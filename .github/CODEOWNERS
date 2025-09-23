@@ -1,0 +1,4 @@
+*.js @ssh-vom
+*.ts @ssh-vom
+*.cpp @ssh-vom
+*.cc @ssh-vom
