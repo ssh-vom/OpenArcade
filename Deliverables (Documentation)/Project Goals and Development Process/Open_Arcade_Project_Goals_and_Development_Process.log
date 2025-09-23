@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (MiKTeX 24.4) (preloaded format=pdflatex 2024.9.15)  23 SEP 2025 16:26
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (MiKTeX 24.4) (preloaded format=pdflatex 2024.9.15)  23 SEP 2025 17:40
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1382,7 +1382,9 @@ LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <10> not available
 
 ]
 
-[3] (Open_Arcade_Project_Goals_and_Development_Process.aux)
+[3]
+
+[4] (Open_Arcade_Project_Goals_and_Development_Process.aux)
  ***********
 LaTeX2e <2024-06-01> patch level 2
 L3 programming layer <2024-08-16>
@@ -1394,17 +1396,17 @@ Package logreq Info: Writing requests to 'Open_Arcade_Project_Goals_and_Developm
 
  ) 
 Here is how much of TeX's memory you used:
- 41583 strings out of 473898
- 818092 string characters out of 5726479
+ 41596 strings out of 473898
+ 818266 string characters out of 5726479
  1939960 words of memory out of 5000000
- 63767 multiletter control sequences out of 15000+600000
- 567629 words of font info for 73 fonts, out of 8000000 for 9000
+ 63773 multiletter control sequences out of 15000+600000
+ 567975 words of font info for 74 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  133i,12n,136p,868b,2477s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\Anish\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1000.pk><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on Open_Arcade_Project_Goals_and_Development_Process.pdf (4 pages, 109162 bytes).
+ <C:\Users\Anish\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1000.pk><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
+Output written on Open_Arcade_Project_Goals_and_Development_Process.pdf (5 pages, 123143 bytes).
 PDF statistics:
- 121 PDF objects out of 1000 (max. 8388607)
- 16 named destinations out of 1000 (max. 500000)
+ 137 PDF objects out of 1000 (max. 8388607)
+ 22 named destinations out of 1000 (max. 500000)
  106 words of extra memory for PDF output out of 10000 (max. 10000000)
 

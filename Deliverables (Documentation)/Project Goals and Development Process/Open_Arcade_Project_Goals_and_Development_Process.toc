@@ -8,5 +8,5 @@
 \contentsline {section}{\numberline {2}Development Process}{3}{section.2}%
 \contentsline {subsection}{\numberline {2.1}Meetings}{3}{subsection.2.1}%
 \contentsline {subsection}{\numberline {2.2}Overall Process Workflow}{3}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Group Roles}{3}{subsection.2.3}%
-\contentsline {subsection}{\numberline {2.4}Technology}{3}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.3}Group Roles}{4}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Technology}{4}{subsection.2.4}%
