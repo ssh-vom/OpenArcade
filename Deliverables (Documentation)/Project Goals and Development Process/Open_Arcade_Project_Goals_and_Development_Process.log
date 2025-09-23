@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (MiKTeX 24.4) (preloaded format=pdflatex 2024.9.15)  23 SEP 2025 00:14
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (MiKTeX 24.4) (preloaded format=pdflatex 2024.9.15)  23 SEP 2025 14:06
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -950,41 +950,185 @@ File: pppdftex.def 2025/01/30 v0.6e Pdfpages driver for pdfTeX (AM)
 \AM@templatesizebox=\box84
 ) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/parskip\parskip.sty
 Package: parskip 2021-03-14 v2.0h non-zero parskip adjustments
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/tikzpagenodes\tikzpagenodes.sty
+Package: tikzpagenodes 2012/09/16 v1.1 Special PGF/TikZ nodes for areas of the page
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pgf/frontendlayer\tikz.sty (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgf.sty
+Package: pgf 2023-01-15 v3.1.10 (3.1.10)
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgfcore.sty (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pgf/systemlayer\pgfsys.sty (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsys.code.tex
+Package: pgfsys 2023-01-15 v3.1.10 (3.1.10)
+\pgf@x=\dimen321
+\pgf@y=\dimen322
+\pgf@xa=\dimen323
+\pgf@ya=\dimen324
+\pgf@xb=\dimen325
+\pgf@yb=\dimen326
+\pgf@xc=\dimen327
+\pgf@yc=\dimen328
+\pgf@xd=\dimen329
+\pgf@yd=\dimen330
+\w@pgf@writea=\write5
+\r@pgf@reada=\read7
+\c@pgf@counta=\count522
+\c@pgf@countb=\count523
+\c@pgf@countc=\count524
+\c@pgf@countd=\count525
+\t@pgf@toka=\toks54
+\t@pgf@tokb=\toks55
+\t@pgf@tokc=\toks56
+\pgf@sys@id@count=\count526
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgf.cfg
+File: pgf.cfg 2023-01-15 v3.1.10 (3.1.10)
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 56.
+Driver file for pgf: pgfsys-pdftex.def
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsys-pdftex.def
+File: pgfsys-pdftex.def 2023-01-15 v3.1.10 (3.1.10)
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsys-common-pdf.def
+File: pgfsys-common-pdf.def 2023-01-15 v3.1.10 (3.1.10)
+))) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsyssoftpath.code.tex
+File: pgfsyssoftpath.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfsyssoftpath@smallbuffer@items=\count527
+\pgfsyssoftpath@bigbuffer@items=\count528
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsysprotocol.code.tex
+File: pgfsysprotocol.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcore.code.tex
+Package: pgfcore 2023-01-15 v3.1.10 (3.1.10)
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfint.code.tex) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorepoints.code.tex
+File: pgfcorepoints.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@picminx=\dimen331
+\pgf@picmaxx=\dimen332
+\pgf@picminy=\dimen333
+\pgf@picmaxy=\dimen334
+\pgf@pathminx=\dimen335
+\pgf@pathmaxx=\dimen336
+\pgf@pathminy=\dimen337
+\pgf@pathmaxy=\dimen338
+\pgf@xx=\dimen339
+\pgf@xy=\dimen340
+\pgf@yx=\dimen341
+\pgf@yy=\dimen342
+\pgf@zx=\dimen343
+\pgf@zy=\dimen344
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorepathconstruct.code.tex
+File: pgfcorepathconstruct.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@path@lastx=\dimen345
+\pgf@path@lasty=\dimen346
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorepathusage.code.tex
+File: pgfcorepathusage.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@shorten@end@additional=\dimen347
+\pgf@shorten@start@additional=\dimen348
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorescopes.code.tex
+File: pgfcorescopes.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfpic=\box85
+\pgf@hbox=\box86
+\pgf@layerbox@main=\box87
+\pgf@picture@serial@count=\count529
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcoregraphicstate.code.tex
+File: pgfcoregraphicstate.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgflinewidth=\dimen349
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcoretransformations.code.tex
+File: pgfcoretransformations.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@pt@x=\dimen350
+\pgf@pt@y=\dimen351
+\pgf@pt@temp=\dimen352
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorequick.code.tex
+File: pgfcorequick.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcoreobjects.code.tex
+File: pgfcoreobjects.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorepathprocessing.code.tex
+File: pgfcorepathprocessing.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorearrows.code.tex
+File: pgfcorearrows.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfarrowsep=\dimen353
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcoreshade.code.tex
+File: pgfcoreshade.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@max=\dimen354
+\pgf@sys@shading@range@num=\count530
+\pgf@shadingcount=\count531
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcoreimage.code.tex
+File: pgfcoreimage.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcoreexternal.code.tex
+File: pgfcoreexternal.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfexternal@startupbox=\box88
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorelayers.code.tex
+File: pgfcorelayers.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcoretransparency.code.tex
+File: pgfcoretransparency.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorepatterns.code.tex
+File: pgfcorepatterns.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcorerdf.code.tex
+File: pgfcorerdf.code.tex 2023-01-15 v3.1.10 (3.1.10)
+))) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmoduleshapes.code.tex
+File: pgfmoduleshapes.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfnodeparttextbox=\box89
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmoduleplot.code.tex
+File: pgfmoduleplot.code.tex 2023-01-15 v3.1.10 (3.1.10)
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfcomp-version-0-65.sty
+Package: pgfcomp-version-0-65 2023-01-15 v3.1.10 (3.1.10)
+\pgf@nodesepstart=\dimen355
+\pgf@nodesepend=\dimen356
+) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfcomp-version-1-18.sty
+Package: pgfcomp-version-1-18 2023-01-15 v3.1.10 (3.1.10)
+)) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz\tikz.code.tex
+Package: tikz 2023-01-15 v3.1.10 (3.1.10)
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibraryplothandlers.code.tex
+File: pgflibraryplothandlers.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@plot@mark@count=\count532
+\pgfplotmarksize=\dimen357
+)
+\tikz@lastx=\dimen358
+\tikz@lasty=\dimen359
+\tikz@lastxsaved=\dimen360
+\tikz@lastysaved=\dimen361
+\tikz@lastmovetox=\dimen362
+\tikz@lastmovetoy=\dimen363
+\tikzleveldistance=\dimen364
+\tikzsiblingdistance=\dimen365
+\tikz@figbox=\box90
+\tikz@figbox@bg=\box91
+\tikz@tempbox=\box92
+\tikz@tempbox@bg=\box93
+\tikztreelevel=\count533
+\tikznumberofchildren=\count534
+\tikznumberofcurrentchild=\count535
+\tikz@fig@count=\count536
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodulematrix.code.tex
+File: pgfmodulematrix.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfmatrixcurrentrow=\count537
+\pgfmatrixcurrentcolumn=\count538
+\pgf@matrix@numberofcolumns=\count539
+)
+\tikz@expandcount=\count540
+ (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/libraries\tikzlibrarytopaths.code.tex
+File: tikzlibrarytopaths.code.tex 2023-01-15 v3.1.10 (3.1.10)
+))) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/ifoddpage\ifoddpage.sty
+Package: ifoddpage 2022/10/18 v1.2 Conditionals for odd/even page detection
+\c@checkoddpage=\count541
+))
+Package hyperref Info: Option `colorlinks' set `true' on input line 70.
  (LJMU-API-header.tex (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/tools\multicol.sty
 Package: multicol 2024/05/23 v1.9h multicolumn formatting (FMi)
-\c@tracingmulticols=\count522
-\mult@box=\box85
-\multicol@leftmargin=\dimen321
-\c@unbalance=\count523
-\c@collectmore=\count524
-\doublecol@number=\count525
-\multicoltolerance=\count526
-\multicolpretolerance=\count527
-\full@width=\dimen322
-\page@free=\dimen323
-\premulticols=\dimen324
-\postmulticols=\dimen325
+\c@tracingmulticols=\count542
+\mult@box=\box94
+\multicol@leftmargin=\dimen366
+\c@unbalance=\count543
+\c@collectmore=\count544
+\doublecol@number=\count545
+\multicoltolerance=\count546
+\multicolpretolerance=\count547
+\full@width=\dimen367
+\page@free=\dimen368
+\premulticols=\dimen369
+\postmulticols=\dimen370
 \multicolsep=\skip101
 \multicolbaselineskip=\skip102
-\partial@page=\box86
-\last@line=\box87
-\mc@boxedresult=\box88
-\maxbalancingoverflow=\dimen326
-\mult@rightbox=\box89
-\mult@grightbox=\box90
-\mult@firstbox=\box91
-\mult@gfirstbox=\box92
-\@tempa=\box93
-\@tempa=\box94
-\@tempa=\box95
-\@tempa=\box96
-\@tempa=\box97
-\@tempa=\box98
-\@tempa=\box99
-\@tempa=\box100
-\@tempa=\box101
+\partial@page=\box95
+\last@line=\box96
+\mc@boxedresult=\box97
+\maxbalancingoverflow=\dimen371
+\mult@rightbox=\box98
+\mult@grightbox=\box99
+\mult@firstbox=\box100
+\mult@gfirstbox=\box101
 \@tempa=\box102
 \@tempa=\box103
 \@tempa=\box104
@@ -1012,22 +1156,31 @@ Package: multicol 2024/05/23 v1.9h multicolumn formatting (FMi)
 \@tempa=\box126
 \@tempa=\box127
 \@tempa=\box128
-\c@minrows=\count528
-\c@columnbadness=\count529
-\c@finalcolumnbadness=\count530
-\last@try=\dimen327
-\multicolovershoot=\dimen328
-\multicolundershoot=\dimen329
-\mult@nat@firstbox=\box129
-\colbreak@box=\box130
-\mc@col@check@num=\count531
+\@tempa=\box129
+\@tempa=\box130
+\@tempa=\box131
+\@tempa=\box132
+\@tempa=\box133
+\@tempa=\box134
+\@tempa=\box135
+\@tempa=\box136
+\@tempa=\box137
+\c@minrows=\count548
+\c@columnbadness=\count549
+\c@finalcolumnbadness=\count550
+\last@try=\dimen372
+\multicolovershoot=\dimen373
+\multicolundershoot=\dimen374
+\mult@nat@firstbox=\box138
+\colbreak@box=\box139
+\mc@col@check@num=\count551
 ))
 
 Package biblatex Warning: 'babel/polyglossia' detected but 'csquotes' missing.
 (biblatex)                Loading 'csquotes' recommended.
 
-\@quotelevel=\count532
-\@quotereset=\count533
+\@quotelevel=\count552
+\@quotereset=\count553
 
 LaTeX Warning: Unused global option(s):
     [a4].
@@ -1035,25 +1188,25 @@ LaTeX Warning: Unused global option(s):
 (Open_Arcade_Project_Goals_and_Development_Process.aux)
 \openout1 = `Open_Arcade_Project_Goals_and_Development_Process.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 64.
-LaTeX Font Info:    ... okay on input line 64.
-\c@lstlisting=\count534
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+\c@lstlisting=\count554
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -1091,17 +1244,17 @@ LaTeX Font Info:    ... okay on input line 64.
 
 (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count535
-\scratchdimen=\dimen330
-\scratchbox=\box131
-\nofMPsegments=\count536
-\nofMParguments=\count537
-\everyMPshowfont=\toks54
-\MPscratchCnt=\count538
-\MPscratchDim=\dimen331
-\MPnumerator=\count539
-\makeMPintoPDFobject=\count540
-\everyMPtoPDFconversion=\toks55
+\scratchcounter=\count555
+\scratchdimen=\dimen375
+\scratchbox=\box140
+\nofMPsegments=\count556
+\nofMParguments=\count557
+\everyMPshowfont=\toks57
+\MPscratchCnt=\count558
+\MPscratchDim=\dimen376
+\MPnumerator=\count559
+\makeMPintoPDFobject=\count560
+\everyMPtoPDFconversion=\toks58
 ) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
 Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 485.
@@ -1110,10 +1263,10 @@ File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 )) (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/translations/dicts\translations-basic-dictionary-english.trsl
 File: translations-basic-dictionary-english.trsl (english translation file `translations-basic-dictionary')
 )
-Package hyperref Info: Link coloring ON on input line 64.
+Package hyperref Info: Link coloring ON on input line 78.
  (Open_Arcade_Project_Goals_and_Development_Process.out) (Open_Arcade_Project_Goals_and_Development_Process.out)
-\@outlinefile=\write5
-\openout5 = `Open_Arcade_Project_Goals_and_Development_Process.out'.
+\@outlinefile=\write6
+\openout6 = `Open_Arcade_Project_Goals_and_Development_Process.out'.
 
 Package biblatex Info: Trying to load language 'UKenglish'...
 Package biblatex Info: ... file 'UKenglish.lbx' found.
@@ -1141,8 +1294,8 @@ Package biblatex Info: Automatic encoding selection.
 Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'Open_Arcade_Project_Goals_and_Development_Process.bbl' found.
  (Open_Arcade_Project_Goals_and_Development_Process.bbl)
-Package biblatex Info: Reference section=0 on input line 64.
-Package biblatex Info: Reference segment=0 on input line 64.
+Package biblatex Info: Reference section=0 on input line 78.
+Package biblatex Info: Reference segment=0 on input line 78.
  (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pdflscape\pdflscape.sty
 Package: pdflscape 2022-10-27 v0.13 Display of landscape pages in PDF
  (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/pdflscape\pdflscape-nometadata.sty
@@ -1153,18 +1306,22 @@ Package: lscape 2020/05/28 v3.02 Landscape Pages (DPC)
 Package pdflscape Info: Auto-detected driver: pdftex on input line 81.
 ))
 Couldn't patch \deferred@thm@head!
-<m24-col_png.png, id=31, 76.1244pt x 40.4712pt>
+<m24-col_png.png, id=50, 76.1244pt x 40.4712pt>
 File: m24-col_png.png Graphic file (type png)
 <use m24-col_png.png>
-Package pdftex.def Info: m24-col_png.png  used on input line 77.
+Package pdftex.def Info: m24-col_png.png  used on input line 91.
 (pdftex.def)             Requested size: 113.81102pt x 60.51212pt.
 
-Overfull \hbox (5.22217pt too wide) in paragraph at lines 74--78
+Overfull \hbox (5.22217pt too wide) in paragraph at lines 88--92
 []|    [] 
  []
 
 
 
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <12> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 105.
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <14.4> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 105.
 [1
 Non-PDF special ignored!
 <special> header=pstricks.pro
@@ -1206,8 +1363,8 @@ LaTeX Font Info:    Trying to load font information for U+wasy on input line 3.
  (C:\Users\Anish\AppData\Local\Programs\MiKTeX\tex/latex/wasysym\uwasy.fd
 File: uwasy.fd 2020/01/19 v2.4 Wasy-2 symbol font definitions
 ))
-\tf@toc=\write6
-\openout6 = `Open_Arcade_Project_Goals_and_Development_Process.toc'.
+\tf@toc=\write7
+\openout7 = `Open_Arcade_Project_Goals_and_Development_Process.toc'.
 
 
 
@@ -1215,8 +1372,11 @@ File: uwasy.fd 2020/01/19 v2.4 Wasy-2 symbol font definitions
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.94 \clearpage
-                [1]
+l.108 \clearpage
+                
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <10> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 108.
+ [1]
 
 [2
 
@@ -1228,23 +1388,23 @@ LaTeX2e <2024-06-01> patch level 2
 L3 programming layer <2024-08-16>
  ***********
 Package rerunfilecheck Info: File `Open_Arcade_Project_Goals_and_Development_Process.out' has not changed.
-(rerunfilecheck)             Checksum: 4360E81FAF35CCBE09D34C4B2B4FC42B;867.
+(rerunfilecheck)             Checksum: 090153ABA8AFC3B950E7FA98787261DE;1371.
 Package logreq Info: Writing requests to 'Open_Arcade_Project_Goals_and_Development_Process.run.xml'.
 \openout1 = `Open_Arcade_Project_Goals_and_Development_Process.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 36625 strings out of 473898
- 701587 string characters out of 5726479
- 1938960 words of memory out of 5000000
- 58943 multiletter control sequences out of 15000+600000
- 567123 words of font info for 70 fonts, out of 8000000 for 9000
+ 41583 strings out of 473898
+ 818092 string characters out of 5726479
+ 1939960 words of memory out of 5000000
+ 63767 multiletter control sequences out of 15000+600000
+ 567629 words of font info for 73 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 133i,11n,136p,868b,2477s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\Anish\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1000.pk><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb>
-Output written on Open_Arcade_Project_Goals_and_Development_Process.pdf (4 pages, 96068 bytes).
+ 133i,12n,136p,868b,2477s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\Anish\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1000.pk><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/Anish/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
+Output written on Open_Arcade_Project_Goals_and_Development_Process.pdf (4 pages, 109163 bytes).
 PDF statistics:
- 92 PDF objects out of 1000 (max. 8388607)
- 12 named destinations out of 1000 (max. 500000)
- 62 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 121 PDF objects out of 1000 (max. 8388607)
+ 16 named destinations out of 1000 (max. 500000)
+ 106 words of extra memory for PDF output out of 10000 (max. 10000000)
 
