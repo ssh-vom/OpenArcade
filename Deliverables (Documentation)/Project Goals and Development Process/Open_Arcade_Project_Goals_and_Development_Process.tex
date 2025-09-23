@@ -1,0 +1,132 @@
+\documentclass[a4]{article}
+\usepackage{listings}
+\usepackage{LJMU-API}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{fancyvrb}
+\usepackage{graphicx}
+\usepackage[normalem]{ulem}
+\usepackage{varwidth}
+\usepackage[x11names]{xcolor}
+\usepackage{amsmath, stackengine}
+\usepackage{cancel}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{biblatex}
+\usepackage{pdfpages}
+\usepackage{parskip}
+\addbibresource{sample.bib}
+
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.97, 0.97, 0.97}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=gray!100,
+    filecolor=blue,      
+    urlcolor=blue,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+\input{LJMU-API-header}
+
+\macid{OPENACADE}
+\coursename{MECHTRON 3TB4}
+\assignment{Project Goals and Development Process}
+\date{\today}
+
+\begin{document}
+\begin{titlepage}
+
+    \hspace*{0mm}\textbf{\Large OpenArcade}\\
+    \hspace*{0mm} \large Anish Paramsothy, paramsa\\
+    \hspace*{0mm} \large Chris Palermo, palerc\\
+    \hspace*{0mm} \large Mitchel Cox, coxm12\\
+    \hspace*{0mm} \large Shivom Sharma, shars119\\
+    \hspace*{0mm} \large Jacqueline Leung, leungw18
+
+    \hspace*{\textwidth} 
+    \hspace{-4cm} 
+    \vspace{-2cm} 
+    \raisebox{1cm}[0cm][0cm]{\includegraphics[width=4cm]{m24-col_png.png}}
+
+    \vspace{7cm} 
+    
+    
+    \begin{center}
+        \Huge \textbf{Project Goals and Development Process} \\[1em]
+        \Large MECHTRON 4TB6, McMaster University
+    \end{center}
+    \vspace{8cm}
+    
+    \hspace*{0mm} \textbf{\large Date Submitted:} September 27th, 2025
+
+    \hspace*{0mm} \textbf{\large Due Date:} September 28th, 2025
+\end{titlepage}
+\tableofcontents
+
+\clearpage
+\section{Project Goals}
+\subsection{Project Description}
+Design and development of an arcade/box style controller series of modules (with a module containing: buttons, joysticks, d-pad, etc), that can be mechanically 
+connected to each other to allow for gamers to develop their own combination and style of controller. Along with the idea that gamers can combine modules together,
+we want to give them the option to play using the modules separately. These modules will be connected to a central main hub which will communicate the inputs of the
+modules to the game.
+
+\subsection{Rationale}
+Currently, there are several game controllers that follow the ideology of “1 size fits all”, preventing gamers that may be injured, disabled, or lacking fine motor 
+skills to play the games they want. This could be the case due to a variety of reasons:
+\begin{itemize}
+    \item The controller itself is too small and is required to be held.
+    \item Several controllers require a grip that becomes uncomfortable to the plaer after hours of gaming.
+    \item Buttons and joysticks are close together and require the user to place their hands in positions that can potentially be uncomfortable.
+    \item There is little room for customization, and alot of controllers follow the one ideology of "one size fits all".  
+\end{itemize}
+
+\subsection{Goals}
+We have several goals that we want to outline for the controller. We want to accomplish these to some degree of effectiveness:
+\begin{itemize}
+    \item \textbf{Modularized}: The controller should include multiple modules, and for these to work together to play games.
+    \item \textbf{Customizable}: The controller should be able to be attached to each other (if A and B are modules, to be attached in either A-B or B-A formats), or be able to be utilized as separate and detached modules.
+        The joysticks should also be swappable and include additional customization options.
+    \item \textbf{Input Delay}: producing the lowest amount of input delay as possible, to prevent any scenarios where games become unplayable because the inputs are not responsive enough.
+    \item \textbf{Comfort}: The controller should be attempting to be an ergonomic substitute to other controllers, so providing better options for buttons and joysticks and their placement should be a heavy consideration. 
+        Along with this, the location of where the controller will be (either in lap or on table) will also provide an improved gaming experience for the user.
+    \item \textbf{Functional}: The controller modules should be able to fit correctly together without any mechanical issues. Along with this, the controller should function correctly in terms of gameplay, where specific inputs (button presses or joystick movement) relate to the correct outputs.
+    \item \textbf{Robust}: The controller should meet the basic needs of staying together and not falling apart when subject to stress. This could include the force created when pressing a button, or potentially the user resting their arm on the device while playing.
+    \item \textbf{Intuitive}: The controller should not be confusing to use, the modules should attach in a simple manner to prevent confusion.
+    \item \textbf{Connectivity}: The controller should be able to connect to different types of devices, with the main priority being computer.
+    \item \textbf{Aesthetically pleasing}: The controller should look nice in order to draw in consumers.   
+\end{itemize}
+
+\section{Development Process}
+
+
+
+\end{document}

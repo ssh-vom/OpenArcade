@@ -1,0 +1,115 @@
+%% Adapted by Peter McFarlane from various sources.
+%% All errors of style or content are mine.
+%% acknowledgements to Bob Margolis, and also Rob Lynas (from whom some macros are plagiarised).
+%% My apologies for not annotating this file, I shall do so soon (yeah, right).
+%% Further ripped apart, hacked and adjusted, but with resemblance to the original in parts,
+%% by Simon Harrison for his own preferences, but thanks to the other guys who provided the platform!
+
+\ProvidesPackage{LJMU-API}
+\NeedsTeXFormat{LaTeX2e}
+\newcommand{\name}{\relax}
+\newcommand{\tma}{\relax}
+\newcommand{\course}{\relax}
+\newcommand{\pid}{\relax}
+%%
+
+\title{\textbf{TMA: \course\space}}
+\author{\textbf{\name\space\pid}}
+
+\newcommand{\myname}[1]{\renewcommand{\name}{#1}}
+\newcommand{\assignment}[1]{\renewcommand{\tma}{#1}}
+\newcommand{\coursename}[1]{\renewcommand{\course}{#1}}
+\newcommand{\macid}[1]{\renewcommand{\pid}{#1}}
+
+
+\RequirePackage{amssymb}
+\RequirePackage{amsmath}
+\RequirePackage{amsfonts}
+\RequirePackage{amsthm}
+\RequirePackage{upgreek}
+\RequirePackage{wasysym}
+\RequirePackage{bm}
+\RequirePackage{fancyhdr}  
+\RequirePackage{geometry}             
+\RequirePackage{xifthen} 
+\RequirePackage{verbatim} 
+%\RequirePackage[mathscr]{euscript} 
+\RequirePackage[dvips]{graphicx}
+
+\geometry{headheight=10mm}
+\geometry{headsep=5mm}
+\geometry{bottom=25mm}
+\geometry{footskip=15mm}
+\geometry{rmargin=30mm,lmargin=30mm}%
+\geometry{includemp}
+\geometry{marginparwidth=0mm,marginparsep=0mm}
+\setlength{\headwidth}{\textwidth}
+
+\newcommand{\marginnote}[1]{\marginpar{#1}}
+\newcommand{\marginnotes}{\geometry{marginparwidth=40mm,marginparsep=5mm}%
+		\geometry{rmargin=15mm,lmargin=20mm}%
+		\setlength{\headwidth}{\textwidth}}	
+
+\newcounter{question}
+\newcounter{qpart}[question]
+\newcounter{qsubpart}[qpart]
+\renewcommand{\thequestion}{\arabic{question}}
+\renewcommand{\theqpart}{\alph{qpart}}
+\renewcommand{\theqsubpart}{\roman{qsubpart}}
+
+\newenvironment{question}[1][0]{%
+		\ifthenelse{#1>0}{\setcounter{question}{#1-1}}{\relax}%
+		\stepcounter{question}\makebox[0pt][r]{\large{Q \thequestion .\quad }}}%
+		{\par \vspace{3em}}
+\newcommand{\qpart}[1][0]{%
+		\ifthenelse{#1>0}{\setcounter{qpart}{#1-1}}{\relax}%
+		\stepcounter{qpart}\par%
+		\makebox[0pt][r]{\large{(\theqpart )\quad }}}
+\newcommand{\qsubpart}[1][0]{%
+		\ifthenelse{#1>0}{\setcounter{qsubpart}{#1-1}}{\relax}%
+		\stepcounter{qsubpart}\par%
+		\makebox[0pt][r]{\large{(\theqsubpart )\quad }}}
+
+
+
+\numberwithin{equation}{question}	
+   
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\renewcommand{\qedsymbol}{\blacksmiley}	
+
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2 ex plus 0.3 ex minus 0.2 ex}
+
+\pagestyle{fancy}
+\lhead{\textrm{\pid }} 
+\chead{\textrm{\course \ \tma }}  
+\rhead{\textrm{ \ page \thepage \ of \pageref{l@stpage}}}
+\lfoot{}\cfoot{}\rfoot{}          
+
+\newcommand{\x}{\ensuremath\times}
+
+\AtEndDocument{\label{l@stpage}}
+
+\usepackage{graphicx}
+%\usepackage[ps2pdf,bookmarksnumbered]{hyperref}
+\usepackage[UKenglish]{babel}
+\usepackage{pstricks}
+\usepackage{pstricks-add}
+\usepackage{pst-math,pst-xkey}
+
+%\renewcommand{\thesection}{\arabic{section}}
+%\renewcommand{\thesubsection}{\arabic{subsection}}
+%\renewcommand{\thesubsubsection}{\arabic{subsubsection})}
+
+\newcommand{\sub}{\subsection{}}
+\newcommand{\sss}{\subsubsection{}}
+\renewcommand{\v}[1]{\ve{#1}}
+
+
+
+\endinput
+
+
+
