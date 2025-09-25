@@ -15,6 +15,7 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{biblatex}
+\usepackage{tabularx}
 \usepackage{pdfpages}
 \usepackage{parskip}
 \usepackage{tikzpagenodes} 
@@ -106,11 +107,12 @@
 \tableofcontents
 
 \clearpage
+\section{Glossary}
 \section{Project Goals}
 \subsection{Project Description}
-Design and development of an arcade/box style controller series of modules (with a module containing: buttons, joysticks, d-pad, etc), that can be mechanically 
+Design and development of an arcade/box style controller series of children modules (with a children module containing: buttons, joysticks, d-pad, etc), that can be mechanically 
 connected to each other to allow for gamers to develop their own combination and style of controller. Along with the idea that gamers can combine modules together,
-we want to give them the option to play using the modules separately. These modules will be connected to a central main hub which will communicate the inputs of the
+we want to give them the option to play using the modules separately. These modules will be connected to a parent module which will communicate the inputs of the
 modules to the game.
 
 \subsection{Rationale}
@@ -128,15 +130,15 @@ We have several goals that we want to outline for the controller. We want to acc
 \subsubsection{Level 1 Goals}
 These goals are the most important for the functionality of the controller.
 \begin{itemize}
-    \item \textcolor{McMasterMaroon}{\textbf{Modularized}}: The controller should include multiple modules, and for these to work together to play games.
-    \item \textcolor{McMasterMaroon}{\textbf{Customizable}}: The controller should be able to be attached to each other (if A and B are modules, to be attached in either A-B or B-A formats), or be able to be utilized as separate and detached modules.
+    \item \textcolor{McMasterMaroon}{\textbf{Modularized}}: The controller should include multiple children modules, and for these to work together to play games.
+    \item \textcolor{McMasterMaroon}{\textbf{Customizable}}: The controller should be able to be attached to each other (if A and B are children modules, then they are to be attached in either A-B or B-A formats), or be able to be utilized as separate and detached children modules.
         The joysticks should also be swappable and include additional customization options.
     \item \textcolor{McMasterMaroon}{\textbf{Input Delay}}: producing the lowest amount of input delay as possible, to prevent any scenarios where games become unplayable because the inputs are not responsive enough.
     \item \textcolor{McMasterMaroon}{\textbf{Comfort}}: The controller should be attempting to be an ergonomic substitute to other controllers, so providing better options for buttons and joysticks and their placement should be a heavy consideration. 
         Along with this, the location of where the controller will be (either in lap or on table) will also provide an improved gaming experience for the user.
-    \item \textcolor{McMasterMaroon}{\textbf{Functional}}: The controller modules should be able to fit correctly together without any mechanical issues. Along with this, the controller should function correctly in terms of gameplay, where specific inputs (button presses or joystick movement) relate to the correct outputs.
+    \item \textcolor{McMasterMaroon}{\textbf{Functional}}: The children modules should be able to fit correctly together without any mechanical issues. Along with this, the controller should function correctly in terms of gameplay, where specific inputs (button presses or joystick movement) relate to the correct outputs.
     \item \textcolor{McMasterMaroon}{\textbf{Robust}}: The controller should meet the basic needs of staying together and not falling apart when subject to stress. This could include the force created when pressing a button, or potentially the user resting their arm on the device while playing.
-    \item \textcolor{McMasterMaroon}{\textbf{Intuitive}}: The controller should not be confusing to use, the modules should attach in a simple manner to prevent confusion.
+    \item \textcolor{McMasterMaroon}{\textbf{Intuitive}}: The controller should not be confusing to use, the children modules should attach in a simple manner to prevent confusion.
     \item \textcolor{McMasterMaroon}{\textbf{Connectivity}}: The controller should be able to connect to different types of devices, with the main priority being computer.   
 \end{itemize}
 \subsubsection{Level 2 Goals}
@@ -161,21 +163,91 @@ Group members are meant to come to meetings with some individual work done, and 
 Below is a list of steps that outline the workflow in which the OpenArcade controller will be designed and fabricated.
 \begin{enumerate}
     \item \textcolor{McMasterMaroon}{Discussion of Hazard Analysis}: Meet in a few group meetings to identify hazards related to all aspects of design, including hazards during development, and hazards during use. This will all be noted in a hazard analysis document. To complete this task, all possible hazards should be identified.
-    \item \textcolor{McMasterMaroon}{Development of System Requirements}: Outlining the hardware/software/mechanical required to complete the various milestones of the project. This document will be modified during the entire timeline of the project, as the group will define what is needed for the \textit{proof of concept}, \textit{rev 0} and \textit{rev 1} milestones. The document will include a list of software and hardware used, along with the material that will be used for the casing. This will aid in drafting a bill of materials (BOM).
+    \item \textcolor{McMasterMaroon}{Development of System Requirements}: Outlining the hardware/software/mechanical required to complete the various milestones of the project. This document will be modified during the entire timeline of the project, as the group will define what is needed for the \textit{proof of concept}, \textit{rev 0} and \textit{rev 1} milestones. The document will include a list of software and hardware used, along with the material that will be used for the housing. This will aid in drafting a bill of materials (BOM).
     \item \textcolor{McMasterMaroon}{Concept Design 1}: Drafting an initial concept design to show as the proof of concept. This should include showing the functionality of buttons on a simple scale. The goal is to develop a written plan of what the proof of concept should be, and finalizing what hardware will be required for that.
     \item \textcolor{McMasterMaroon}{Proof of Concept}: The proof of concept will be used to outline basic functioanlity of the design. This will include:
         \begin{itemize}
-            \item Ability to communicate between main board and computer.
-            \item Functionality of smaller boards (attached to buttons/joysticks) to a breadboard with LEDs
+            \item Ability to communicate between parent board and computer.
+            \item Functionality of children boards (attached to buttons/joysticks) to a breadboard with LEDs
             \item BOM including hardware choices
         \end{itemize}
-    The proof of concept will be succesful if the button and joystick inputs correspond to the correct outputs on the board. Along with this, another succesful test will be if the main board correctly communicates to the computer.
-    \item \textcolor{McMasterMaroon}{Concept Design 2}: Begin planning the finalized design. The group will work in determining how the smaller modules (with buttons/joysticks) will communicate with the main central unit, so that direct inputs can result in outputs seen on the computer. A rough mechanical design will be made with cardboard or other simple materials so that the placement of the buttons and joysticks can be determined. Essentially a primilary casing for the controller. The modules will not be attacheable yet.
-    \item \textcolor{McMasterMaroon}{Rev 0}: Showcase the the buttons and joysticks communicating to the game itself. The demo will show how the buttons can be configured to specific outputs, and that they communcate the correct outputs for the corresponding inputs. Smaller modules will communicate to the main central unit, which will be communicated to the game.
-    \item \textcolor{McMasterMaroon}{Concept Design 3}: Discussion and plannig of the finalized design. This will include the mechanical casing of the modules, along with how they will be attached to each other to form the full controller. The casing should act as a housing for the electrical and hardware components that prevents movement of the internal pieces, while also being able to attach to other modules. emitted heat from the controller should also be considered when developing the casing.
-    \item \textcolor{McMasterMaroon}{Rev 1}: The finalized design of the controller. The demo will include two modules that can be attached to each other, and can successfully communcate with the game with the correct outputs. The controller will be compared to other controllers to showcase why it is an effective substitute for the current controllers in the market. 
+    The proof of concept will be succesful if the button and joystick inputs correspond to the correct outputs on the breadboard. Along with this, another succesful test will be if the parent board correctly communicates to the computer.
+    \item \textcolor{McMasterMaroon}{Concept Design 2}: Begin planning the finalized design. The group will work in determining how the children modules (with buttons/joysticks) will communicate with the parent module, so that direct inputs can result in outputs seen on the computer. A rough mechanical design will be made with cardboard or other simple materials so that the placement of the buttons and joysticks can be determined. Essentially a primilary housing for the controller. The children modules will not be attacheable yet.
+    \item \textcolor{McMasterMaroon}{Rev 0}: Showcase the the buttons and joysticks communicating to the game itself. The demo will show how the buttons can be configured to specific outputs, and that they communcate the correct outputs for the corresponding inputs. Children modules will communicate to the parent module, which will be communicated to the game.
+    \item \textcolor{McMasterMaroon}{Concept Design 3}: Discussion and plannig of the finalized design. This will include the mechanical housing for all modules, along with how they will be attached to each other to form the full controller. The housing should contain the electrical and hardware components, while also preventing the movement/shifting of the internal pieces. Children modules should be attachable to each other. Emitted heat from the controller should also be considered when developing the housing.
+    \item \textcolor{McMasterMaroon}{Rev 1}: The finalized design of the controller. The demo will include two children modules that can be attached to each other, and can successfully communcate with the game through the parent module with the correct outputs. The controller will be compared to other controllers to showcase why it is an effective substitute for the controllers in the market. 
 \end{enumerate}
 \subsection{Group Roles}
+\clearpage
 \subsection{Technology}
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.2} % extra row spacing
+\begin{tabularx}{\linewidth}{|X|X|}
+\hline
+\textcolor{McMasterMaroon}{\textbf{Software}} & \textcolor{McMasterMaroon}{\textbf{Uses}} \\
+\hline
+Github & For any code and version control. \\
+\hline
+Google Drive & Any collaborative documents and shared files. Used for CAD/mechanical version control. \\
+\hline
+Autodesk Inventor & CAD for the housing of the parent and children modules, and for any custom components. \\
+\hline
+STM32CubeIDE, VsCode, Vim & IDE for code and microcontrollers. \\
+\hline
+C/C++ & Language for firmware. \\
+\hline
+TypeScript/JavaScript & UI language for configurator application. \\
+\hline
+Python & Miscellaneous scripting language. \\
+\hline
+KiCad, EasyEDA, Altium & Software for PCB design. \\
+\hline
+PrusaSlicer, Bambu, Studio & Software for 3D printing. \\
+\hline
+Docker & Containerizing code to run on multiple machines (MacOS, Linux, Windows). \\
+\hline
+Heroku/Render & Website hosting platform for configurator application. \\
+\hline
+Figma, Mermaid, MSPaint, Procreate & Softwares used for systems diagramming. \\
+\hline
+LaTeX & Tool used for documentation. \\
+\hline
+\end{tabularx}
+\caption{Software and their uses}
+\end{table}
+
+
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.2} % extra row spacing
+\begin{tabularx}{\linewidth}{|X|X|}
+\hline
+\textcolor{McMasterMaroon}{\textbf{Hardware}} & \textcolor{McMasterMaroon}{\textbf{Uses}} \\
+\hline
+3D Printers (Bambu Lab A1, Thode Makerspace: Prusa MK4S) & To print the controller children module casing and any custom components \\
+\hline
+STM32F Series Boards & Controller for the main central unit \\
+\hline
+ESP32s Series Boards, Raspberry Pi Pico & Module-level control board (Bluetooth connection or wired to central unit) \\
+\hline
+Arcade Buttons/Joysticks & Hardware for inputs from children modules \\
+\hline
+Miscellaneous Electrical Components (Capacitors, Resistors, Power Supply, etc.) & Any electrical components required to build the controller children modules \\
+\hline
+Breadboards & Used in concept design and design verification \\
+\hline
+Breakout Boards & Used for making custom cables for USB, micro-USB \\
+\hline
+Bluetooth Card (Wi-Fi 5 enabled) & For communication between children and parent boards \\
+\hline
+Oscilloscope/Multimeter & Troubleshooting and testing \\
+\hline
+Cables (USB, Power cable) & Used for power and data transfer \\
+\hline
+\end{tabularx}
+\caption{Hardware and their uses}
+\end{table}
 
 \end{document}
