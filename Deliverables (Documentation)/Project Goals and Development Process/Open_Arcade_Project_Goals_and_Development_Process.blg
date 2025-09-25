@@ -1,0 +1,9 @@
+[0] Config.pm:307> INFO - This is Biber 2.19
+[0] Config.pm:310> INFO - Logfile is 'Open_Arcade_Project_Goals_and_Development_Process.blg'
+[169] biber-MSWIN64:340> INFO - === 
+[220] Biber.pm:419> INFO - Reading 'Open_Arcade_Project_Goals_and_Development_Process.bcf'
+[376] Biber.pm:979> INFO - Found 0 citekeys in bib section 0
+[397] bbl.pm:660> INFO - Writing 'Open_Arcade_Project_Goals_and_Development_Process.bbl' with encoding 'UTF-8'
+[397] bbl.pm:763> INFO - Output to Open_Arcade_Project_Goals_and_Development_Process.bbl
+[398] Biber.pm:131> WARN - The file 'Open_Arcade_Project_Goals_and_Development_Process.bcf' does not contain any citations!
+[398] Biber.pm:133> INFO - WARNINGS: 1
