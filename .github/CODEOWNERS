@@ -2,3 +2,4 @@
 *.ts @ssh-vom
 *.cpp @ssh-vom
 *.cc @ssh-vom
+*.tex @ssh-vom
