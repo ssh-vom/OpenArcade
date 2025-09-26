@@ -9,5 +9,10 @@
 \contentsline {section}{\numberline {3}Development Process}{3}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Meetings}{3}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Overall Process Workflow}{3}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}Group Roles}{5}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}Technology}{6}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.3}Coding Standards}{5}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}General Practices}{5}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Version Control}{5}{subsubsection.3.3.2}%
+\contentsline {subsubsection}{\numberline {3.3.3}Testing Plan}{5}{subsubsection.3.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.4}Code Formatting}{5}{subsubsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.4}Group Roles}{6}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Technology}{7}{subsection.3.5}%
