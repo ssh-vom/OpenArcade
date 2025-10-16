@@ -1,6 +1,9 @@
 import asyncio
 from bleak import BleakClient, BleakScanner
 
+"""
+TODO replace these with the actual UUID and Char UUID for testing 
+"""
 SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb"
 CHAR_UUID = "0000fff1-0000-1000-8000-00805f9b34fb"
 
