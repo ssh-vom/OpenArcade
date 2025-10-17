@@ -5,3 +5,4 @@
 *.blg
 *.fls
 *.fdb_latexmk
+*.env
