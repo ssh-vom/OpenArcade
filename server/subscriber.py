@@ -1,5 +1,6 @@
 import asyncio
 from bleak import BleakClient, BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
 
 TIMEOUT_DEFAULT = 10.0
 heart_rate_service_uuid = "0000180d-0000-1000-8000-00805f9b34fb"
@@ -7,23 +8,21 @@ heart_rate_char_uuid = "00002a37-0000-1000-8000-00805f9b34fb"
 target_address = "a0:b7:65:24:9a:ea"
 
 notification_count = 0
-is_connected = True
 
 
-def disconnect_callback(client):
+def disconnect_callback(client: BleakClient):
     """Called when device disconnects"""
-    global is_connected
-    is_connected = False
     print("[DISCONNECT] Device disconnected!")
 
 
-async def notification_handler(sender: int, data: bytearray):
+async def notification_handler(sender: BleakGATTCharacteristic, data: bytearray):
     """Handle incoming notifications from ESP32"""
     global notification_count
     try:
         notification_count += 1
-        print(f"[NOTIFICATION #{notification_count}] {data.hex()}")
-
+        print(
+            f"[NOTIFICATION #{notification_count}] {data.hex()} from sender: {sender}"
+        )
         if len(data) >= 2:
             heart_rate = int(data[1])
             print(f"[DATA] Heart Rate = {heart_rate} BPM")
@@ -39,7 +38,7 @@ async def scan_for_device():
 
 
 async def main():
-    global is_connected, notification_count
+    global notification_count
 
     target = await scan_for_device()
     if not target:
