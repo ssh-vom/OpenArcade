@@ -2,10 +2,15 @@ import asyncio
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 
-TIMEOUT_DEFAULT = 10.0
+TIMEOUT_DEFAULT = 20.0
 heart_rate_service_uuid = "0000180d-0000-1000-8000-00805f9b34fb"
 heart_rate_char_uuid = "00002a37-0000-1000-8000-00805f9b34fb"
-target_address = "a0:b7:65:24:9a:ea"
+# target_address = "a0:b7:65:24:9a:ea"
+
+target_address = "2F1B3BC0-F834-EF5F-E60A-E6FB94B3C891"
+# target_address = "EA:9A:24:65:B7:A0"
+
+# EA:9A:24:65:B7:A0
 
 notification_count = 0
 
@@ -33,6 +38,9 @@ async def notification_handler(sender: BleakGATTCharacteristic, data: bytearray)
 async def scan_for_device():
     """Scan for target device"""
     print("[SCAN] Scanning for devices...")
+    devices = await BleakScanner.discover(timeout=TIMEOUT_DEFAULT)
+    for d in devices:
+        print(d)
     device = await BleakScanner.find_device_by_address(target_address)
     return device
 
