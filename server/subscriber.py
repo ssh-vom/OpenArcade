@@ -5,14 +5,19 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 TIMEOUT_DEFAULT = 20.0
 heart_rate_service_uuid = "0000180d-0000-1000-8000-00805f9b34fb"
 heart_rate_char_uuid = "00002a37-0000-1000-8000-00805f9b34fb"
-# target_address = "a0:b7:65:24:9a:ea"
 
-target_address = "2F1B3BC0-F834-EF5F-E60A-E6FB94B3C891"
+target_address_1 = "a0:b7:65:24:9a:ea"
+target_address_2 = "f8:b3:b7:3a:01:9a"
+
+# target_address = "a0:b7:65:24:9a:ea"
+# target_address = "f8:b3:b7:3a:01:9a"
+
+# target_address = "2F1B3BC0-F834-EF5F-E60A-E6FB94B3C891"
 # target_address = "EA:9A:24:65:B7:A0"
 
 # EA:9A:24:65:B7:A0
 
-notification_count = 0
+notification_count = 0 
 
 
 def disconnect_callback(client: BleakClient):
@@ -22,7 +27,7 @@ def disconnect_callback(client: BleakClient):
 
 async def notification_handler(sender: BleakGATTCharacteristic, data: bytearray):
     """Handle incoming notifications from ESP32"""
-    global notification_count
+    nonlocal notification_count
     try:
         notification_count += 1
         print(
@@ -35,27 +40,17 @@ async def notification_handler(sender: BleakGATTCharacteristic, data: bytearray)
         print(f"[ERROR] Exception in handler: {type(e).__name__}: {e}")
 
 
-async def scan_for_device():
+async def scan_for_device(target_address):
     """Scan for target device"""
     print("[SCAN] Scanning for devices...")
-    devices = await BleakScanner.discover(timeout=TIMEOUT_DEFAULT)
-    for d in devices:
-        print(d)
+    # devices = await BleakScanner.discover(timeout=TIMEOUT_DEFAULT)
+    # for d in devices:
+    #     print(d)
     device = await BleakScanner.find_device_by_address(target_address)
     return device
 
-
-async def main():
-    global notification_count
-
-    target = await scan_for_device()
-    if not target:
-        print("[ERROR] Target device not found")
-        return
-
-    try:
-        print(f"[CONNECT] Connecting to {target.name} ({target.address})")
-        async with BleakClient(
+async def device_function(target):
+    async with BleakClient(
             target,
             timeout=TIMEOUT_DEFAULT,
             disconnect_callback=disconnect_callback,
@@ -105,6 +100,28 @@ async def main():
             print(
                 f"[FINAL] Received {notification_count} total notifications before disconnect"
             )
+
+
+
+async def main():
+    global notification_count
+
+    target1 = await scan_for_device(target_address_1)
+    if not target1:
+        print("[ERROR] Target 1 device not found")
+        return
+    
+    target2 = await scan_for_device(target_address_2)
+    if not target2:
+        print("[ERROR] Target 2 device not found")
+        return
+
+    try:
+        print(f"[CONNECT] Connecting to {target1.name} ({target1.address})")
+        print(f"[CONNECT] Connecting to {target2.name} ({target2.address})")
+        device1 = await device_function(target1)
+        device2 = await device_function(target2)
+
 
     except Exception as e:
         print(f"[ERROR] Connection error: {type(e).__name__}: {e}")
