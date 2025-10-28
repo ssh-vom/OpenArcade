@@ -20,13 +20,6 @@ def disconnect_callback(client: BleakClient):
     print("[DISCONNECT] Device disconnected!")
 
 
-async def create_handler(address):
-    async def handler(sender: BleakGATTCharacteristic, data: bytearray):
-        print(f"[{address}] Notification: {data.hex()}")
-
-    return handler
-
-
 def make_notification_handler(device_address: str):
     """Create a unique handler for each device"""
     notification_count = 0
