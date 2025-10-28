@@ -36,18 +36,25 @@ def make_notification_handler(device_address: str):
 
 async def scan_for_devices():
     """Scan for target device"""
+    found = []
     for attempt in range(1, RETRY_COUNT + 1):
-        devices = await BleakScanner.discover(timeout=TIMEOUT_DEFAULT)
-        found = [d for d in devices if d.address in ADDRESSES]
-        if found:
-            for d in found:
-                print(f"([SCAN] Device Found: {d.address} ({d.name})")
-                return found
-        else:
-            print(f"[SCAN] Attempt {attempt} failed, retrying...")
+        for addr in ADDRESSES:
+            device = await BleakScanner.find_device_by_address(addr)
+            if device:
+                found.append(device)
 
-    print("[ERROR] No devices found after retries")
-    return []
+    return found
+
+    #     if found:
+    #         for d in found:
+    #             print(f"([SCAN] Device Found: {d.address} ({d.name})")
+    #             return found
+    #     else:
+    #         print(f"[SCAN] Attempt {attempt} failed, retrying...")
+    #
+    # print(f"[ERROR] No devices found after {RETRY_COUNT} retries")
+    # return []
+    #
 
 
 async def connect_and_subscribe(device: BLEDevice):
