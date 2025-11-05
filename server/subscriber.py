@@ -45,17 +45,6 @@ async def scan_for_devices():
 
     return found
 
-    #     if found:
-    #         for d in found:
-    #             print(f"([SCAN] Device Found: {d.address} ({d.name})")
-    #             return found
-    #     else:
-    #         print(f"[SCAN] Attempt {attempt} failed, retrying...")
-    #
-    # print(f"[ERROR] No devices found after {RETRY_COUNT} retries")
-    # return []
-    #
-
 
 async def connect_and_subscribe(device: BLEDevice):
     address = device.address
