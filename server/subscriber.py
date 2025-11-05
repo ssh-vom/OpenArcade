@@ -1,18 +1,20 @@
 import asyncio
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.device import BLEDevice
 
 TIMEOUT_DEFAULT = 20.0
-heart_rate_service_uuid = "0000180d-0000-1000-8000-00805f9b34fb"
-heart_rate_char_uuid = "00002a37-0000-1000-8000-00805f9b34fb"
-# target_address = "a0:b7:65:24:9a:ea"
+RETRY_COUNT = 2
 
-target_address = "2F1B3BC0-F834-EF5F-E60A-E6FB94B3C891"
-# target_address = "EA:9A:24:65:B7:A0"
 
-# EA:9A:24:65:B7:A0
+ADDRESSES = [
+    "6C99935C-D723-713B-766B-03542EE1E159",
+    # "2F1B3BC0-F834-EF5F-E60A-E6FB94B3C891",
+    # "f8:b3:b7:3a:01:9a",
+    # "a0:b7:65:24:9a:ea",
+]
 
-notification_count = 0
+notification_counts = {}
 
 
 def disconnect_callback(client: BleakClient):
@@ -20,43 +22,37 @@ def disconnect_callback(client: BleakClient):
     print("[DISCONNECT] Device disconnected!")
 
 
-async def notification_handler(sender: BleakGATTCharacteristic, data: bytearray):
-    """Handle incoming notifications from ESP32"""
-    global notification_count
-    try:
-        notification_count += 1
-        print(
-            f"[NOTIFICATION #{notification_count}] {data.hex()} from sender: {sender}"
-        )
-        if len(data) >= 2:
-            heart_rate = int(data[1])
-            print(f"[DATA] Heart Rate = {heart_rate} BPM")
-    except Exception as e:
-        print(f"[ERROR] Exception in handler: {type(e).__name__}: {e}")
+def make_notification_handler(device_address: str):
+    """Create a unique handler for each device"""
+    notification_counts[device_address] = 0
+
+    async def handler(sender: BleakGATTCharacteristic, data: bytearray):
+        notification_counts[device_address] += 1
+        count = notification_counts[device_address]
+        print(f"[NOTIFICATION #{count}] From {device_address}: {data.hex()} ")
+
+    return handler
 
 
-async def scan_for_device():
+async def scan_for_devices():
     """Scan for target device"""
-    print("[SCAN] Scanning for devices...")
-    devices = await BleakScanner.discover(timeout=TIMEOUT_DEFAULT)
-    for d in devices:
-        print(d)
-    device = await BleakScanner.find_device_by_address(target_address)
-    return device
+    found = []
+    for attempt in range(1, RETRY_COUNT + 1):
+        for addr in ADDRESSES:
+            device = await BleakScanner.find_device_by_address(addr)
+            if device:
+                found.append(device)
+
+    return found
 
 
-async def main():
-    global notification_count
+async def connect_and_subscribe(device: BLEDevice):
+    address = device.address
 
-    target = await scan_for_device()
-    if not target:
-        print("[ERROR] Target device not found")
-        return
-
+    print(f"[CONNECT] Connecting to device with {address}")
     try:
-        print(f"[CONNECT] Connecting to {target.name} ({target.address})")
         async with BleakClient(
-            target,
+            device,
             timeout=TIMEOUT_DEFAULT,
             disconnect_callback=disconnect_callback,
         ) as client:
@@ -69,45 +65,45 @@ async def main():
 
             characteristic = None
             for service in client.services:
-                if service.uuid.lower() == heart_rate_service_uuid.lower():
-                    print("[DISCOVER] Found Heart Rate Service")
-                    for char in service.characteristics:
-                        print(f"  - {char.uuid}: {char.properties}")
-                        if char.uuid.lower() == heart_rate_char_uuid.lower():
-                            characteristic = char
-                            print("[DISCOVER] Found heart rate characteristic")
-                            break
-                    break
+                print(service)
+                for char in service.characteristics:
+                    print(char.description)
+                    if char.description == "Heart Rate Measurement":
+                        characteristic = char
+                        break
 
             if not characteristic:
                 print("[ERROR] Heart rate characteristic not found")
                 return
 
             print("[SUBSCRIBE] Subscribing to notifications...")
+            notification_handler = make_notification_handler(address)
             await client.start_notify(characteristic, notification_handler)
-            print("[READY] Listening for notifications. Press CTRL+C to exit")
-
             try:
                 while client.is_connected:
                     await asyncio.sleep(0.5)
-                    if notification_count > 0 and notification_count % 10 == 0:
-                        print(
-                            f"[KEEPALIVE] Received {notification_count} notifications so far..."
-                        )
             except asyncio.CancelledError:
                 print("[EXIT] Task cancelled")
             finally:
-                try:
-                    await client.stop_notify(characteristic)
-                except Exception as e:
-                    print(f"[ERROR] Failed to stop notify: {e}")
-
-            print(
-                f"[FINAL] Received {notification_count} total notifications before disconnect"
-            )
+                await client.stop_notify(characteristic)
+                print(f"[FINAL] Total notifications: {notification_counts[address]}")
 
     except Exception as e:
         print(f"[ERROR] Connection error: {type(e).__name__}: {e}")
+
+
+async def main():
+    devices = await scan_for_devices()
+    if not devices:
+        print("[ERROR] No devices found")
+        return
+
+    tasks = []
+    for device in devices:
+        task = asyncio.create_task(connect_and_subscribe(device))
+        tasks.append(task)
+        await asyncio.sleep(1.0)
+    await asyncio.gather(*tasks)
 
 
 if __name__ == "__main__":
