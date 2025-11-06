@@ -149,18 +149,18 @@ CHAR_MAP = {
 }
 
 
-def send_key(code, modifier=0):
-    report = bytes([modifier, 0, code, 0, 0, 0, 0, 0])
-    with open(HID, "rb+") as f:
-        f.write(report)
-        f.write(b"\x00" * 8)  # release key
-
-
 def type_message(text):
-    for c in text:
-        if c in CHAR_MAP:
-            code, mod = CHAR_MAP[c]
-            send_key(code, mod.value)
+    with open(HID, "rb+") as f:
+        for c in text:
+            if c in CHAR_MAP:
+                code, mod = CHAR_MAP[c]
+                report = bytes([mod.value, 0, code, 0, 0, 0, 0, 0])
+                f.write(report)
+                f.flush()
+                time.sleep(0.01)
+                f.write(b"\x00" * 8)
+                f.flush()
+                time.sleep(0.01)
 
 
 type_message("Hello, World!\n")
