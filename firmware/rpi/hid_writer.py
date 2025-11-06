@@ -1,4 +1,5 @@
 from enum import Enum
+import time
 
 HID = "/dev/hidg0"
 
