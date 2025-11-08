@@ -8,10 +8,10 @@ RETRY_COUNT = 2
 
 
 ADDRESSES = [
-    "6C99935C-D723-713B-766B-03542EE1E159",
+    # "6C99935C-D723-713B-766B-03542EE1E159",
     # "2F1B3BC0-F834-EF5F-E60A-E6FB94B3C891",
     # "f8:b3:b7:3a:01:9a",
-    # "a0:b7:65:24:9a:ea",
+    "a0:b7:65:24:9a:ea",
 ]
 
 notification_counts = {}
