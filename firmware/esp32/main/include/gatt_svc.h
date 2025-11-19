@@ -15,7 +15,8 @@
 #include "host/ble_gap.h"
 
 /* Public function declarations */
-void send_heart_rate_indication(void);
+void send_heart_rate_notification(void);
+void send_button_state_notification(void);
 void gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg);
 void gatt_svr_subscribe_cb(struct ble_gap_event *event);
 int gatt_svc_init(void);

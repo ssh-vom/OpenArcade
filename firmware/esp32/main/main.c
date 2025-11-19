@@ -70,11 +70,12 @@ static void heart_rate_task(void *param) {
   /* Loop forever */
   while (1) {
     /* Update heart rate value every 1 second */
-    update_heart_rate();
+    // update_heart_rate();
     // ESP_LOGI(TAG, "heart rate updated to %d", get_heart_rate());
 
     /* Send heart rate indication if enabled */
-    send_heart_rate_indication();
+    // send_heart_rate_notification();
+    send_button_state_notification();
 
     ESP_LOGI(TAG, "button state%d", gpio_get_level(BUTTON1_GPIO));
     /* Sleep */
@@ -91,7 +92,7 @@ static void configure_gpio(void) {
     gpio_config_t io_conf = {.pin_bit_mask = (1ULL << BUTTONS[i]),
                              .mode = GPIO_MODE_INPUT,
                              .pull_up_en = GPIO_PULLUP_ENABLE,
-                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                             // .pull_down_en = GPIO_PULLDOWN_DISABLE,
                              .intr_type = GPIO_INTR_DISABLE};
 
     gpio_config(&io_conf);

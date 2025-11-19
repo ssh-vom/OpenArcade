@@ -7,6 +7,7 @@
 #include "gatt_svc.h"
 #include "common.h"
 #include "heart_rate.h"
+#include "host/ble_gatt.h"
 #include "led.h"
 
 /* Private function declarations */
@@ -81,18 +82,18 @@ static int heart_rate_chr_access(uint16_t conn_handle, uint16_t attr_handle,
   /* Read characteristic event */
   case BLE_GATT_ACCESS_OP_READ_CHR:
     /* Verify connection handle */
-    if (conn_handle != BLE_HS_CONN_HANDLE_NONE) {
-      ESP_LOGI(TAG, "characteristic read; conn_handle=%d attr_handle=%d",
-               conn_handle, attr_handle);
-    } else {
-      ESP_LOGI(TAG, "characteristic read by nimble stack; attr_handle=%d",
-               attr_handle);
-    }
+    // if (conn_handle != BLE_HS_CONN_HANDLE_NONE) {
+    //   ESP_LOGI(TAG, "characteristic read; conn_handle=%d attr_handle=%d",
+    //            conn_handle, attr_handle);
+    // } else {
+    //   ESP_LOGI(TAG, "characteristic read by nimble stack; attr_handle=%d",
+    //            attr_handle);
+    // }
 
     /* Verify attribute handle */
     if (attr_handle == heart_rate_chr_val_handle) {
       /* Update access buffer value */
-      heart_rate_chr_val[1] = get_heart_rate();
+      heart_rate_chr_val[1] = gpio_get_level(16);
       rc = os_mbuf_append(ctxt->om, &heart_rate_chr_val,
                           sizeof(heart_rate_chr_val));
       return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
@@ -124,13 +125,13 @@ static int led_chr_access(uint16_t conn_handle, uint16_t attr_handle,
   /* Write characteristic event */
   case BLE_GATT_ACCESS_OP_WRITE_CHR:
     /* Verify connection handle */
-    if (conn_handle != BLE_HS_CONN_HANDLE_NONE) {
-      ESP_LOGI(TAG, "characteristic write; conn_handle=%d attr_handle=%d",
-               conn_handle, attr_handle);
-    } else {
-      ESP_LOGI(TAG, "characteristic write by nimble stack; attr_handle=%d",
-               attr_handle);
-    }
+    // if (conn_handle != BLE_HS_CONN_HANDLE_NONE) {
+    //   ESP_LOGI(TAG, "characteristic write; conn_handle=%d attr_handle=%d",
+    //            conn_handle, attr_handle);
+    // } else {
+    //   ESP_LOGI(TAG, "characteristic write by nimble stack; attr_handle=%d",
+    //            attr_handle);
+    // }
 
     /* Verify attribute handle */
     if (attr_handle == led_chr_val_handle) {
@@ -163,10 +164,16 @@ error:
 }
 
 /* Public functions */
-void send_heart_rate_indication(void) {
+void send_heart_rate_notification(void) {
   if (heart_rate_ind_status && heart_rate_chr_conn_handle_inited) {
     ble_gatts_notify(heart_rate_chr_conn_handle, heart_rate_chr_val_handle);
-    ESP_LOGI(TAG, "heart rate indication sent!");
+    ESP_LOGI(TAG, "heart rate notification sent!");
+  }
+}
+void send_button_state_notification(void) {
+  if (heart_rate_ind_status && heart_rate_chr_conn_handle_inited) {
+    ble_gatts_notify(heart_rate_chr_conn_handle, heart_rate_chr_val_handle);
+    ESP_LOGI(TAG, "heart rate notification sent!");
   }
 }
 
