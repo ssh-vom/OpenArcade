@@ -12,6 +12,7 @@
 #include "led.h"
 
 #define BUTTON1_GPIO 16
+#define DEBOUNCE_US 3000
 uint64_t BUTTONS[BUTTON1_GPIO];
 
 /* Library function declarations */
@@ -22,6 +23,34 @@ static void on_stack_reset(int reason);
 static void on_stack_sync(void);
 static void nimble_host_config_init(void);
 static void nimble_host_task(void *param);
+
+int get_button_state(int GPIO);
+
+bool wasPressed = false;
+bool debounced_state = true;
+bool logical_pressed = 0;
+int64_t last_change_time = 0;
+int get_button_state(int GPIO) {
+
+  bool raw = gpio_get_level(GPIO);
+
+  int64_t now = esp_timer_get_time();
+
+  if (raw != debounced_state && (now - last_change_time) > DEBOUNCE_US) {
+    debounced_state = raw;
+    last_change_time = now;
+
+    if (debounced_state == 0 && !logical_pressed) {
+      logical_pressed = 1;
+    }
+
+    else if (debounced_state == 1 && logical_pressed) {
+      logical_pressed = 0;
+    }
+  }
+
+  return logical_pressed;
+}
 
 // pull down reads 0 when not pressed
 
@@ -77,7 +106,7 @@ static void heart_rate_task(void *param) {
     // send_heart_rate_notification();
     send_button_state_notification();
 
-    ESP_LOGI(TAG, "button state%d", gpio_get_level(BUTTON1_GPIO));
+    ESP_LOGI(TAG, "button state%d", get_button_state(BUTTON1_GPIO));
     /* Sleep */
     vTaskDelay(HEART_RATE_TASK_PERIOD);
   }
@@ -92,7 +121,7 @@ static void configure_gpio(void) {
     gpio_config_t io_conf = {.pin_bit_mask = (1ULL << BUTTONS[i]),
                              .mode = GPIO_MODE_INPUT,
                              .pull_up_en = GPIO_PULLUP_ENABLE,
-                             // .pull_down_en = GPIO_PULLDOWN_DISABLE,
+                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
                              .intr_type = GPIO_INTR_DISABLE};
 
     gpio_config(&io_conf);
