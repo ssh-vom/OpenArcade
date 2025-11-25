@@ -11,9 +11,9 @@
 #include "heart_rate.h"
 #include "led.h"
 
-#define BUTTON1_GPIO 16
+#define BUTTON1_GPIO 35
 #define DEBOUNCE_US 3000
-uint64_t BUTTONS[BUTTON1_GPIO];
+static const uint8_t BUTTONS[] = {BUTTON1_GPIO};
 
 /* Library function declarations */
 void ble_store_config_init(void);
@@ -117,10 +117,10 @@ static void heart_rate_task(void *param) {
 
 static void configure_gpio(void) {
 
-  for (int i = 0; i < sizeof(BUTTONS) / sizeof(uint64_t); ++i) {
+  for (int i = 0; i < sizeof(BUTTONS); ++i) {
     gpio_config_t io_conf = {.pin_bit_mask = (1ULL << BUTTONS[i]),
                              .mode = GPIO_MODE_INPUT,
-                             .pull_up_en = GPIO_PULLUP_ENABLE,
+                             .pull_up_en = GPIO_PULLUP_DISABLE,
                              .pull_down_en = GPIO_PULLDOWN_DISABLE,
                              .intr_type = GPIO_INTR_DISABLE};
 
