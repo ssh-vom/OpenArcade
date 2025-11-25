@@ -16,5 +16,6 @@ sdkconfig.*
 **.fdb_latexmk
 **.env
 **/build/
+**/node_modules/
 
 
