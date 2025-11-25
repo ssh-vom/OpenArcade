@@ -4,14 +4,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 
 const renderer = new THREE.WebGLRenderer({ antialis: true });
-
 const stats = new Stats();
-
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-window.addEventListener("click", onClick);
-
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 
@@ -24,38 +17,41 @@ const camera = new THREE.PerspectiveCamera(
   0.25,
   20,
 );
-
 const controls = new OrbitControls(camera, renderer.domElement);
-light.position.set(7, 5, 5);
-
 const axesHelper = new THREE.AxesHelper(5);
 const gridHelper = new THREE.GridHelper();
 
 // Studio lighting
 const ambient = new THREE.AmbientLight(0xffffff, 1.5);
-scene.add(ambient);
-
 // Soft Key Light
 const keyLight = new THREE.DirectionalLight(0xffffff, 2);
+// Fill light
+const fillLight = new THREE.DirectionalLight(0xffffff, 1);
+// Back light (rim light)
+const rimLight = new THREE.DirectionalLight(0xffffff, 1);
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+window.addEventListener("click", onClick);
+
+light.position.set(7, 5, 5);
+
+scene.add(ambient);
+
 keyLight.position.set(4, 10, 6);
 keyLight.castShadow = true;
 scene.add(keyLight);
 
-// Fill light
-const fillLight = new THREE.DirectionalLight(0xffffff, 1);
 fillLight.position.set(-6, 8, 4);
 scene.add(fillLight);
 
-// Back light (rim light)
-const rimLight = new THREE.DirectionalLight(0xffffff, 1);
 rimLight.position.set(0, 5, -6);
 scene.add(rimLight);
 
 // White background
 scene.background = new THREE.Color(0xffffff);
 
-// scene.add(gridHelper);
-// scene.add(axesHelper);
 scene.add(light);
 const buttonMeshes = [];
 loader.load(
@@ -67,14 +63,10 @@ loader.load(
         buttonMeshes.push(child);
       }
     });
-    // });
     gltf.scene.scale.set(10, 10, 10);
     console.log(gltf.scene);
     gltf.scene.traverse((o) => console.log(o.name, o));
 
-    // create a max sized box -> [children boards]
-    // -> when you select one the other's will like blur or disappear
-    // we will focus on those
     gltf.scene.position.set(-1, 0, 0);
     scene.add(gltf.scene);
   },
@@ -107,14 +99,10 @@ function onClick(event) {
     const mesh = intersects[0].object;
     const actual = mesh.parent;
     actual.visible = !actual.visible;
-    // console.log();
-
-    // actual.material.color.set(Math.random() * 0xffffff);
   }
 
   render();
 }
-// The body of the app
 
 function render() {
   renderer.render(scene, camera);
