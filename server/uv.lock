@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 
 [[package]]
@@ -111,10 +111,31 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "bleak" },
+    { name = "simplepyble" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "bleak", specifier = ">=1.1.1" }]
+requires-dist = [
+    { name = "bleak", specifier = ">=1.1.1" },
+    { name = "simplepyble", specifier = ">=0.10.3" },
+]
+
+[[package]]
+name = "simplepyble"
+version = "0.10.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/dc/c4b50004f357e82dcd555dc5b8a90766ce410386791754d571555d5f4f19/simplepyble-0.10.3.tar.gz", hash = "sha256:ebfe6636c36867463c4b7c54fa9e9af87e1a045f5c764939214a73bb5b62e892", size = 103549, upload-time = "2025-06-24T22:02:32.191Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6f/b6/529cdd1f9ca2ced6484c567143c54b2e16c653d6a5516ba34bfec0a80529/simplepyble-0.10.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:a56bb1f7efb7b6dbdbe6cf3f5e3036f3c698121f3df1994872cbeb0893cc6e88", size = 198606, upload-time = "2025-06-24T22:01:45.447Z" },
+    { url = "https://files.pythonhosted.org/packages/78/b6/6f91bfa3db107f6334391ccb12387b411fe3382d9bbe17d46fb7f4edcb45/simplepyble-0.10.3-cp313-cp313-macosx_11_0_universal2.whl", hash = "sha256:bc5c8a935fa6a5d045fcb70ec7abc2a7512ac090f0de069da5dac48b1e9b94b8", size = 417379, upload-time = "2025-06-24T22:01:46.51Z" },
+    { url = "https://files.pythonhosted.org/packages/31/0e/5ef7632bfd14ece4eef5cc26e82ad9d71130bbb9cfba93063397ff1b0946/simplepyble-0.10.3-cp313-cp313-macosx_11_0_x86_64.whl", hash = "sha256:0a437a951e50df5df5c8542b8f8d715c661bb2bbb16e4af3456bd2f1350c6a36", size = 223426, upload-time = "2025-06-24T22:01:47.757Z" },
+    { url = "https://files.pythonhosted.org/packages/08/4e/916afe369275f0f17d0b1f89360613c284e9a239887ef6d96245b1ddedbc/simplepyble-0.10.3-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a60c04f42cd8a62f3790b3fdfc50b42ef7bc08120bc0567106306ef3893bff50", size = 1541834, upload-time = "2025-06-24T22:01:48.965Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/1e/48efa4fcf62420046cb6960597c90e66361136af5dd5aa0f618aeac7251f/simplepyble-0.10.3-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ebeeecba331526fa19e76236887fa1eae756df7ac6734efecb62d41da640d78f", size = 1650921, upload-time = "2025-06-24T22:01:51.061Z" },
+    { url = "https://files.pythonhosted.org/packages/12/22/5f28c8af861bcf505cec79aa5977d4547be2c2d62f4a453ba29846a6f114/simplepyble-0.10.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f5eafb527f64edc458cb10d2475996f30bdb07ffca057d491862c7c836c38c55", size = 1640686, upload-time = "2025-06-24T22:01:52.769Z" },
+    { url = "https://files.pythonhosted.org/packages/c0/1e/9b998e8ba14bff83cc5a1007b7fbbcf0a94d0e8c86a766776733ae564fe0/simplepyble-0.10.3-cp313-cp313-win32.whl", hash = "sha256:72cedcf5bf47ca27929d39d150d7a05a6147a2925ade0ec0282ff6aef8c46b45", size = 222432, upload-time = "2025-06-24T22:01:54.374Z" },
+    { url = "https://files.pythonhosted.org/packages/14/59/49decb431ec2da4e3354ddbef3bf2973f1cc74061d18132cf16e37d74e67/simplepyble-0.10.3-cp313-cp313-win_amd64.whl", hash = "sha256:5a7f110867760f58d5125fc849abf60bb6bc19faf948af242826d0ad0e8ba912", size = 242987, upload-time = "2025-06-24T22:01:56.024Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/e5/b558aeda6cad49d73f7c400c2e9bb6a960bdd8f64d278c57cad2cfa35d8d/simplepyble-0.10.3-cp313-cp313-win_arm64.whl", hash = "sha256:b0291f03287fa8b4de20fb65bea64d0d1add1ae9d99255b5382e1fa2e521754f", size = 237885, upload-time = "2025-06-24T22:01:57.182Z" },
+]
 
 [[package]]
 name = "typing-extensions"
