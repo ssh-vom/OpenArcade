@@ -11,7 +11,7 @@
 #include "esp_random.h"
 
 /* Defines */
-#define HEART_RATE_TASK_PERIOD (50 / portTICK_PERIOD_MS)
+#define HEART_RATE_TASK_PERIOD (100 / portTICK_PERIOD_MS)
 
 /* Public function declarations */
 uint8_t get_heart_rate(void);
