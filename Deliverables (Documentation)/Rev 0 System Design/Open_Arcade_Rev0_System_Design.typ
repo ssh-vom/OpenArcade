@@ -6,6 +6,10 @@
 #show ref: set text(fill: rgb("#64a5cf"))
 #show figure: set block(breakable: true)
 
+#let def(title) = (
+  text(fill: rgb("#7a003d"))[#title]
+) 
+
 #grid(columns: (1fr, 1fr), gutter: -8cm, align(left)[
   #text(
     size: 12pt, fill: rgb("#7a003d"), weight: "semibold",
@@ -78,11 +82,11 @@
 #set par(justify: true)
 = Glossary 
 #list(
-  [#text(fill: rgb("#7a003d"))[Module:]  a unit that contains electronics (microcontroller and wiring), that will communicate inputs to another device.], 
-  [#text(fill: rgb("#7a003d"))[Parent Module:] describes the central hub that children modules will communicate to. This parent module will connect to a computer/console to communicate to the game.], 
-  [#text(fill: rgb("#7a003d"))[Child Module:] describes a unit that may contain joysticks, buttons, d-pads, etc. These will communicate the inputs to the parent module and then to the game. ], 
-  [#text(fill: rgb("#7a003d"))[HID:] Human-interface device. A device that allows the [user #sym.arrow computer] connection to occur.], 
-  [#text(fill: rgb("#7a003d"))[KeepAlive (KA):] a 1-bit signal that is sent between devices to check that the connection is operating correctly.],
+  [#def("Module"):  a unit that contains electronics (microcontroller and wiring), that will communicate inputs to another module or host device.], 
+  [#def("Parent Module"): describes the central hub that children modules will communicate to. This parent module will connect to a computer/console to communicate to the game.], 
+  [#def("Child Module"): describes a unit that may contain joysticks, buttons, d-pads, etc. These will communicate the inputs to the parent module and then to the game. ], 
+  [#def("HID"): Human-interface device. A device that allows the [user #sym.arrow computer] connection to occur.], 
+  [#def("KeepAlive (KA)"): a 1-bit signal that is sent between modules to check that the connection is operating correctly.],
 )
 = Introduction
 == Project Description
@@ -100,7 +104,7 @@ For revision 0, the OpenArcade team has listed a few critical points to define
 the milestone. These points will be used to assess the successful completion of
 the initial revision. _These points are subject to change._
 #list(
-  [2 child modules (joystick and buttons), that will communicate to the the
+  [Child modules (joystick and buttons), that will communicate to the the
     singular parent module via bluetooth. These modules will be encased in a simple
     housing that will not include the mechanical attachment feature.], [A preliminary configuration app to allow buttons to be programmed to perform
     specific functions by default.],
@@ -115,29 +119,35 @@ The purpose of this document is to outline the overall system design that will b
   [Software Design and reasoning.],
   [Hardware Design and reasoning.],
   [Mechanical Design and reasoning.],
-) _Note that this document may be subject to change, as during the manufacturing of the project, the team may decide to move forward with new design aspects that better optimize our idea. Any new additions or adjustments will be documented during the
+) _Note that sections in this document may be subject to change, as during the manufacturing of the project, the team may decide to move forward with new design aspects that better optimize our idea. Any new additions or adjustments will be documented during the
  next deliverable/milestone so that the MECHTRON 4TB6 staff can acknowledge the changes and understand why it was needed._
 
 = System Overview and Behaviour
 This section will overview the design of the system in greater detail as to what was provided in the _System Requirements and Hazard Analysis_ document. As mentioned before, this section will outline the underlying processes that occur while the OpenArcade controller is in use. This will include how sub-systems connect to each other, and the corresponding inputs and outputs of each of those sub-systems.
 == Systems Diagram (Updated)
 Between now and the previous deliverable, the system design been modified slightly to accurately showcase what the group plans on implement in greater detail to before.
-#figure(image("SystemDiagram.png"), caption: [Systems diagram])<fig:fig1>
+
 @fig:fig1 shows the monitored/controlled inputs and outputs of each of the subsystems that are required for correct functionality of the OpenArcade controller. It can be noted that there is an increased degree of detail as to what is involved in the system. Along with the inner processes of each board being explained, the new changes include:
 #list(
   [Introduced/removed new processes and variables:
   #list(
-    [#text(fill:rgb("#7a003d"),"State package"): a bit array that describes the current state of the buttons and values of the joysticks, which is to be sent to the parent module.],
-    [#text(fill:rgb("#7a003d"),"NOTIFICATION_ACK"): a process in which upon a successful connection between parent and child, the parent will send a signal that a data packet is being received.],
-    [#text(fill:rgb("#7a003d"),"Advertising"): if a pairing button is pressed OR the child module is powered on, the child module will advertise itself for BLE connection.],
-    [#text(fill:rgb("#7a003d"),"New state package mapping"): when the configuration app is used, it will remap what each bit in the state package sequence will relate to in HID mapping.],
-    [#text(fill:rgb("#7a003d"),"Joystick value"): The joystick currently chosen (mentioned later in @tbl:tb7) discusses that the joystick has 4 state directional outputs, and does not utilize values of X and Y with higher resolution. _This may be subject to change for the Rev 1 deliverable_],
-    [#text(fill:rgb("#7a003d"),"Deadzone zone"): as mentioned above, @tbl:tb7 states that the joystick does not have XY values and thus implementing a deadzone would mean physical distance to click one of the 4 directional push buttons within the joystick hardware. _This may be subject to change for the Rev 1 deliverable_]
+    [#def("State package"): a bit array that describes the current state of the buttons and values of the joysticks, which is to be sent to the parent module.],
+    [#def("NOTIFICATION_ACK"): a process in which upon a successful connection between parent and child, the parent will send a signal that a data packet is being received.],
+    [#def("Advertising"): if a pairing button is pressed OR the child module is powered on, the child module will advertise itself for BLE connection.],
+    [#def("New state package mapping"): when the configuration app is used, it will remap what each bit in the state package sequence will relate to in HID mapping.],
+    [#def("Joystick value"): The joystick currently chosen (mentioned later in @tbl:tb7) discusses that the joystick has 4 state directional outputs, and does not utilize values of X and Y with higher resolution. _This may be subject to change for the Rev 1 deliverable_],
+    [#def("Deadzone zone"): as mentioned above, @tbl:tb7 states that the joystick does not have XY values and thus implementing a deadzone would mean physical distance to click one of the 4 directional push buttons within the joystick hardware. _This may be subject to change for the Rev 1 deliverable_]
   )
   ],
   [Sub-subsystem "Display" added to each of the modules, with its purpose being to showcase the battery life. The OpenArcade team wants to note that this may or may not be included in the design for Rev 0, but is something that is planned to be included in the final design. This will be noted during the Rev 0 presentation for clarity.],
 )
-
+#pagebreak()
+#set page(flipped: true)
+\
+\
+#figure(image("SystemDiagram.png", width: 110%), caption: [Systems diagram])<fig:fig1>
+#pagebreak()
+#set page(flipped: false)
 == Context Diagram
 The context diagram does not change, as the overall goal of the controller is the same. It can be seen in @fig:fig2. This diagram is a simplified description of the controller's [input #sym.arrow output] path.
 #figure(image("ContextDiagram.png"), caption: [Context diagram])<fig:fig2>
@@ -165,9 +175,9 @@ The monitored variables are inputs to the systems. They represent the user's act
       [`joystick_l`], [Assigned to the state of the push button corresponding to "left" on the joystick.], [True/False], 
       [`joystick_r`], [Assigned to the state of the push button corresponding to "right" on the joystick.], [True/False],
       [`pair_state`], [The value that expresses the pairing feature for BLE is on (1) or off (0), along with whether the child module is connected to the parent (2)], [Unitless], 
-      [`num_mods`], [The number of child modules connected in the system.], [Unitless], 
+      [`num_modules`], [The number of child modules connected to the parent.], [Unitless], 
       [`temp`], [The current average temperature of the controller.], [°C], 
-      [`input_delay`], [Will be used to monitor the time elapsed of a user event translating to an event on the device.], [ms],
+      [`input_delay`], [Will be used to monitor the time elapsed of a user event translating to an event on the host device.], [ms],
       [`connection_time`], [The time it takes for child module to connect to parent module.], [ms],
       [`T_hb`], [Bit value to represent KA signal.], [Unitless],
       [`err_rep`], [alert packets sent when critical errors occur.], [Unitless],
@@ -179,7 +189,7 @@ The monitored variables are inputs to the systems. They represent the user's act
 )
 \
 === Controlled Variables
-Controlled variables are those that are final outputs to the system, such as the total list of connected devices, or the final HID report mapping for the device to interpret the gamepad. The variables, along with their designated units (if applicable) are noted in @tbl:tb2. 
+Controlled variables are those that are final outputs to the system, such as the total list of connected modules, or the final HID report mapping for the host device to interpret the gamepad. The variables, along with their designated units (if applicable) are noted in @tbl:tb2. 
 \
 #v(-3mm)
 #align(
@@ -188,8 +198,8 @@ Controlled variables are those that are final outputs to the system, such as the
       table(
       columns: (23%, 62%, 15%), [#text(fill: white)[*Controlled\ Variables*]], [#text(fill: white)[*Description*]], [#text(fill: white)[*Units*]], 
       [`HID_Report`], [The report detailing the state of button presses and joystick orientation, and the encoding of those entries in the the format of a standardized gamepad.], [Unitless], 
-      [`device_list`], [A list of current child modules connected to parent.], [Unitless], 
-      [`Device_Descriptor`], [The set of fields that define what the parent module is. This includes characteristics such as: vendor ID, product ID, device class/subclass/protocol, form of communication required (HID), etc. Will change depending on the mode selected.], [Unitless], 
+      [`module_list`], [A list of current child modules connected to parent.], [Unitless], 
+      [`device_descriptor`], [The set of fields that define what the parent module is. This includes characteristics such as: vendor ID, product ID, device class/subclass/protocol, form of communication required (HID), etc. Will change depending on the mode selected.], [Unitless], 
       /*
       [`dz_x`], [The positional range of values (in the x direction), where a user movement of the joystick within this range will not register as an input (deadzone).], [[5-15]% of joystick ADC range], 
       [`dz_y`], [The positional range of values (in the y direction), where a user movement of the joystick within this range will not register as an input (deadzone).], [[5-15]% of joystick ADC range],*/
@@ -229,6 +239,7 @@ The 4-Variable model implementing these variables can be seen in @fig:fig4, whic
 #figure(image("4_VARIABLE_MODEL.png", width:101.5%), caption: [OpenArcade Controller 4-Variable Model Diagram])<fig:fig4>
 #pagebreak()
 #set page(flipped: false)
+The processes in the 4-variable model diagram are split into hardware and software, where software processes are described as programmed logic to translate and transfer data between subsystems (noted and explained thoroughly in @software), while the hardware acts as a way to connect physical infrastructure to the actual system function (noted and explained thoroughly in @hardware). 
 #align(
   center, [
     #figure(
@@ -245,7 +256,7 @@ The 4-Variable model implementing these variables can be seen in @fig:fig4, whic
   ],
 )
 #pagebreak()
-== Software Design
+== Software Design <software>
 As mentioned before, the controller is designed around the 4 variable model, which takes monitored variables and software modules that connect to controlled variables and outputs to the system, which are defined as both the screens on the parent/child modules and the game. The system contains two main subsystems: the child and parent modules. 
 === Background Information
 This section describes the working process of how the system takes raw data and converts it to game actions.
@@ -254,7 +265,7 @@ When a user performs an action, such as a button press or movement of the joysti
 
 The parent module receives the state package, a state mapping configuration (if modified by the user, default otherwise), and a mode that the parent module will be in. The state mapping configuration is set by the user in an external configuration app, and will modify that the index location in the state package that is read to relate to specific inputs #list([If the first four bits of the state package are ordered as [A, B, X, Y], a user who wishes to swap the physical 'X' button to perform the 'A' action would modify the state mapping configuration so that the Button A logical function now draws its data from the third bit index rather than the first.])
 
-This modified state configuration is coupled with the operating mode that the controller is in. Each mode corresponds to a specific HID descriptor (such as XBOX, Generic Gamepad, Nintendo), which informs the device of how to interpret the subsequent HID report from the controller. The HID report is formed by mapping the newly configured state package to a byte structure that follows the format of the descriptor. This is then transferred to the device and decoded by the HID device drivers to be read by the game. 
+This modified state configuration is coupled with the operating mode that the controller is in. Each mode corresponds to a specific HID descriptor (such as XBOX, Generic Gamepad, Nintendo), which informs the host device of how to interpret the subsequent HID report from the controller. The HID report is formed by mapping the newly configured state package to a byte structure that follows the format of the descriptor. This is then transferred to the host device and decoded by the HID drivers to be read by the game. 
 
 === Child Module
 The inputs and outputs of the child module subsystem are noted in @tbl:tb5. The goal of this subsystem is to transfer user actions to the parent module and to communicate system data to the user.
@@ -275,17 +286,23 @@ The inputs and outputs of the child module subsystem are noted in @tbl:tb5. The 
   ],
 )
 ==== Module Description
-Module CM_S_STATES: receives data from the user input, and will update a state package that contains all button and joystick states. The state package is a bit array with each bit relating to the 8 large buttons, the 2 smaller buttons (start and select buttons), and the 4 joystick outputs. This state package is an output to the CM subsystem.
+#def("Module CM_S_STATES"): receives data from the user input, and will update a state package that contains all button and joystick states. The state package is a bit array with each bit relating to the 8 large buttons, the 2 smaller buttons (start and select buttons), and the 4 joystick outputs.
+#list([Input: user input of buttons/joysticks.],[Output: raw data containing a byte array in standardized order of the states of CM_H1 (state package).])
 
-Module CM_S_BLE: The BLE module for the child. will have a starting advertisement on boot-up to initially try and connect to the parent. A connection timeout will  be issued in the case that there is no connection established. In that case, the module will receive data from user input of the pairing button, and will result in the child re-advertising itself via BLE so that it can connect to the parent.
+#def("Module CM_S_BLE"): The BLE module for the child. will have a starting advertisement on boot-up to initially try and connect to the parent. A connection timeout will  be issued in the case that there is no connection established. In that case, the module will receive data from user input of the pairing button, and will result in the child re-advertising itself via BLE so that it can connect to the parent.
+#list([Output: flag returned that outlines if a successful connection has been established.])
 
-Module CM_S_TEMP: Tracks internal temperature of ESP chip. If Temp exceeds a threshold set, output warning. If it exceeds a maximum then turn module off
+#def("Module CM_S_TEMP"): Tracks internal temperature of ESP chip. If Temp exceeds a threshold set, output warning. If it exceeds a maximum then turn module off
+#list([Input: internal temperature of the module.],[Output: current temperature and/or issued warning of critical temperature reached. This should be forwarded to the CM_S_SCREEN module.])
 
-Module CM_S_PAIR: Tracks pairing status of the device.
+#def("Module CM_S_PAIR"): Tracks pairing status of the module.
+#list([Input: pairing button.],[Output: status of connection (number distinguishing paired, no pair, and pairing). This should be forwarded to the CM_S_SCREEN module.])
 
-Module CM_S_BATTERY: Tracks battery life based on raw data.
+#def("Module CM_S_BATTERY"): Tracks battery life based on raw data.
+#list([Input: battery circuit voltage reading.],[Output: percentage of battery available. This should be forwarded to the CM_S_SCREEN module.])
 
-Module CM_S_SCREEN: Will take values of the temperature, module ID, battery life, and pairing status and print onto screen.
+#def("Module CM_S_SCREEN"): Will take values of the temperature, module ID, battery life, and pairing status and print onto screen.
+#list([Input: Temperature, module ID, battery life, pairing status.],[Output: prints the inputs on the CM_H4.])
 === Parent Module
 The inputs of the parent module subsystem are defined in @tbl:tb6. The goal of the parent module subsystem is take a raw state package and convert it to an HID report that factors in the configuration set by the user (or just default), and the mode that the HID will be formatted in (set by the user).
 #align(
@@ -304,25 +321,35 @@ The inputs of the parent module subsystem are defined in @tbl:tb6. The goal of t
   ],
 )
 ==== Module Description
-Module PM_S_BLE: BLE Module for the parent. Will be constantly scanning for specific device UUIDs which are written in a list. When a device is recognized, the Pi will perform handshake, which includes synchronization (to match time for data transfer), an acknowledgement from the child about this synchronization, and a confirmation acknowledgement from the parent.
+#def("Module PM_S_BLE"): BLE Module for the parent. Will be constantly scanning for specific module UUIDs which are written in a list. When a module is recognized, the Parent will perform handshake, which includes synchronization (to match time for data transfer), an acknowledgement from the child about this synchronization, and a confirmation acknowledgement from the parent. 
+#list([Output: flag returned noting that a new child module has connected to the parent. This output should update other modules, such as PM_S_MODULES.])
 
-Module PM_S_DEVICES: Module tracking all child devices connected to parent and sending this data to screen via SDA pin. Is updated every time a new connection is established with new UUID and MAC address added to list.
+#def("Module PM_S_DEVICES"): Module tracking all child modules connected to parent and sending this data to screen via SDA pin. Is updated every time a new connection is established with new UUID and MAC address added to list.
+#list([Input: upon a successful connection the parent module will have new UUIDs or MAC addresses of the child modules.],
+[Output: updated list of all modules connected, which should be sent to the PM_S_SCREEN module for printing.])
 
-Module PM_S_TEMP: Tracks internal temperature of Raspberry Pi chip.If Temp exceeds a threshold set, output warning. If it exceeds a maximum then turn module off.
+#def("Module PM_S_TEMP"): Tracks internal temperature of Raspberry Pi chip.If Temp exceeds a threshold set, output warning. If it exceeds a maximum then turn module off.
+#list([Input: internal temperature of the module.],[Output: current temperature and/or issued warning of critical temperature reached. This should be forwarded to the PM_S_SCREEN module.])
 
-Module PM_S_MODE: Tracks the current HID mode of the device, and is changed via button PM_H1. Changing the mode will mean changing the HID Descriptor (changes the encoding so that the device can read the controller as a XBOX/PS/Nintendo Gamepad) and the HID Report format (the sequence of output bytes ordered correctly to match the specific gamepad format we are looking for).
+#def("Module PM_S_MODE"): Tracks the current HID mode of the module (which will relate to the host device), and is changed via button PM_H1. Changing the mode will mean changing the HID Descriptor (changes the encoding so that the host device can read the controller as a XBOX/PS/Nintendo Gamepad) and the HID Report format (the sequence of output bytes ordered correctly to match the specific gamepad format we are looking for).
+#list([Input: mode associated to the current host device.],[Output: new HID formatting for both descriptor and report. This module sends information to PM_S_SCREEN, the descriptor, and PM_S_HID_WRITE.])
 
-Module PM_S_SCREEN: Will take Temperature, Devices, and Mode and print onto screen.
+#def("Module PM_S_SCREEN"): Will take Temperature, module list, and Mode and print onto screen.
+#list([Input: Temperature, Mode, module list.],[Output: prints the inputs on the PM_H2.])
 
-Module PM_S_CONFIG_APP: an external configuration app that will remap what the parent module will read from the incoming state package provided by the child module. Updates only when configuration is changed and sends a profile.
+#def("Module PM_S_CONFIG_APP"): an external configuration app that will remap what the parent module will read from the incoming state package provided by the child module. Updates only when configuration is changed and sends a profile.
+#list([Input: User changes.],[Output: file that re-assigns bit locations to associated buttons in array. Sent to PM_S_CONFIG_APP.])
 
-Module PM_S_CONFIG_MAP: intermediate step between PM_S_CONFIG_APP and HID_WRITE that takes the state package and consults the current mapping set either by default or through a profile set in the configuration app, giving new meaning to the bits that comprise the state package.
+#def("Module PM_S_CONFIG_MAP"): intermediate step between PM_S_CONFIG_APP and HID_WRITE that takes the state package and consults the current mapping set either by default or through a profile set in the configuration app, giving new meaning to the bits that comprise the state package.
+#list([Input: current state package and config app changes.],[Output: the updated translation of state package in a standard format. Sent to PM_S_HID_WRITE.])
 
-Module PM_S_HID_WRITE: Writes a HID report (data sequence). The report will first determine the mode (commonly referred to as the protocol that the device follows) it is in using PM_S_MODE, and then will then encode the values sent by the updated state package created from PM_S_CONFIG_MAP, to match the standard HID report formatting.
+#def("Module PM_S_HID_WRITE"): Writes a HID report (data sequence). The report will first determine the mode (commonly referred to as the protocol that the module will follows) it is in using PM_S_MODE, and then will then encode the values sent by the updated state package created from PM_S_CONFIG_MAP, to match the standard HID report formatting.
+#list([Input: updated state package translation and current mode.],[Output: HID report that follows correct formatting protocol set by host device. Sends to host device.])
 
-Module PM_S_STORE: saves the current configuration set from the configuration app. 
+#def("Module PM_S_STORE"): saves the current configuration set from the configuration app. 
+#list([Input: any modifiable data, such as mode or config.],[Output: stored information to be reused and call upon reboot.])
 #pagebreak()
-== Hardware Design
+== Hardware Design <hardware>
 The Hardware component of the project includes the boards required to operate the controller, the buttons and joysticks, and the screen (if it is included in the Rev 0 design). Note that some of these components (such as buttons, joysticks, batteries, etc.) may be subject to change during the course of the project for more optimized options that better fit the design that the OpenArcade team visualizes. This list of components can be seen in @tbl:tb7.
 \ 
 
@@ -332,9 +359,9 @@ The Hardware component of the project includes the boards required to operate th
     table(
       columns: (20%, 60%, 20%), 
       [#text(fill: white)[*Component*]], [#text(fill: white)[*Description/Use Case*]], [#text(fill: white)[*Component Image*]],
-      [Raspberry PI Zero 2W], [Parent module main board. Will use BLE to receive data from child modules and send HID report package to the device via USB connection.\ _`Operating Voltage: 4.75V-5.25V`_], [#figure(image("02w.png", width: 100%))],
+      [Raspberry PI Zero 2W], [Parent module main board. Will use BLE to receive data from child modules and send HID report package to the host device via USB connection.\ _`Operating Voltage: 4.75V-5.25V`_], [#figure(image("02w.png", width: 100%))],
       [ESP32- WROOM- 32D],[Child module main board. Will take in user input from connected joysticks/buttons, and send state package containing state changes of joysticks/buttons to parent module via BLE.\ _`Operating Voltage: 4V-12V`_],[#figure(image("ESP32.png", width: 100%))],
-      [OLED Display Screen (CM_H4 and PM_H2)],[Small screen attached to the outside of the module housing. #list([Child Module: communicate the state of the child module, along with the battery life of the controller.],[Parent Module: communicate the number of devices connected.]) _`Operating Voltage: 3.3V-5V`_],[\ #figure(image("OLED_Display.png", width: 100%))],
+      [OLED Display Screen (CM_H4 and PM_H2)],[Small screen attached to the outside of the module housing. #list([Child Module: communicate the state of the child module, along with the battery life of the controller.],[Parent Module: communicate the number of modules connected.]) _`Operating Voltage: 3.3V-5V`_],[\ #figure(image("OLED_Display.png", width: 100%))],
       [Large Button (CM_H1)],[Standard arcade-style button with LED. Can act as triggers, bumpers, ABXY. \ _`Operating Voltage (LED): 5V`_],[#figure(image("Button_LRG.jpg", width: 100%))],
       [Small Button (CM_H1 and CM_H2)],[Smaller sized button used for start and select, along with pairing. \ _`Max Operating Voltage: 12V`_\ _`Current Rating: 0.5A`_],[#figure(image("Button_SML.jpg", width: 100%))],
       [Joystick (CM_H1)],[Arcade-style joystick with push buttons for each direction.\ _`Operating Voltage: 5V`_],[#figure(image("Joystick.jpg", width: 100%))],
@@ -347,33 +374,38 @@ The Hardware component of the project includes the boards required to operate th
   ],
 )
 #pagebreak()
-#set page(flipped: true)
 === Child Module
 
-Each child module uses an ESP32 Development Board. The electrical schematic diagram of how the child module will be designed can be seen in @fig:fig5. Please note that net labels are used (name tags) on the electrical components to show direct wired connections to increase the readability of the schematic.  
-#figure(image("Child_Module_ELEC.png", width: 86%), caption: [Child Module Electrical Schematic])<fig:fig5>
-#pagebreak()
-#set page(flipped: false)
-Notes on the Design:
+Each child module uses an ESP32 Development Board. The electrical schematic diagram of how the child module will be designed can be seen in @fig:fig5. Please note that net labels are used (name tags) on the electrical components to show direct wired connections to increase the readability of the schematic. 
+
+_Notes on the Design_:
 #list(
   [The design is meant to follow a standard that we will use in all of our boards, for better readability.],
-  [Large buttons: large buttons will be designated to GPIO pins: 4, 5, 15, 16, 17, 18, 19, 23. This means that each module will have a maximum standard button count of 8, which covers basic bumpers ("LB/RB")/trigger ("RT/LT") buttons and "ABXY". These pins will be programmed to pull-up internally, which is used to reduce the noise of the system that can be caused when moving the button from 0 to 1 rather than 1 to 0.],
-  [Small buttons: small buttons will be designated to GPIO pins: 12, 14, 27, where 12 is the pairing button used in the case of a timeout to re-advertise the device, 14 is the standard "Start" and 27 is the standard "Select" buttons. These will also use the internal pull-up setup.],
-  [Joystick: Joystick outputs will be designated to GPIO pins: 25, 26, 32, 33. The joystick used utilizes 4 push buttons hooked up to outputs that will be communicated to the device. A combination of these push buttons pressed will result in the corresponding diagonal output.],
-  [Screen: replaces the LED indication that was mentioned in the hardware requirements. the screen is connected to the SDA and SCL pins of the ESP to allow for I2C connection between devices, in which the ESP will communicate the connectivity of the controller (`pair_state`), along with the battery life. It is to be powered by the ESP's 3V3 power supply to communicate this information to the user.],
-  [Power: The ESP is to be powered by 4xAA batteries, which will be connected through switch to turn the ESP on our off. This is what will currently be used in Rev 0, but may potentially change between Rev 0 and Rev 1, such as introducing a rechargeable set of power similar to how modern controller operate. The battery life will be monitored and sent to the GPIO pin 13, so that the user can visually see the power of the controller.],
+  [#def("Large buttons"): large buttons will be designated to GPIO pins: 4, 5, 15, 16, 17, 18, 19, 23. This means that each module will have a maximum standard button count of 8, which covers basic bumpers ("LB/RB")/trigger ("RT/LT") buttons and "ABXY". These pins will be programmed to pull-up internally, which is used to reduce the noise of the system that can be caused when moving the button from 0 to 1 rather than 1 to 0.],
+  [#def("Small buttons"): small buttons will be designated to GPIO pins: 12, 14, 27, where 12 is the pairing button used in the case of a timeout to re-advertise the module, 14 is the standard "Start" and 27 is the standard "Select" buttons. These will also use the internal pull-up setup.],
+  [#def("Joystick"): Joystick outputs will be designated to GPIO pins: 25, 26, 32, 33. The joystick used utilizes 4 push buttons hooked up to outputs that will be communicated to the modules, and received by the host device. A combination of these push buttons pressed will result in the corresponding diagonal output.],
+  [#def("Screen"): replaces the LED indication that was mentioned in the hardware requirements. the screen is connected to the SDA and SCL pins of the ESP of the child module to allow for I2C connection between module and screen, in which the ESP will communicate the connectivity of the controller (`pair_state`), along with the battery life. It is to be powered by the ESP's 3V3 power supply to communicate this information to the user.],
+  [#def("Power"): The ESP is to be powered by 4xAA batteries, which will be connected through switch to turn the ESP on our off. This is what will currently be used in Rev 0, but may potentially change between Rev 0 and Rev 1, such as introducing a rechargeable set of power similar to how modern controller operate. The battery life will be monitored and sent to the GPIO pin 13, so that the user can visually see the power of the controller.],
 )
+#pagebreak()
+#set page(flipped: true)
+#figure(image("Child_Module_ELEC.png", width: 95%), caption: [Child Module Electrical Schematic])<fig:fig5>
+#pagebreak()
+#set page(flipped: false)
+
 === Parent Module
 
 The parent module will consist of a Raspberry Pi Zero 2W, and will be connected to a screen. The Pi will be powered and send data through the Mirco USB ports. It is planned to connect via bluetooth to the child modules using the BLE feature provided on the Pi. The schematic can be seen in @fig:fig6. Please note that net labels are used (name tags) on the electrical components to show direct wired connections to increase the readability of the schematic. 
-#figure(image("RPI_ELEC.png", width: 100%), caption: [Parent Module Electrical Schematic])<fig:fig6>
-Notes on the Design:
+
+_Notes on the Design_:
 #list(
-  [The Pi will be connected to power and transfer data via usb connection to the device that it will be playing on.],
-  [Screen: the screen is connected to the SDA and SCL pins of the ESP to allow for I2C connection between devices, in which the Pi will communicate the number of modules connected to the board (`device_list`). It is to be powered by the ESP's 3V3 power supply to communicate this information to the user.]
+  [The Pi will be connected to power and transfer data via USB connection to the host device that it will be playing on.],
+  [#def("Screen"): the screen is connected to the SDA and SCL pins of the ESP to allow for I2C connection between devices, in which the Pi will communicate the number of modules connected to the board (`module_list`). It is to be powered by the ESP's 3V3 power supply to communicate this information to the user.]
 )
+#figure(image("RPI_ELEC.png", width: 110%), caption: [Parent Module Electrical Schematic])<fig:fig6>
 #pagebreak()
 == Mechanical Design
+The mechanical aspect of the project is all related to the housing that the controller will be in. For Rev 0, the controller housing will be very basic, and act as a stand for the buttons/joysticks, while being able to place electrical hardware under it. The component list is listed below in @tbl:tb8. 
 #align(
   center, [
     #figure(
@@ -397,6 +429,7 @@ Notes on the Design:
 )
 === Child Module
 === Parent Module
+The parent module housing will include a slot for the screen and a hole for the wires to connect to the host device.
 = Timing Constraints
 There are a few critical timing constraints to consider for the OpenArcade Controller to function correctly, which can be seen in @tbl:tb8.
 #align(
@@ -416,11 +449,11 @@ There are a few critical timing constraints to consider for the OpenArcade Contr
 #pagebreak()
 = Initialization
 == Startup
-The parent module (client) will be plugged into the device that the user wants to use (in most cases it will be a computer). Once the parent module is powered (via the cable connection), it will automatically start looking for advertising children modules (server). When the parent module finds a child module that is advertising, it will automatically connect. Once connected, the parent module will relay the user's input to the computer resulting in in-game actions. 
+The parent module (client) will be plugged into the host device that the user wants to use (in most cases it will be a computer). Once the parent module is powered (via the cable connection), it will automatically start looking for advertising children modules (server). When the parent module finds a child module that is advertising, it will automatically connect. Once connected, the parent module will relay the user's input to the computer resulting in in-game actions. 
 
 Child modules are turned on via a switch to connect power to the system, and will begin an advertising phase for a set time until timeout is declared if no connection is established.
 == Termination
-The parent module can be turned off by disconnecting the module from the device. Child modules can be turned off via a power switch, which will disconnect the established BLE connection between the parent and child (removing it from the parent device list).
+The parent module can be turned off by disconnecting the parent from the host device. Child modules can be turned off via a power switch, which will disconnect the established BLE connection between the parent and child (removing it from the parent's module list).
 
 In the case that the temperature of the parent or child exceeds a warning or critical temperature (threshold set by manufacturer), the module will shut off and will be reuseable once the temperature is safe.
 
