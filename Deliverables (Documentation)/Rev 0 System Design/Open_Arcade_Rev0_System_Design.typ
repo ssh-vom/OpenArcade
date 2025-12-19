@@ -468,4 +468,16 @@ During normal operation, the parent will load up a state mapping configuration (
 When using the configuration app, users will be able to intuitively remap the physical inputs of the system (buttons). This is all passed to the parent module, which will update the HID report accordingly. On the host device, the new mapping will be treated as the native layout, as if the controller was always set up in this way. 
 
 == Undesired Event Handling
-
+In the event of events occurring that do not relate the normal operation of the OpenArcade controller, there needs to be reactive methods in place to deal with these events. @tbl:tb10 notes how undesired events will be detected and handled.
+#align(
+  center, [#figure(    
+    table(
+      columns: (30%, 35%, 35%), [#text(fill: white)[*Event*]], [#text(fill: white)[*Detection*]], [#text(fill: white)[*Response/Solution*]],
+      [Child and parent modules are not pairing.],[airing state is not changing states to show the child module is paired.],[Display the pairing state on the child module and retry pairing after timeout.],
+      [The Bluetooth connection between the child and parent module disconnects.],[Pairing state for a child module changes unexpectedly.],[Set child module to idle mode, update the number of child modules displayed and pair state to inform the user of the disconnect.],
+      [Child module inputs are not being reflected in the game.],[Button inputs no longer result in in-game inputs.],[Set child module to idle mode.],
+      [Child/Parent module begins overheating.],[Internal temperature goes above the designated temperature threshold.],[OLED display will print an overheating warning and the module auto shuts down if it exceeds a critical value.] 
+      ),caption: [Undesired Event Handling]
+      )<tbl:tb10>
+  ],
+)
