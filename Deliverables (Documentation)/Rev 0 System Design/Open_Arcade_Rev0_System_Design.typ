@@ -104,7 +104,7 @@ For revision 0, the OpenArcade team has listed a few critical points to define
 the milestone. These points will be used to assess the successful completion of
 the initial revision. _These points are subject to change._
 #list(
-  [Child modules (joystick and buttons), that will communicate to the the
+  [Child modules (joystick and buttons), that will communicate to the
     singular parent module via bluetooth. These modules will be encased in a simple
     housing that will not include the mechanical attachment feature.], [A preliminary configuration app to allow buttons to be programmed to perform
     specific functions by default.],
@@ -125,7 +125,7 @@ The purpose of this document is to outline the overall system design that will b
 = System Overview and Behaviour
 This section will overview the design of the system in greater detail as to what was provided in the _System Requirements and Hazard Analysis_ document. As mentioned before, this section will outline the underlying processes that occur while the OpenArcade controller is in use. This will include how sub-systems connect to each other, and the corresponding inputs and outputs of each of those sub-systems.
 == Systems Diagram (Updated)
-Between now and the previous deliverable, the system design been modified slightly to accurately showcase what the group plans on implement in greater detail to before.
+Between now and the previous deliverable, the system design been modified slightly to accurately showcase what the group plans on implementing in greater detail to before.
 
 @fig:fig1 shows the monitored/controlled inputs and outputs of each of the subsystems that are required for correct functionality of the OpenArcade controller. It can be noted that there is an increased degree of detail as to what is involved in the system. Along with the inner processes of each board being explained, the new changes include:
 #list(
@@ -135,14 +135,15 @@ Between now and the previous deliverable, the system design been modified slight
     [#def("NOTIFICATION_ACK"): a process in which upon a successful connection between parent and child, the parent will send a signal that a data packet is being received.],
     [#def("Advertising"): if a pairing button is pressed OR the child module is powered on, the child module will advertise itself for BLE connection.],
     [#def("New state package mapping"): when the configuration app is used, it will remap what each bit in the state package sequence will relate to in HID mapping.],
-    [#def("Joystick value"): The joystick currently chosen (mentioned later in @tbl:tb7) discusses that the joystick has 4 state directional outputs, and does not utilize values of X and Y with higher resolution. _This may be subject to change for the Rev 1 deliverable_],
-    [#def("Deadzone zone"): as mentioned above, @tbl:tb7 states that the joystick does not have XY values and thus implementing a deadzone would mean physical distance to click one of the 4 directional push buttons within the joystick hardware. _This may be subject to change for the Rev 1 deliverable_]
+    [#def("Joystick value"): The joystick currently chosen (discussed later in @tbl:tb7) has 4 state directional outputs, and does not utilize values of X and Y with higher resolution. _This may be subject to change for the Rev 1 deliverable_],
+    [#def("Joystick deadzone"): as mentioned above, @tbl:tb7 states that the joystick does not have XY values and thus increasing deadzone would mean implementing physical distance to click one of the 4 directional push buttons within the joystick hardware. _This may be subject to change for the Rev 1 deliverable_]
   )
   ],
   [Sub-subsystem "Display" added to each of the modules, with its purpose being to showcase the battery life. The OpenArcade team wants to note that this may or may not be included in the design for Rev 0, but is something that is planned to be included in the final design. This will be noted during the Rev 0 presentation for clarity.],
 )
 #pagebreak()
 #set page(flipped: true)
+\
 \
 \
 #figure(image("SystemDiagram.png", width: 110%), caption: [Systems diagram])<fig:fig1>
@@ -153,7 +154,7 @@ The context diagram does not change, as the overall goal of the controller is th
 #figure(image("ContextDiagram.png"), caption: [Context diagram])<fig:fig2>
 === Functional Decomposition
 The functional decomposition has also slightly changed to reword some of the processes while also including the display aspect, which again may or may not be used in Rev 0. The diagram still splits the system into two main systems and displays how they interact with each other and what is required from each of them. This can be seen in @fig:fig3.
-#figure(image("FunctionalDecomposition.png", width: 60%), caption: [Functional Decomposition])<fig:fig3>
+#figure(image("FunctionalDecomposition.png", width: 70%), caption: [Functional Decomposition])<fig:fig3>
 #pagebreak()
 = System Design
 
@@ -163,7 +164,6 @@ if y == 0 { rgb("#7a003d") }, inset: (right: 0.75em), align: left)
 === Monitored Variables
 The monitored variables are inputs to the systems. They represent the user's actions being transmitted as inputs to the ESP and the inputs to the Pi. The variables, along with their designated units (if applicable) are noted in @tbl:tb1.    
 \
-#v(-3mm)
 #align(
   center, [
   #figure(
@@ -191,7 +191,7 @@ The monitored variables are inputs to the systems. They represent the user's act
 === Controlled Variables
 Controlled variables are those that are final outputs to the system, such as the total list of connected modules, or the final HID report mapping for the host device to interpret the gamepad. The variables, along with their designated units (if applicable) are noted in @tbl:tb2. 
 \
-#v(-3mm)
+
 #align(
   center, [
     #figure( 
@@ -213,7 +213,7 @@ Controlled variables are those that are final outputs to the system, such as the
 
 The variables, along with their designated units (if applicable) are noted in @tbl:tb3. 
 \
-#v(-3mm)
+
 #align(
   center, [
     #figure(    
@@ -261,7 +261,7 @@ As mentioned before, the controller is designed around the 4 variable model, whi
 === Background Information
 This section describes the working process of how the system takes raw data and converts it to game actions.
 
-When a user performs an action, such as a button press or movement of the joystick, it's state will change. On each child module, the states of each of these buttons and joysticks will be placed in a bit array (the state package) in a specified standard format so that it can be read by the parent module.
+When a user performs an action, such as a button press or movement of the joystick, its state will change. On each child module, the states of each of these buttons and joysticks will be placed in a bit array (the state package) in a specified standard format so that it can be read by the parent module.
 
 The parent module receives the state package, a state mapping configuration (if modified by the user, default otherwise), and a mode that the parent module will be in. The state mapping configuration is set by the user in an external configuration app, and will modify that the index location in the state package that is read to relate to specific inputs #list([If the first four bits of the state package are ordered as [A, B, X, Y], a user who wishes to swap the physical 'X' button to perform the 'A' action would modify the state mapping configuration so that the Button A logical function now draws its data from the third bit index rather than the first.])
 
@@ -395,7 +395,7 @@ _Notes on the Design_:
 
 === Parent Module
 
-The parent module will consist of a Raspberry Pi Zero 2W, and will be connected to a screen. The Pi will be powered and send data through the Mirco USB ports. It is planned to connect via bluetooth to the child modules using the BLE feature provided on the Pi. The schematic can be seen in @fig:fig6. Please note that net labels are used (name tags) on the electrical components to show direct wired connections to increase the readability of the schematic. 
+The parent module will consist of a Raspberry Pi Zero 2W, and will be connected to a screen. The parent will be powered and send data through USB connection to the host. It is planned to connect via bluetooth to the child modules using the BLE feature provided on the Pi. The schematic can be seen in @fig:fig6. Please note that net labels are used (name tags) on the electrical components to show direct wired connections to increase the readability of the schematic. 
 
 _Notes on the Design_:
 #list(
@@ -438,8 +438,8 @@ There are a few critical timing constraints to consider for the OpenArcade Contr
     table(
       columns: (20%, 40%, 40%), 
       [#text(fill: white)[*Action*]], [#text(fill: white)[*Description*]], [#text(fill: white)[*Timing Requirement*]],
-      [Child Module Advertisement], [Initial advertisement on start up.\ \ Re-advertising after pairing button is clicked.], [The advertisements will run for X seconds, after which a timeout will be issued, requiring the press of the pairing button once again.],
-      [Temperature Warnings],[Issue temperature warnings as soon as it reaches critical values],[No specific timing, but must report warning the moment is acknowledges abnormal temperature.],
+      [Child Module Advertisement], [Initial advertisement on start up.\ \ Re-advertisement after pairing button is clicked.], [The advertisements will run for X seconds, after which a timeout will be issued, requiring the press of the pairing button.],
+      [Temperature Warnings],[Issue temperature warnings as soon as it reaches critical values],[No specific timing, but must report warning the moment abnormal temperature is detected.],
       [User→Game action],[The time it takes to press a button and have it register in the game.],[Standard controllers work with around 10-20ms, so aiming to replicate a similar time will prevent the game from feeling slow.]
       ),
       caption: [Timing Requirements]
@@ -455,7 +455,7 @@ Child modules are turned on via a switch to connect power to the system, and wil
 == Termination
 The parent module can be turned off by disconnecting the parent from the host device. Child modules can be turned off via a power switch, which will disconnect the established BLE connection between the parent and child (removing it from the parent's module list).
 
-In the case that the temperature of the parent or child exceeds a warning or critical temperature (threshold set by manufacturer), the module will shut off and will be reuseable once the temperature is safe.
+In the case that the temperature of the parent or child exceeds a warning or critical temperature (threshold set by manufacturer), the module will shut off and will be reusable once the temperature is safe.
 
 In the case of battery depletion, the child module will be turned off automatically, which will disconnect the BLE connection with the parent.
 #pagebreak()
