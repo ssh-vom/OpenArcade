@@ -449,11 +449,11 @@ There are a few critical timing constraints to consider for the OpenArcade Contr
 #pagebreak()
 = Initialization
 == Startup
-The parent module (client) will be plugged into the host device that the user wants to use (in most cases it will be a computer). Once the parent module is powered (via the cable connection), it will automatically start looking for advertising children modules (server). When the parent module finds a child module that is advertising, it will automatically connect. Once connected, the parent module will relay the user's input to the computer resulting in in-game actions. 
+The parent module (client) will be plugged into the host device that the user wants to use (in most cases it will be a computer). Once the parent module is powered (USB), it will automatically start looking for advertising children modules (server). When the parent module finds a child module that is advertising, it will automatically connect. Once connected, the parent module will relay the user's input to the computer resulting in in-game actions. 
 
-Child modules are turned on via a switch to connect power to the system, and will begin an advertising phase for a set time until timeout is declared if no connection is established.
+Child modules are turned on with a switch to connect power to the system, and will begin an advertising phase for a set time until timeout is declared if no connection is established.
 == Termination
-The parent module can be turned off by disconnecting the parent from the host device. Child modules can be turned off via a power switch, which will disconnect the established BLE connection between the parent and child (removing it from the parent's module list).
+The parent module can be turned off by disconnecting the parent from the host device. Child modules can be turned off with a power switch, which will disconnect the established BLE connection between the parent and child (removing it from the parent's module list).
 
 In the case that the temperature of the parent or child exceeds a warning or critical temperature (threshold set by manufacturer), the module will shut off and will be reusable once the temperature is safe.
 
@@ -473,8 +473,7 @@ In the event of events occurring that do not relate the normal operation of the 
   center, [#figure(    
     table(
       columns: (30%, 35%, 35%), [#text(fill: white)[*Event*]], [#text(fill: white)[*Detection*]], [#text(fill: white)[*Response/Solution*]],
-      [Child and parent modules are not pairing.],[airing state is not changing states to show the child module is paired.],[Display the pairing state on the child module and retry pairing after timeout.],
-      [The Bluetooth connection between the child and parent module disconnects.],[Pairing state for a child module changes unexpectedly.],[Set child module to idle mode, update the number of child modules displayed and pair state to inform the user of the disconnect.],
+      [Child and parent modules are not pairing.],[Pairing state is not changing states to show the child module is paired.\ \ Pairing state for a child module changes unexpectedly.],[Display the pairing state on the child module and retry pairing after timeout.\ \ Set child module to idle mode, update the number of child modules displayed and pair state to inform the user of the disconnect.],
       [Child module inputs are not being reflected in the game.],[Button inputs no longer result in in-game inputs.],[Set child module to idle mode.],
       [Child/Parent module begins overheating.],[Internal temperature goes above the designated temperature threshold.],[OLED display will print an overheating warning and the module auto shuts down if it exceeds a critical value.] 
       ),caption: [Undesired Event Handling]
