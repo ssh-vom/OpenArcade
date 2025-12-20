@@ -421,15 +421,28 @@ The mechanical aspect of the project is all related to the housing that the cont
       [4x 1.5V Battery Pack (CM_H3)],[Battery holder for 4 AA batteries.],
       [Power Switch],[Switch used to turn the child module on and off. will be connected to the battery pack.],
       [3D-printed Housing],[Housing for both the parent and child modules.],
-      [Screws/nuts],[Securing the components to the housing.]
+      [Screws/nuts],[Screws to be used with threaded insert to secure ESP32 Dev Kit and OLED screen to our case. (M2, M4).],
+      [Brass Screw-to-Expand Insert for Plastic],[Threaded insert used to secure ESP32 Dev Kit and OLED screen to our plastic casing.\ #list([M2 x 0.4mm],[M4 x 0.7mm])],
+      [Gorilla Glue Adhesive],[Used to secure small buttons, battery packs, switches, etc.],
       ),
       caption: [Component List]
       )<tbl:tb8>
   ],
 )
+Since the system design deliverable is due 1 month prior to the Rev 0 presentation/demo, the 3D model of the housing is not fully complete and is missing a few things that may be included from now to the demo date. This includes: 
+#list([Fastening of each of the components to the housing, which will either be done with plastic dowels, threaded inserts and screws, or through adhesive.])
+_Please note that the housing will point of focus in the deliverables after Rev 0, and will currently serve as a method to group components together and have them enclosed._
 === Child Module
+The child module housing will allow for buttons/joysticks to sit elevated from other electrical components to allow for easier wired connection. The main goal in Rev 0 is to allow for the controller. The housing will be printed using PLA filament. @fig:fig9 displays the current design of the child module housing. _Please note that the design is subject to change._ 
+==== Buttons Module
+#figure(image("Child_Module_Housing.png", width: 100%), caption: [Child Module Housing (Buttons)])<fig:fig7>
+==== Joystick Module
+#figure(image("Child_Module_Housing_2.png", width: 100%), caption: [Child Module Housing (Joystick)])<fig:fig8>
 === Parent Module
-The parent module housing will include a slot for the screen and a hole for the wires to connect to the host device.
+The parent module housing will include a slot for the screen and a hole for the wires to connect to the host device. The housing will be printed using PLA filament. @fig:fig9 displays the current design of the parent module housing. _Please note that the design is subject to change._ 
+#figure(image("Parent_Module_Housing.png", width: 100%), caption: [Parent Module Housing])<fig:fig9>
+
+#pagebreak()
 = Timing Constraints
 There are a few critical timing constraints to consider for the OpenArcade Controller to function correctly, which can be seen in @tbl:tb8.
 #align(
