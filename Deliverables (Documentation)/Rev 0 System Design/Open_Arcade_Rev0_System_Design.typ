@@ -335,10 +335,10 @@ The inputs of the parent module subsystem are defined in @tbl:tb6. The goal of t
 #list([Input: mode associated to the current host device.],[Output: new HID formatting for both descriptor and report. This module sends information to PM_S_SCREEN, the descriptor, and PM_S_HID_WRITE.])
 
 #def("Module PM_S_SCREEN"): Will take Temperature, module list, and Mode and print onto screen.
-#list([Input: Temperature, Mode, module list.],[Output: prints the inputs on the PM_H2.])
+#list([Input: Temperature, mode, module list.],[Output: prints the inputs on the PM_H2.])
 
 #def("Module PM_S_CONFIG_APP"): an external configuration app that will remap what the parent module will read from the incoming state package provided by the child module. Updates only when configuration is changed and sends a profile.
-#list([Input: User changes.],[Output: file that re-assigns bit locations to associated buttons in array. Sent to PM_S_CONFIG_APP.])
+#list([Input: user changes.],[Output: file that re-assigns bit locations to associated buttons in array. Sent to PM_S_CONFIG_APP.])
 
 #def("Module PM_S_CONFIG_MAP"): intermediate step between PM_S_CONFIG_APP and HID_WRITE that takes the state package and consults the current mapping set either by default or through a profile set in the configuration app, giving new meaning to the bits that comprise the state package.
 #list([Input: current state package and config app changes.],[Output: the updated translation of state package in a standard format. Sent to PM_S_HID_WRITE.])
@@ -361,7 +361,7 @@ The Hardware component of the project includes the boards required to operate th
       [#text(fill: white)[*Component*]], [#text(fill: white)[*Description/Use Case*]], [#text(fill: white)[*Component Image*]],
       [Raspberry PI Zero 2W], [Parent module main board. Will use BLE to receive data from child modules and send HID report package to the host device via USB connection.\ _`Operating Voltage: 4.75V-5.25V`_], [#figure(image("02w.png", width: 100%))],
       [ESP32- WROOM- 32D],[Child module main board. Will take in user input from connected joysticks/buttons, and send state package containing state changes of joysticks/buttons to parent module via BLE.\ _`Operating Voltage: 4V-12V`_],[#figure(image("ESP32.png", width: 100%))],
-      [OLED Display Screen (CM_H4 and PM_H2)],[Small screen attached to the outside of the module housing. #list([Child Module: communicate the state of the child module, along with the battery life of the controller.],[Parent Module: communicate the number of modules connected.]) _`Operating Voltage: 3.3V-5V`_],[\ #figure(image("OLED_Display.png", width: 100%))],
+      [OLED Display Screen (CM_H4 and PM_H2)],[Small screen attached to the outside of the module housing. #list([Child Module: communicate the module ID, pairing state, battery life, and temperature of the child module.],[Parent Module: communicate the number of modules connected and temperature of the parent.]) _`Operating Voltage: 3.3V-5V`_],[\ #figure(image("OLED_Display.png", width: 100%))],
       [Large Button (CM_H1)],[Standard arcade-style button with LED. Can act as triggers, bumpers, ABXY. \ _`Operating Voltage (LED): 5V`_],[#figure(image("Button_LRG.jpg", width: 100%))],
       [Small Button (CM_H1 and CM_H2)],[Smaller sized button used for start and select, along with pairing. \ _`Max Operating Voltage: 12V`_\ _`Current Rating: 0.5A`_],[#figure(image("Button_SML.jpg", width: 100%))],
       [Joystick (CM_H1)],[Arcade-style joystick with push buttons for each direction.\ _`Operating Voltage: 5V`_],[#figure(image("Joystick.jpg", width: 100%))],
