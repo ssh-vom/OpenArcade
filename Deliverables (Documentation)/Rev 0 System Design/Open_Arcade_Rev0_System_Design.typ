@@ -154,7 +154,7 @@ The context diagram does not change, as the overall goal of the controller is th
 #figure(image("ContextDiagram.png"), caption: [Context diagram])<fig:fig2>
 === Functional Decomposition
 The functional decomposition has also slightly changed to reword some of the processes while also including the display aspect, which again may or may not be used in Rev 0. The diagram still splits the system into two main systems and displays how they interact with each other and what is required from each of them. This can be seen in @fig:fig3.
-#figure(image("FunctionalDecomposition.png", width: 70%), caption: [Functional Decomposition])<fig:fig3>
+#figure(image("FunctionalDecomposition.png", width: 80%), caption: [Functional Decomposition])<fig:fig3>
 #pagebreak()
 = System Design
 
