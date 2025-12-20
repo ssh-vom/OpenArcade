@@ -1,5 +1,5 @@
 #set page("us-letter")
-#set text(size: 11.5pt, font: "New Computer Modern")
+#set text(size: 12pt, font: "New Computer Modern")
 #set heading(numbering: "1.1  ")
 
 #show figure.where(kind: table): set figure.caption(position: top)
@@ -122,6 +122,7 @@ The purpose of this document is to outline the overall system design that will b
 ) _Note that sections in this document may be subject to change, as during the manufacturing of the project, the team may decide to move forward with new design aspects that better optimize our idea. Any new additions or adjustments will be documented during the
  next deliverable/milestone so that the MECHTRON 4TB6 staff can acknowledge the changes and understand why it was needed._
 
+#pagebreak()
 = System Overview and Behaviour
 This section will overview the design of the system in greater detail as to what was provided in the _System Requirements and Hazard Analysis_ document. As mentioned before, this section will outline the underlying processes that occur while the OpenArcade controller is in use. This will include how sub-systems connect to each other, and the corresponding inputs and outputs of each of those sub-systems.
 == Systems Diagram (Updated)
@@ -135,8 +136,8 @@ Between now and the previous deliverable, the system design been modified slight
     [#def("NOTIFICATION_ACK"): a process in which upon a successful connection between parent and child, the parent will send a signal that a data packet is being received.],
     [#def("Advertising"): if a pairing button is pressed OR the child module is powered on, the child module will advertise itself for BLE connection.],
     [#def("New state package mapping"): when the configuration app is used, it will remap what each bit in the state package sequence will relate to in HID mapping.],
-    [#def("Joystick value"): The joystick currently chosen (discussed later in @tbl:tb7) has 4 state directional outputs, and does not utilize values of X and Y with higher resolution. _This may be subject to change for the Rev 1 deliverable_],
-    [#def("Joystick deadzone"): as mentioned above, @tbl:tb7 states that the joystick does not have XY values and thus increasing deadzone would mean implementing physical distance to click one of the 4 directional push buttons within the joystick hardware. _This may be subject to change for the Rev 1 deliverable_]
+    [#def("Joystick value"): The joystick currently chosen (discussed later in @tbl:tb7) has 4 state directional outputs, and does not utilize values of X and Y with higher resolution. _This may be subject to change for the Rev 1 deliverable._],
+    [#def("Joystick deadzone"): as mentioned above, @tbl:tb7 states that the joystick does not have XY values and thus increasing deadzone would mean implementing physical distance to click one of the 4 directional push buttons within the joystick hardware. _This may be subject to change for the Rev 1 deliverable._]
   )
   ],
   [Sub-subsystem "Display" added to each of the modules, with its purpose being to showcase the battery life. The OpenArcade team wants to note that this may or may not be included in the design for Rev 0, but is something that is planned to be included in the final design. This will be noted during the Rev 0 presentation for clarity.],
@@ -244,7 +245,7 @@ The processes in the 4-variable model diagram are split into hardware and softwa
   center, [
     #figure(
     table(
-      columns: (20%, 45%), 
+      columns: (30%, 45%), 
       [#text(fill: white)[*System Component*]], [#text(fill: white)[*Description*]],
       [CM_H],[Child module hardware component],
       [CM_S],[Child module software component],
@@ -400,7 +401,7 @@ The parent module will consist of a Raspberry Pi Zero 2W, and will be connected 
 _Notes on the Design_:
 #list(
   [The Pi will be connected to power and transfer data via USB connection to the host device that it will be playing on.],
-  [#def("Screen"): the screen is connected to the SDA and SCL pins of the ESP to allow for I2C connection between devices, in which the Pi will communicate the number of modules connected to the board (`module_list`). It is to be powered by the ESP's 3V3 power supply to communicate this information to the user.]
+  [#def("Screen"): the screen is connected to the SDA and SCL pins of the ESP to allow for I2C connection between devices, in which the Pi will communicate the number of modules connected to the board. It is to be powered by the ESP's 3V3 power supply to communicate this information to the user.]
 )
 #figure(image("RPI_ELEC.png", width: 110%), caption: [Parent Module Electrical Schematic])<fig:fig6>
 #pagebreak()
@@ -433,7 +434,7 @@ Since the system design deliverable is due 1 month prior to the Rev 0 presentati
 #list([Fastening of each of the components to the housing, which will either be done with plastic dowels, threaded inserts and screws, or through adhesive.])
 _Please note that the housing will point of focus in the deliverables after Rev 0, and will currently serve as a method to group components together and have them enclosed._
 === Child Module
-The child module housing will allow for buttons/joysticks to sit elevated from other electrical components to allow for easier wired connection. The main goal in Rev 0 is to allow for the controller. The housing will be printed using PLA filament. @fig:fig9 displays the current design of the child module housing. _Please note that the design is subject to change._ 
+The child module housing will allow for buttons/joysticks to sit elevated from other electrical components to allow for easier wired connection. The main goal in Rev 0 is to allow for the controller. The housing will be printed using PLA filament. @fig:fig7 displays the current design of the child module housing with just buttons, while @fig:fig8. _Please note that the design is subject to change._ 
 ==== Buttons Module
 #figure(image("Child_Module_Housing.png", width: 100%), caption: [Child Module Housing (Buttons)])<fig:fig7>
 ==== Joystick Module
