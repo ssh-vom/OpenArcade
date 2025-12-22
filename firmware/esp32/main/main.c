@@ -1,10 +1,11 @@
-/*
- * SPDX-FileCopyrightText: 2024 Espressif Systems (Shanghai) CO LTD
+/* SPDX-FileCopyrightText: 2024 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: Unlicense OR CC0-1.0
  */
 /* Includes */
 #include "common.h"
+#include "controller_input.h"
+#include "display.h"
 #include "driver/gpio.h"
 #include "gap.h"
 #include "gatt_svc.h"
@@ -12,66 +13,11 @@
 #include "led.h"
 #include "soc/gpio_reg.h"
 
-#define BUTTON1_GPIO 15
-#define BUTTON2_GPIO 4
-#define BUTTON3_GPIO 16
-#define BUTTON4_GPIO 17
-#define BUTTON5_GPIO 5
-#define BUTTON6_GPIO 18
-#define BUTTON7_GPIO 19
-#define SCREEN_SCL 21
-#define SCREEN_SDA 22
-#define BUTTON8_GPIO 23
-#define JOYSTICK_R 32
-#define JOYSTICK_U 33
-#define JOYSTICK_L 25
-#define JOYSTICK_D 26
-#define BUTTON_SEL 27
-#define BUTTON_START 14
-#define BUTTON_PAIR 12
-#define BATTERY_LIFE 13
-#define DEBOUNCE_US 3000
-
-typedef struct {
-  // Face buttons
-  uint32_t b1 : 1;
-  uint32_t b2 : 1;
-  uint32_t b3 : 1;
-  uint32_t b4 : 1;
-  uint32_t b5 : 1;
-  uint32_t b6 : 1;
-  uint32_t b7 : 1;
-  uint32_t b8 : 1;
-
-  // Joystick
-  uint32_t joy_l : 1;
-  uint32_t joy_r : 1;
-  uint32_t joy_u : 1;
-  uint32_t joy_d : 1;
-
-  // System/menu
-  uint32_t select : 1;
-  uint32_t start : 1;
-  uint32_t pair : 1;
-
-  // I2C signals (optional)
-  uint32_t scl : 1;
-  uint32_t sda : 1;
-
-  // Battery
-  uint32_t battery : 1;
-
-  uint32_t : 13; // unused / padding
-
-} controller_state_t;
-
 static inline uint32_t read_all_buttons_packed() {
 
   uint32_t in0 = REG_READ(GPIO_IN_REG);
   uint32_t in1 = REG_READ(GPIO_IN1_REG);
 
-#define RAW(pin) ((pin < 32) ? ((in0 >> pin) & 1) : ((in1 >> (pin - 32)) & 1))
-#define PACK(bitpos, pin) (RAW(pin) << bitpos)
   uint32_t out = 0;
   // Face buttons
   out |= PACK(0, BUTTON1_GPIO);
@@ -193,18 +139,13 @@ static void nimble_host_task(void *param) {
   vTaskDelete(NULL);
 }
 
-static void heart_rate_task(void *param) {
+static void controller_task(void *param) {
   /* Task entry log */
-  ESP_LOGI(TAG, "heart rate task has been started!");
+  ESP_LOGI(TAG, "Controller Task has been started!");
 
   /* Loop forever */
   while (1) {
-    /* Update heart rate value every 1 second */
-    // update_heart_rate();
-    // ESP_LOGI(TAG, "heart rate updated to %d", get_heart_rate());
 
-    /* Send heart rate indication if enabled */
-    // send_heart_rate_notification();
     send_button_state_notification();
     controller_state_t st = read_all_buttons();
 
@@ -242,6 +183,8 @@ void app_main(void) {
   /* LED initialization */
   // led_init();
   configure_gpio();
+  ESP_ERROR_CHECK(display_init());
+  display_set_state(DISPLAY_STATE_BOOT);
 
   /*
    * NVS flash initialization
@@ -284,6 +227,6 @@ void app_main(void) {
 
   /* Start NimBLE host task thread and return */
   xTaskCreate(nimble_host_task, "NimBLE Host", 4 * 1024, NULL, 5, NULL);
-  xTaskCreate(heart_rate_task, "Heart Rate", 4 * 1024, NULL, 5, NULL);
+  xTaskCreate(controller_task, "Controller State", 4 * 1024, NULL, 5, NULL);
   return;
 }

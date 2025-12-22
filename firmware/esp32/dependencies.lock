@@ -14,8 +14,35 @@ dependencies:
     source:
       type: idf
     version: 5.5.1
+  k0i05/esp_ssd1306:
+    component_hash: 
+      0bda01e422bdefe42b0760b2e3d3e840d57f5adc555fe40a267ecb918d9b63a2
+    dependencies:
+    - name: idf
+      require: private
+      version: '>5.3.0'
+    - name: k0i05/esp_type_utils
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=1.0.0'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.2.7
+  k0i05/esp_type_utils:
+    component_hash: 
+      95d8ec40268e045f7e264d8035f451e53844b4a2f6d5f112ece6645c5effd639
+    dependencies:
+    - name: idf
+      require: private
+      version: '>5.3.0'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 1.2.7
 direct_dependencies:
 - espressif/led_strip
-manifest_hash: a9af7824fb34850fbe175d5384052634b3c00880abb2d3a7937e666d07603998
+- k0i05/esp_ssd1306
+manifest_hash: 4ea6b0f57309a6e2e08d7a000865e7afad3f12e52de36cbdfa0e192fe6497174
 target: esp32
 version: 2.0.0
