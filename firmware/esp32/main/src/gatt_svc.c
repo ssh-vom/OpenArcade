@@ -44,8 +44,7 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
              {/* Heart rate characteristic */
               .uuid = &heart_rate_chr_uuid.u,
               .access_cb = heart_rate_chr_access,
-              .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_INDICATE |
-                       BLE_GATT_CHR_F_NOTIFY,
+              .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
               .val_handle = &heart_rate_chr_val_handle},
              {
                  0, /* No more characteristics in this service. */

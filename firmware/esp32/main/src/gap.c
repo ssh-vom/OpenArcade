@@ -8,6 +8,11 @@
 #include "common.h"
 #include "gatt_svc.h"
 
+#define CONN_INTERVAL_MIN 6
+#define CONN_INTERVAL_MAX 6
+#define SLAVE_LATENCY 0
+#define SUPERVISION_TIMEOUT 100
+
 /* Private function declarations */
 inline static void format_addr(char *addr_str, uint8_t addr[]);
 static void print_conn_desc(struct ble_gap_conn_desc *desc);
@@ -127,8 +132,10 @@ static void start_advertising(void) {
   adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN;
 
   /* Set advertising interval */
-  adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(500);
-  adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(510);
+  // adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(500);
+  // adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(510);
+  adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(20);
+  adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(30);
 
   /* Start advertising */
   rc = ble_gap_adv_start(own_addr_type, NULL, BLE_HS_FOREVER, &adv_params,
@@ -178,10 +185,10 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
       // Seemingly work fine when we are sending notifications
 
       struct ble_gap_upd_params params = {
-          .itvl_min = 40,
-          .itvl_max = 200,
-          .latency = 0,
-          .supervision_timeout = 1000, // 5 s
+          .itvl_min = CONN_INTERVAL_MIN, // 40 originally
+          .itvl_max = CONN_INTERVAL_MAX, // 200 originally
+          .latency = SLAVE_LATENCY,
+          .supervision_timeout = SUPERVISION_TIMEOUT, // 5 s
       };
       // struct ble_gap_upd_params params = {.itvl_min = desc.conn_itvl,
       //                                     .itvl_max = desc.conn_itvl,
