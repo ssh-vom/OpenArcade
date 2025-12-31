@@ -6,62 +6,9 @@
 #include "common.h"
 #include "controller_input.h"
 #include "display.h"
-#include "driver/gpio.h"
 #include "gap.h"
 #include "gatt_svc.h"
-#include "heart_rate.h"
-#include "led.h"
-#include "soc/gpio_reg.h"
 
-static inline uint32_t read_all_buttons_packed() {
-
-  uint32_t in0 = REG_READ(GPIO_IN_REG);
-  uint32_t in1 = REG_READ(GPIO_IN1_REG);
-
-  uint32_t out = 0;
-  // Face buttons
-  out |= PACK(0, BUTTON1_GPIO);
-  out |= PACK(1, BUTTON2_GPIO);
-  out |= PACK(2, BUTTON3_GPIO);
-  out |= PACK(3, BUTTON4_GPIO);
-  out |= PACK(4, BUTTON5_GPIO);
-  out |= PACK(5, BUTTON6_GPIO);
-  out |= PACK(6, BUTTON7_GPIO);
-  out |= PACK(7, BUTTON8_GPIO);
-
-  // Joystick
-  out |= PACK(8, JOYSTICK_L);
-  out |= PACK(9, JOYSTICK_R);
-  out |= PACK(10, JOYSTICK_U);
-  out |= PACK(11, JOYSTICK_D);
-
-  // System/menu
-  out |= PACK(12, BUTTON_SEL);
-  out |= PACK(13, BUTTON_START);
-  out |= PACK(14, BUTTON_PAIR);
-
-  // Extra
-  // out |= PACK(15, 35);
-
-  // I2C pins
-  out |= PACK(15, SCREEN_SCL);
-  out |= PACK(16, SCREEN_SDA);
-
-  // Battery
-  out |= PACK(17, BATTERY_LIFE);
-
-  return out;
-}
-
-static inline controller_state_t read_all_buttons() {
-  uint32_t packed = read_all_buttons_packed();
-  return *(controller_state_t *)&packed;
-}
-static const uint8_t INPUT_PINS[] = {
-    BUTTON1_GPIO, BUTTON2_GPIO, BUTTON3_GPIO, BUTTON4_GPIO, BUTTON5_GPIO,
-    BUTTON6_GPIO, BUTTON7_GPIO, BUTTON8_GPIO, JOYSTICK_L,   JOYSTICK_R,
-    JOYSTICK_U,   JOYSTICK_D,   BUTTON_SEL,   BUTTON_START, BUTTON_PAIR,
-    SCREEN_SCL,   SCREEN_SDA,   BATTERY_LIFE};
 /* Library function declarations */
 void ble_store_config_init(void);
 
@@ -71,34 +18,8 @@ static void on_stack_sync(void);
 static void nimble_host_config_init(void);
 static void nimble_host_task(void *param);
 
+static volatile bool ble_ready = false;
 int get_button_state(int GPIO);
-
-// bool wasPressed = false;
-// bool debounced_state = true;
-// bool logical_pressed = 0;
-// int64_t last_change_time = 0;
-// // int get_button_state(int GPIO) {
-// //
-// //   bool raw = gpio_get_level(GPIO);
-// //
-// //   int64_t now = esp_timer_get_time();
-// //
-// //   if (raw != debounced_state && (now - last_change_time) > DEBOUNCE_US) {
-// //     debounced_state = raw;
-// //     last_change_time = now;
-// //
-// //     if (debounced_state == 0 && !logical_pressed) {
-// //       logical_pressed = 1;
-// //     }
-// //
-// //     else if (debounced_state == 1 && logical_pressed) {
-// //       logical_pressed = 0;
-// //     }
-// //   }
-// //
-//   return logical_pressed;
-// }
-
 // pull down reads 0 when not pressed
 
 /* Private functions */
@@ -115,6 +36,7 @@ static void on_stack_reset(int reason) {
 static void on_stack_sync(void) {
   /* On stack sync, do advertising initialization */
   adv_init();
+  ble_ready = true;
 }
 
 static void nimble_host_config_init(void) {
@@ -139,39 +61,22 @@ static void nimble_host_task(void *param) {
   vTaskDelete(NULL);
 }
 
+static controller_input_t input;
+
 static void controller_task(void *param) {
-  /* Task entry log */
   ESP_LOGI(TAG, "Controller Task has been started!");
 
-  /* Loop forever */
   while (1) {
+    uint32_t now_ms = esp_timer_get_time() / 1000;
 
-    send_button_state_notification();
-    controller_state_t st = read_all_buttons();
+    controller_input_update(&input, now_ms);
+    controller_state_t st = controller_input_get_state(&input);
 
-    ESP_LOGI("BTN",
-             "B:%d%d%d%d %d%d%d%d  J:%d%d%d%d  SYS:%d %d %d  I2C:%d %d  BAT:%d",
-             st.b1, st.b2, st.b3, st.b4, st.b5, st.b6, st.b7, st.b8, st.joy_l,
-             st.joy_r, st.joy_u, st.joy_d, st.select, st.start, st.pair, st.scl,
-             st.sda, st.battery);
+    if (ble_ready) {
+      send_button_state_notification(&st);
+    }
 
-    vTaskDelay(HEART_RATE_TASK_PERIOD);
-  }
-
-  /* Clean up at exit */
-  vTaskDelete(NULL);
-}
-
-static void configure_gpio(void) {
-
-  for (int i = 0; i < sizeof(INPUT_PINS) / sizeof(INPUT_PINS[0]); ++i) {
-    gpio_config_t io_conf = {.pin_bit_mask = (1ULL << INPUT_PINS[i]),
-                             .mode = GPIO_MODE_INPUT,
-                             .pull_up_en = GPIO_PULLUP_ENABLE,
-                             .pull_down_en = GPIO_PULLDOWN_DISABLE,
-                             .intr_type = GPIO_INTR_DISABLE};
-
-    gpio_config(&io_conf);
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
 
@@ -182,7 +87,27 @@ void app_main(void) {
 
   /* LED initialization */
   // led_init();
-  configure_gpio();
+
+  controller_input_init(&input);
+
+  controller_input_add_button(&input, BUTTON1_GPIO, true, 20, 800);
+  controller_input_add_button(&input, BUTTON2_GPIO, true, 20, 800);
+  controller_input_add_button(&input, BUTTON3_GPIO, true, 20, 800);
+  controller_input_add_button(&input, BUTTON4_GPIO, true, 20, 800);
+  controller_input_add_button(&input, BUTTON5_GPIO, true, 20, 800);
+  controller_input_add_button(&input, BUTTON6_GPIO, true, 20, 800);
+  controller_input_add_button(&input, BUTTON7_GPIO, true, 20, 800);
+  controller_input_add_button(&input, BUTTON8_GPIO, true, 20, 800);
+
+  controller_input_add_button(&input, JOYSTICK_L, true, 15, 0);
+  controller_input_add_button(&input, JOYSTICK_R, true, 15, 0);
+  controller_input_add_button(&input, JOYSTICK_U, true, 15, 0);
+  controller_input_add_button(&input, JOYSTICK_D, true, 15, 0);
+
+  controller_input_add_button(&input, BUTTON_SEL, true, 30, 1500);
+  controller_input_add_button(&input, BUTTON_START, true, 30, 1500);
+  controller_input_add_button(&input, BUTTON_PAIR, true, 50, 3000);
+
   ESP_ERROR_CHECK(display_init());
   display_set_state(DISPLAY_STATE_BOOT);
 
