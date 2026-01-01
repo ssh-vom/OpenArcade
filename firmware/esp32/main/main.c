@@ -36,6 +36,7 @@ static void on_stack_reset(int reason) {
 static void on_stack_sync(void) {
   /* On stack sync, do advertising initialization */
   adv_init();
+  ESP_LOGI(TAG, "Stack synced, ready for connections");
   ble_ready = true;
 }
 
@@ -76,7 +77,7 @@ static void controller_task(void *param) {
       send_button_state_notification(&st);
     }
 
-    vTaskDelay(pdMS_TO_TICKS(1));
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
 
@@ -151,7 +152,7 @@ void app_main(void) {
   nimble_host_config_init();
 
   /* Start NimBLE host task thread and return */
-  xTaskCreate(nimble_host_task, "NimBLE Host", 4 * 1024, NULL, 5, NULL);
+  xTaskCreate(nimble_host_task, "NimBLE Host", 4 * 1024, NULL, 6, NULL);
   xTaskCreate(controller_task, "Controller State", 4 * 1024, NULL, 5, NULL);
   return;
 }

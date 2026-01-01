@@ -4,21 +4,20 @@
 #include "gatt_svc.h"
 #include "common.h"
 #include "host/ble_gatt.h"
+#include "host/ble_hs.h"
 #include "nimble/nimble_port.h"
 #include <string.h>
 
 /* ================================
- * UUIDs
+ * UUIDs (little endian)
  * ================================ */
-
 static const ble_uuid128_t openarcade_svc_uuid =
-    BLE_UUID128_INIT(0x6f, 0x70, 0x65, 0x6e, 0x61, 0x72, 0x63, 0x61, 0x64, 0x65,
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x01);
+    BLE_UUID128_INIT(0x01, 0x00, 0x00, 0x00, 0x00, 0x65, 0x64, 0x61, 0x63, 0x72,
+                     0x61, 0x6e, 0x65, 0x70, 0x6f, 0x66);
 
 static const ble_uuid128_t controller_state_chr_uuid =
-    BLE_UUID128_INIT(0x6f, 0x70, 0x65, 0x6e, 0x61, 0x72, 0x63, 0x61, 0x64, 0x65,
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x02);
-
+    BLE_UUID128_INIT(0x02, 0x00, 0x00, 0x00, 0x00, 0x65, 0x64, 0x61, 0x63, 0x72,
+                     0x61, 0x6e, 0x65, 0x70, 0x6f, 0x66);
 /* ================================
  * State
  * ================================ */
@@ -30,6 +29,18 @@ static bool notify_enabled = false;
 /* ================================
  * GATT Definition
  * ================================ */
+static int controller_state_access_cb(uint16_t conn_handle,
+                                      uint16_t attr_handle,
+                                      struct ble_gatt_access_ctxt *ctxt,
+                                      void *arg) {
+  if (ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR) {
+    controller_state_t zero = {0};
+    return os_mbuf_append(ctxt->om, &zero, sizeof(zero)) == 0
+               ? 0
+               : BLE_ATT_ERR_INSUFFICIENT_RES;
+  }
+  return 0;
+}
 
 static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
     {
@@ -39,8 +50,8 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
             (struct ble_gatt_chr_def[]){
                 {
                     .uuid = &controller_state_chr_uuid.u,
-                    .access_cb = NULL,
-                    .flags = BLE_GATT_CHR_F_NOTIFY | BLE_GATT_CHR_F_READ,
+                    .access_cb = controller_state_access_cb,
+                    .flags = BLE_GATT_CHR_F_NOTIFY,
                     .val_handle = &controller_state_chr_handle,
                 },
                 {0}},
@@ -65,7 +76,11 @@ int gatt_svc_init(void) {
 }
 
 void send_button_state_notification(const controller_state_t *state) {
-  if (!notify_enabled || conn_handle == BLE_HS_CONN_HANDLE_NONE) {
+  if (!notify_enabled || conn_handle == BLE_HS_CONN_HANDLE_NONE)
+    return;
+
+  if (controller_state_chr_handle == 0) {
+    ESP_LOGW(TAG, "NOTIFICATION SKIPPED: HANDLE NOT YET REGISTERED");
     return;
   }
 
@@ -91,12 +106,8 @@ void gatt_svr_subscribe_cb(struct ble_gap_event *event) {
 
   if (event->subscribe.attr_handle == controller_state_chr_handle) {
     notify_enabled = event->subscribe.cur_notify;
-
-    if (notify_enabled) {
-      conn_handle = event->subscribe.conn_handle;
-    } else {
-      conn_handle = BLE_HS_CONN_HANDLE_NONE;
-    }
+    conn_handle =
+        notify_enabled ? event->subscribe.conn_handle : BLE_HS_CONN_HANDLE_NONE;
 
     ESP_LOGI(TAG, "Controller notify %s",
              notify_enabled ? "ENABLED" : "DISABLED");
