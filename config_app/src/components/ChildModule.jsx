@@ -3,7 +3,7 @@ import { useRef, memo, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleClick, isEditable = true, position: propPosition = [-1, 0, 0], viewMode = '3d' }) {
+const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleClick, isEditable = true, position: propPosition = [-1, 0, 0], viewMode = '3d', isActive = true }) {
     const gltf = useGLTF(path);
     const groupRef = useRef();
     const glowRef = useRef();
@@ -12,19 +12,28 @@ const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleCli
 
     const buttons = useMemo(() => {
         const data = [];
+        const materialCache = new Map();
+        
         gltf.scene.traverse((child) => {
             if (child.isMesh) {
                 const name = child.name.toLowerCase();
                 if (name.includes('button') || name.includes('btn')) {
-                    const originalColor = child.material?.color?.clone() || new THREE.Color(0xffffff);
+                    // Cache materials to avoid cloning with null check
+                    if (!child.material) return;
+                    let material = materialCache.get(child.material.uuid);
+                    if (!material) {
+                        material = child.material.clone();
+                        materialCache.set(child.material.uuid, material);
+                    }
+                    
                     data.push({
                         name: child.name,
                         geometry: child.geometry,
-                        material: child.material.clone(),
+                        material,
                         position: child.position.clone(),
                         rotation: child.rotation.clone(),
                         scale: child.scale.clone(),
-                        originalColor
+                        originalColor: material.color.clone()
                     });
                     child.visible = false;
                 }
@@ -33,27 +42,29 @@ const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleCli
         return data;
     }, [gltf]);
 
-    const frameCountRef = useRef(0);
+const frameCountRef = useRef(0);
+    const lastAnimationUpdate = useRef(0);
 
     useFrame((state) => {
+        // Skip frames completely for inactive modules or non-editable mode
+        if (!isActive || !isEditable) return;
+        
         frameCountRef.current++;
-        if (frameCountRef.current % 2 !== 0) return; // Throttle to every other frame
+        
+        // EXTREME throttling - only animate every 30th frame (2 FPS at 60Hz)
+        if (frameCountRef.current % 30 !== 0) return;
+        
+        const now = performance.now();
+        // Limit animation updates to 2Hz max (every 500ms)
+        if (now - lastAnimationUpdate.current < 500) return;
+        lastAnimationUpdate.current = now;
 
-        if (groupRef.current) {
-            if (viewMode === '3d') {
-                const targetScale = isEditable ? 10.5 : 7.5;
-                const currentScale = groupRef.current.scale.x;
-                const smoothedScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.08);
-                groupRef.current.scale.setScalar(smoothedScale);
-
-                groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.03 + (isEditable ? 0.12 : 0);
-
-                if (glowRef.current && isEditable) {
-                    glowRef.current.material.opacity = 0.15 + Math.sin(state.clock.elapsedTime * 2) * 0.05;
-                }
-            } else if (viewMode === '2d') {
-                // Rotate for "video" effect
-                groupRef.current.rotation.y += 0.01;
+        if (groupRef.current && viewMode === '3d') {
+            const time = state.clock.elapsedTime;
+            groupRef.current.position.y = Math.sin(time * 0.2) * 0.005 + 0.05;
+            
+            if (glowRef.current) {
+                glowRef.current.material.opacity = 0.15 + Math.sin(time * 0.5) * 0.02;
             }
         }
     });
@@ -86,15 +97,15 @@ const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleCli
         <group 
             ref={groupRef} 
             position={propPosition} 
-            scale={0}
+            scale={isEditable ? 4.5 : 3.5}
         onClick={handleModuleClick}
         >
             {/* Selection indicator ring - positioned at base of model */}
             {isEditable && (
                 <>
                     {/* Outer pulsing glow ring */}
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]} ref={glowRef}>
-                        <ringGeometry args={[0.55, 0.85, 64]} />
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} ref={glowRef}>
+                        <ringGeometry args={[0.25, 0.4, 32]} />
                         <meshBasicMaterial 
                             color="#3b82f6"
                             transparent
@@ -103,8 +114,8 @@ const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleCli
                         />
                     </mesh>
                     {/* Inner sharp ring */}
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-                        <ringGeometry args={[0.5, 0.52, 64]} />
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
+                        <ringGeometry args={[0.22, 0.24, 32]} />
                         <meshBasicMaterial 
                             color="#3b82f6"
                             transparent
@@ -112,16 +123,11 @@ const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleCli
                             side={THREE.DoubleSide}
                         />
                     </mesh>
-                    {/* Upward triangle pointer */}
-                    <mesh position={[0, -0.2, 0]}>
-                        <coneGeometry args={[0.06, 0.25, 3]} />
-                        <meshBasicMaterial color="#3b82f6" transparent opacity={0.8} />
-                    </mesh>
                 </>
             )}
             
             {gltf.scene && <primitive object={gltf.scene} />}
-            {isEditable && buttons.map((button, index) => (
+            {isEditable && isActive && buttons.map((button, index) => (
                 <mesh
                     key={index}
                     geometry={button.geometry}
@@ -140,5 +146,16 @@ const ChildModule = memo(function ChildModule({ path, onButtonClick, onModuleCli
 
 ChildModule.displayName = 'ChildModule';
 
-export { ChildModule };
+// Add custom comparison for memo
+const MemoizedChildModule = memo(ChildModule, (prevProps, nextProps) => {
+    return (
+        prevProps.path === nextProps.path &&
+        prevProps.isEditable === nextProps.isEditable &&
+        prevProps.viewMode === nextProps.viewMode &&
+        prevProps.isActive === nextProps.isActive &&
+        JSON.stringify(prevProps.position) === JSON.stringify(nextProps.position)
+    );
+});
+
+export { ChildModule, MemoizedChildModule };
 

@@ -15,9 +15,20 @@ const CameraController = memo(function CameraController({
     const startTargetRef = useRef(new THREE.Vector3());
     const orbitControlsRef = useRef(null);
     const [isAnimating, setIsAnimating] = useState(false);
+    const lastAnimationStart = useRef(0);
 
     useEffect(() => {
-        if (animationStart > 0) {
+        // Only trigger if this is a new animation request
+        if (animationStart > 0 && animationStart !== lastAnimationStart.current) {
+            lastAnimationStart.current = animationStart;
+            
+            console.log('Animation triggered!', {
+                from: camera.position.clone(),
+                to: cameraPositionRef.current,
+                targetFrom: orbitControlsRef.current?.target?.clone(),
+                targetTo: targetRef.current
+            });
+            
             setIsAnimating(true);
             startPositionRef.current.copy(camera.position);
             if (orbitControlsRef.current) {
@@ -25,7 +36,7 @@ const CameraController = memo(function CameraController({
             }
             startTimeRef.current = performance.now();
         }
-    }, [animationStart]);
+    }, [animationStart, camera, cameraPositionRef, targetRef]);
 
     useFrame(() => {
         if (!isAnimating) return;

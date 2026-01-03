@@ -18,10 +18,12 @@ export function useCameraController({
             targetRef.current.copy(targetPosition);
             cameraPositionRef.current.set(
                 targetPosition.x,
-                targetPosition.y + 2,
-                targetPosition.z + 5
+                targetPosition.y + 1.5,
+                targetPosition.z + 3
             );
-            setAnimationStart(prev => prev + 1);
+            
+            // Always trigger animation with timestamp for uniqueness
+            setAnimationStart(Date.now());
         }
     }, [currentModuleIndex, modules, enabled]);
 

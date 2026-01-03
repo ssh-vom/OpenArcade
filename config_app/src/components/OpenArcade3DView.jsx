@@ -1,22 +1,24 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ChildModule } from "./ChildModule.jsx";
+import { ChildModule, MemoizedChildModule } from "./ChildModule.jsx";
 import { CameraController } from "./CameraController.jsx";
 import { useCameraController } from "../hooks/useCameraController.jsx";
-import { useState, useEffect, memo, useRef } from "react";
+import { useState, useEffect, memo, useRef, useCallback } from "react";
 import { useGLTF, Bounds } from "@react-three/drei";
 import ButtonMappingModal from "./ButtonMappingModal.jsx";
 import ButtonMappingsPanel from "./ButtonMappingsPanel.jsx";
 import ControllerHUD from "./ControllerHUD.jsx";
+import * as THREE from "three";
 
-// Preload GLBs
+// Preload GLBs with texture generation
 useGLTF.preload("/OpenArcadeAssy_v2.glb");
 useGLTF.preload("/OpenArcadeAssyJoystick_v1.glb");
 
-// FPS Monitor Component
+// FPS Monitor Component - optimized
 function FPSMonitor() {
     const fpsRef = useRef(0);
     const frameCountRef = useRef(0);
     const lastTimeRef = useRef(0);
+    const lastLogRef = useRef(0);
 
     useFrame(() => {
         frameCountRef.current++;
@@ -25,7 +27,12 @@ function FPSMonitor() {
             fpsRef.current = frameCountRef.current;
             frameCountRef.current = 0;
             lastTimeRef.current = now;
-            if (fpsRef.current < 30) console.warn(`Low FPS: ${fpsRef.current}`);
+
+            // Only log every 5 seconds to avoid console spam
+            if (now - lastLogRef.current >= 5000 && fpsRef.current < 30) {
+                console.warn(`Low FPS: ${fpsRef.current}`);
+                lastLogRef.current = now;
+            }
         }
     });
 
@@ -33,16 +40,24 @@ function FPSMonitor() {
 }
 
 // Camera Setter Component
-function CameraSetter({ viewMode }) {
+function CameraSetter({ viewMode, currentModulePosition }) {
     const { camera } = useThree();
 
     useEffect(() => {
         if (viewMode === '2d') {
+            // Position camera above the current module in 2D mode
+            camera.position.set(currentModulePosition[0], 5, currentModulePosition[2]);
             camera.rotation.set(-Math.PI / 2, 0, 0);
+            camera.zoom = 5;
+            camera.updateProjectionMatrix();
         } else {
+            // Reset to 3D view
+            camera.position.set(0, 1.5, 3);
             camera.rotation.set(0, 0, 0);
+            camera.zoom = 1;
+            camera.updateProjectionMatrix();
         }
-    }, [viewMode, camera]);
+    }, [viewMode, currentModulePosition, camera]);
 
     return null;
 }
@@ -50,7 +65,7 @@ function CameraSetter({ viewMode }) {
 const OpenArcade3DView = memo(function OpenArcade3DView() {
     const [selectedButton, setSelectedButton] = useState(null);
     const [modules, setModules] = useState([
-        { id: 1, name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-3, 0, 0] },
+        { id: 1, name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
         { id: 2, name: "Module B", deviceId: "OA-002", path: "/OpenArcadeAssyJoystick_v1.glb", mappings: {}, position: [0, 0, 0] },
     ]);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
@@ -62,18 +77,31 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Preload textures to eliminate WebGL warnings
+    useEffect(() => {
+        // Force texture generation to prevent lazy initialization warnings
+        const dummyTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+        dummyTexture.generateMipmaps = false;
+        dummyTexture.needsUpdate = true;
+
+        // Simple texture preloading using drei's preloader
+        modules.forEach(module => {
+            useGLTF.preload(module.path);
+        });
+    }, []);
+
     const currentModule = modules[currentModuleIndex];
     const currentMappings = currentModule.mappings;
     const cameraControl = useCameraController({ currentModuleIndex, modules, enabled: viewMode === '3d' });
 
-    const handleButtonClick = (buttonName, mesh) => {
+    const handleButtonClick = useCallback((buttonName, mesh) => {
         setSelectedButton({ name: buttonName, mesh, action: currentMappings[buttonName] || "" });
-    };
+    }, [currentMappings]);
 
-    const handleModuleClick = (moduleIndex) => {
+    const handleModuleClick = useCallback((moduleIndex) => {
         setCurrentModuleIndex(moduleIndex);
         setSelectedButton(null);
-    };
+    }, []);
 
     const toggleViewMode = () => {
         setViewMode(viewMode === '3d' ? '2d' : '3d');
@@ -131,7 +159,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
                 <div style={{ flex: 1, position: "relative", animation: "fadeIn 0.8s ease-out 0.2s both" }}>
                     <Canvas
                         orthographic={viewMode === '2d'}
-                        camera={viewMode === '3d' ? { position: [0, 2, 5], fov: 45 } : { position: [0, 10, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 50 }}
+                        camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
                         style={{ background: "#0a0a0a", width: "100%", height: "100%" }}
                     >
 
@@ -150,27 +178,28 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
                             position={[-6, 8, 4]}
                             intensity={1}
                         />
-                        <Bounds clip observe margin={1}>
-                            <FPSMonitor />
-                            <CameraSetter viewMode={viewMode} />
+                        <Bounds clip observe={false} margin={1}>
+                            {/* <FPSMonitor /> */}
+                            <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
                             {modules.map((module, index) => (
-                                <ChildModule
+                                <MemoizedChildModule
                                     path={module.path}
                                     onButtonClick={viewMode === '3d' ? handleButtonClick : null}
                                     onModuleClick={() => handleModuleClick(index)}
                                     isEditable={viewMode === '3d' && index === currentModuleIndex}
                                     position={module.position}
                                     viewMode={viewMode}
+                                    isActive={index === currentModuleIndex}
                                     key={module.id}
                                 />
                             ))}
                         </Bounds>
                         {viewMode === '3d' && (
-                        <CameraController
-                            targetRef={cameraControl.targetRef}
-                            cameraPositionRef={cameraControl.cameraPositionRef}
-                            animationStart={cameraControl.animationStart}
-                        />
+                            <CameraController
+                                targetRef={cameraControl.targetRef}
+                                cameraPositionRef={cameraControl.cameraPositionRef}
+                                animationStart={cameraControl.animationStart}
+                            />
                         )}
                     </Canvas>
                 </div>
