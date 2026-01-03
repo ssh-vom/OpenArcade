@@ -3,12 +3,14 @@ import { useRef, useEffect, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-export function ChildModule({ path, onButtonClick }) {
+export function ChildModule({ path, onButtonClick, onModuleClick, isEditable = true, position: propPosition = [-1, 0, 0] }) {
     const gltf = useGLTF(path);
     const groupRef = useRef();
+    const glowRef = useRef();
     const [buttons, setButtons] = useState([]);
     const [modelReady, setModelReady] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    const [hovered, setHovered] = useState(false);
 
     useEffect(() => {
         if (modelReady && !loaded) {
@@ -42,25 +44,35 @@ export function ChildModule({ path, onButtonClick }) {
 
     useFrame((state) => {
         if (groupRef.current) {
-            groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.05;
-            if (!loaded && modelReady) {
-                const progress = Math.min((state.clock.elapsedTime - 0.3) / 0.8, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                groupRef.current.scale.setScalar(10 * eased);
-                if (progress >= 1) setLoaded(true);
+            const targetScale = isEditable ? 10.5 : 7.5;
+            const currentScale = groupRef.current.scale.x;
+            const smoothedScale = THREE.MathUtils.lerp(currentScale, targetScale, 0.08);
+            groupRef.current.scale.setScalar(smoothedScale);
+
+            groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.03 + (isEditable ? 0.12 : 0);
+
+            if (glowRef.current && isEditable) {
+                glowRef.current.material.opacity = 0.15 + Math.sin(state.clock.elapsedTime * 2) * 0.05;
             }
         }
     });
 
+    const handleModuleClick = (e) => {
+        e.stopPropagation();
+        if (!isEditable && onModuleClick) {
+            onModuleClick();
+        }
+    };
+
     const handleClick = (e, button) => {
         e.stopPropagation();
-        if (onButtonClick) {
+        if (isEditable && onButtonClick) {
             onButtonClick(button.name, button);
         }
     };
 
     const handleHover = (button, isHovered) => {
-        if (button.material?.color) {
+        if (isEditable && button.material?.color) {
             button.material.color.copy(
                 isHovered 
                     ? new THREE.Color(0x4ade80)
@@ -72,11 +84,45 @@ export function ChildModule({ path, onButtonClick }) {
     return (
         <group 
             ref={groupRef} 
-            position={[-1, 0, 0]} 
-            scale={loaded ? 10 : 0}
+            position={propPosition} 
+            scale={0}
+            onClick={handleModuleClick}
+            onPointerOver={() => setHovered(true)}
+            onPointerOut={() => setHovered(false)}
         >
-            {modelReady && <primitive object={gltf.scene} />}
-            {buttons.map((button, index) => (
+            {/* Selection indicator ring - positioned at base of model */}
+            {isEditable && (
+                <>
+                    {/* Outer pulsing glow ring */}
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]} ref={glowRef}>
+                        <ringGeometry args={[0.55, 0.85, 64]} />
+                        <meshBasicMaterial 
+                            color="#3b82f6"
+                            transparent
+                            opacity={0.2}
+                            side={THREE.DoubleSide}
+                        />
+                    </mesh>
+                    {/* Inner sharp ring */}
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
+                        <ringGeometry args={[0.5, 0.52, 64]} />
+                        <meshBasicMaterial 
+                            color="#3b82f6"
+                            transparent
+                            opacity={0.9}
+                            side={THREE.DoubleSide}
+                        />
+                    </mesh>
+                    {/* Upward triangle pointer */}
+                    <mesh position={[0, -0.2, 0]}>
+                        <coneGeometry args={[0.06, 0.25, 3]} />
+                        <meshBasicMaterial color="#3b82f6" transparent opacity={0.8} />
+                    </mesh>
+                </>
+            )}
+            
+            {modelReady && <primitive object={gltf.scene.clone()} />}
+            {isEditable && buttons.map((button, index) => (
                 <mesh
                     key={index}
                     geometry={button.geometry}

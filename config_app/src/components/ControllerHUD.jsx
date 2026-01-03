@@ -156,6 +156,16 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                 }}>
                                     {module.mappedButtons || 0} mapped
                                 </div>
+                                {module.deviceId && (
+                                    <div style={{
+                                        color: "#404040",
+                                        fontSize: "10px",
+                                        fontFamily: "monospace",
+                                        marginTop: "2px",
+                                    }}>
+                                        {module.deviceId}
+                                    </div>
+                                )}
                             </div>
                             {currentModule === index && (
                                 <div style={{

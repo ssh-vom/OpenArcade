@@ -1,6 +1,7 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
 import { ChildModule } from "./ChildModule.jsx";
+import { CameraController } from "./CameraController.jsx";
+import { useCameraController } from "../hooks/useCameraController.jsx";
 import { useState, useEffect } from "react";
 import ButtonMappingModal from "./ButtonMappingModal.jsx";
 import ButtonMappingsPanel from "./ButtonMappingsPanel.jsx";
@@ -9,9 +10,9 @@ import ControllerHUD from "./ControllerHUD.jsx";
 export function OpenArcade3DView() {
     const [selectedButton, setSelectedButton] = useState(null);
     const [modules, setModules] = useState([
-        { id: 1, name: "Module A", path: "/OAColouredButtons.glb", mappings: {} },
-        { id: 2, name: "Module B", path: "/OAColouredButtons.glb", mappings: {} },
-        { id: 3, name: "Module C", path: "/OAColouredButtons.glb", mappings: {} },
+        { id: 1, name: "Module A", deviceId: "OA-001", path: "/OAColouredButtons.glb", mappings: {}, position: [-3, 0, 0] },
+        { id: 2, name: "Module B", deviceId: "OA-002", path: "/OAColouredButtons.glb", mappings: {}, position: [0, 0, 0] },
+        { id: 3, name: "Module C", deviceId: "OA-003", path: "/OAColouredButtons.glb", mappings: {}, position: [3, 0, 0] },
     ]);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [loaded, setLoaded] = useState(false);
@@ -23,9 +24,15 @@ export function OpenArcade3DView() {
 
     const currentModule = modules[currentModuleIndex];
     const currentMappings = currentModule.mappings;
+    const cameraControl = useCameraController({ currentModuleIndex, modules, enabled: true });
 
     const handleButtonClick = (buttonName, mesh) => {
         setSelectedButton({ name: buttonName, mesh, action: currentMappings[buttonName] || "" });
+    };
+
+    const handleModuleClick = (moduleIndex) => {
+        setCurrentModuleIndex(moduleIndex);
+        setSelectedButton(null);
     };
 
     const saveMapping = (buttonName, action) => {
@@ -106,12 +113,21 @@ export function OpenArcade3DView() {
                         position={[0, 5, -6]}
                         intensity={1}
                     />
-                    <ChildModule 
-                        path={currentModule.path} 
-                        onButtonClick={handleButtonClick} 
-                        key={`module-${currentModule.id}`}
+                    {modules.map((module, index) => (
+                        <ChildModule 
+                            path={module.path} 
+                            onButtonClick={handleButtonClick}
+                            onModuleClick={() => handleModuleClick(index)}
+                            isEditable={index === currentModuleIndex}
+                            position={module.position}
+                            key={module.id}
+                        />
+                    ))}
+                    <CameraController
+                        targetRef={cameraControl.targetRef}
+                        cameraPositionRef={cameraControl.cameraPositionRef}
+                        isAnimatingRef={cameraControl.isAnimatingRef}
                     />
-                    <OrbitControls />
                 </Canvas>
             </div>
 
