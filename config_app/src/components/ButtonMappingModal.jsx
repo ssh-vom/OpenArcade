@@ -1,6 +1,8 @@
+import { useState } from "react";
+
 // Using a more integrated dark theme look for the Modal
 export default function ButtonMappingModal({ button, onSave, onCancel, onClear }) {
-    const [action, setAction] = React.useState(button.action || "");
+    const [action, setAction] = useState(button.action || "");
 
     const handleSave = () => {
         onSave(button.name, action);

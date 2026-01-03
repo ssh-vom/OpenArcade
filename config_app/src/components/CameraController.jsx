@@ -1,12 +1,12 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, memo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
-export function CameraController({
+const CameraController = memo(function CameraController({
     targetRef,
     cameraPositionRef,
-    isAnimatingRef,
+    animationStart,
     duration = 0.5
 }) {
     const { camera } = useThree();
@@ -14,25 +14,27 @@ export function CameraController({
     const startPositionRef = useRef(new THREE.Vector3());
     const startTargetRef = useRef(new THREE.Vector3());
     const orbitControlsRef = useRef(null);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     useEffect(() => {
-        if (isAnimatingRef.current) {
+        if (animationStart > 0) {
+            setIsAnimating(true);
             startPositionRef.current.copy(camera.position);
             if (orbitControlsRef.current) {
                 startTargetRef.current.copy(orbitControlsRef.current.target);
             }
             startTimeRef.current = performance.now();
         }
-    }, [isAnimatingRef.current]);
+    }, [animationStart]);
 
     useFrame(() => {
-        if (!isAnimatingRef.current) return;
+        if (!isAnimating) return;
 
         const elapsed = performance.now() - startTimeRef.current;
         const progress = Math.min(elapsed / (duration * 1000), 1);
-        
+
         if (progress >= 1) {
-            isAnimatingRef.current = false;
+            setIsAnimating(false);
             if (orbitControlsRef.current) {
                 orbitControlsRef.current.target.copy(targetRef.current);
             }
@@ -60,6 +62,10 @@ export function CameraController({
     return <OrbitControls 
         ref={orbitControlsRef}
         makeDefault
-        enabled={!isAnimatingRef.current}
+        enabled={!isAnimating}
     />;
-}
+});
+
+CameraController.displayName = 'CameraController';
+
+export { CameraController };
