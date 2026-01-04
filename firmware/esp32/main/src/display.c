@@ -19,13 +19,21 @@ static uint8_t battery_pct = 0;
 
 /* ---------- Internal helpers ---------- */
 
-static void display_clear(void) { ssd1306_clear_display(screen, false); }
+static void display_clear(void) {
+  if (!screen)
+    return;
+  ssd1306_clear_display(screen, false);
+}
 
 static void display_draw_header(const char *title) {
+  if (!screen)
+    return;
   ssd1306_display_text(screen, 0, title, false);
 }
 
 static void display_draw_battery(void) {
+  if (!screen)
+    return;
   char buf[16];
   snprintf(buf, sizeof(buf), "BAT %u%%", battery_pct);
   ssd1306_display_text(screen, 7, buf, false);
@@ -47,7 +55,12 @@ esp_err_t display_init(void) {
   /* SSD1306 config */
   ssd1306_config_t cfg = I2C_SSD1306_128x64_CONFIG_DEFAULT;
 
-  ESP_ERROR_CHECK(ssd1306_init(i2c_bus, &cfg, &screen));
+  esp_err_t err = ssd1306_init(i2c_bus, &cfg, &screen);
+  if (err != ESP_OK) {
+    ESP_LOGW(TAG, "SSD1306 not found, running headless");
+    screen = NULL;
+    return ESP_OK;
+  }
 
   display_clear();
   display_set_state(DISPLAY_STATE_BOOT);
@@ -57,6 +70,9 @@ esp_err_t display_init(void) {
 }
 
 void display_set_state(display_state_t state) {
+  if (!screen)
+    return;
+
   if (state == current_state) {
     return; // no-op
   }
