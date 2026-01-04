@@ -17,9 +17,9 @@ Wire the modules together or use them independently. Arrange them however's comf
 
 ```
 ┌─────────────┐     BLE      ┌──────────────┐     USB/Bluetooth     ┌──────────┐
-│  Child      │ ◄──────────► │  Parent Hub  │ ◄─────────────────────► │  Game    │
-│  Module(s)  │  (ESP32)     │  (RPi Zero)  │  (HID emulation)       │  Console │
-└─────────────┘              └──────────────┘                      └──────────┘
+│  Child      │ ◄──────────► │  Parent Hub  │ ◄───────────────────► │  Game    │
+│  Module(s)  │  (ESP32)     │  (RPi Zero)  │  (HID emulation)      │  Console │
+└─────────────┘              └──────────────┘                       └──────────┘
 ```
 
 Each child module (ESP32) broadcasts its inputs over Bluetooth. The parent hub (Raspberry Pi Zero 2 W) subscribes to all modules, aggregates the inputs, and presents itself as a standard game controller to your computer or console.
