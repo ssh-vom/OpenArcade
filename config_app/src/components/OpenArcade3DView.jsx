@@ -2,8 +2,8 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { ChildModule, MemoizedChildModule } from "./ChildModule.jsx";
 import { CameraController } from "./CameraController.jsx";
 import { useCameraController } from "../hooks/useCameraController.jsx";
-import { useState, useEffect, memo, useRef, useCallback } from "react";
-import { useGLTF, Bounds } from "@react-three/drei";
+import { useState, useEffect, memo, useRef, useCallback, useMemo } from "react";
+import { useGLTF, Bounds, Grid, Float } from "@react-three/drei";
 import ButtonMappingModal from "./ButtonMappingModal.jsx";
 import ButtonMappingsPanel from "./ButtonMappingsPanel.jsx";
 import ControllerHUD from "./ControllerHUD.jsx";
@@ -60,6 +60,58 @@ function CameraSetter({ viewMode, currentModulePosition }) {
     }, [viewMode, currentModulePosition, camera]);
 
     return null;
+}
+
+// Minimal Particle System Component
+function Particles() {
+    const particlesRef = useRef();
+    const count = 25;
+
+    const positions = useMemo(() => {
+        const pos = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            pos[i * 3] = (Math.random() - 0.5) * 20;
+            pos[i * 3 + 1] = Math.random() * 10 - 2;
+            pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+        }
+        return pos;
+    }, []);
+
+    useFrame((state) => {
+        if (particlesRef.current) {
+            const positions = particlesRef.current.geometry.attributes.position.array;
+            const time = state.clock.elapsedTime;
+
+            for (let i = 0; i < count; i++) {
+                const i3 = i * 3;
+                positions[i3 + 1] += Math.sin(time * 0.3 + i) * 0.002;
+                positions[i3] += Math.cos(time * 0.2 + i) * 0.001;
+            }
+
+            particlesRef.current.geometry.attributes.position.needsUpdate = true;
+        }
+    });
+
+    return (
+        <points ref={particlesRef}>
+            <bufferGeometry>
+                <bufferAttribute
+                    attach="attributes-position"
+                    count={count}
+                    array={positions}
+                    itemSize={3}
+                />
+            </bufferGeometry>
+            <pointsMaterial
+                size={0.05}
+                color="#5a5a7a"
+                transparent
+                opacity={0.6}
+                sizeAttenuation
+                blending={THREE.AdditiveBlending}
+            />
+        </points>
+    );
 }
 
 const OpenArcade3DView = memo(function OpenArcade3DView() {
@@ -160,24 +212,100 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
                     <Canvas
                         orthographic={viewMode === '2d'}
                         camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
-                        style={{ background: "#0a0a0a", width: "100%", height: "100%" }}
+                        style={{ background: "radial-gradient(circle at center, #1a1a2e 0%, #0a0a0a 100%)", width: "100%", height: "100%" }}
+                        shadows
+                        gl={{ 
+                            antialias: true,
+                            shadowMap: { 
+                                enabled: true, 
+                                type: THREE.PCFSoftShadowMap 
+                            } 
+                        }}
                     >
+                        {/* Fog for depth perception */}
+                        <fog attach="fog" args={["#0a0a0a", 8, 25]} />
 
-                        {/* --- Lights --- */}
 
-                        <ambientLight intensity={1.0} />
+                        {/* --- Enhanced Lighting System --- */}
 
-                        {/* Key Light */}
+                        {/* Ambient base light for overall illumination */}
+                        <ambientLight intensity={0.4} color="#404060" />
+
+                        {/* Key Light - warm directional with shadows */}
                         <directionalLight
-                            position={[4, 10, 6]}
-                            intensity={2}
+                            position={[5, 12, 8]}
+                            intensity={1.2}
+                            color="#fff5e6"
+                            castShadow
+                            shadow-mapSize={[2048, 2048]}
+                            shadow-camera-far={50}
+                            shadow-camera-left={-15}
+                            shadow-camera-right={15}
+                            shadow-camera-top={15}
+                            shadow-camera-bottom={-15}
+                            shadow-bias={0.0001}
+                            shadow-radius={3}
                         />
 
-                        {/* Fill Light */}
+                        {/* Fill Light - cool soft light */}
                         <directionalLight
-                            position={[-6, 8, 4]}
-                            intensity={1}
+                            position={[-8, 6, 4]}
+                            intensity={0.5}
+                            color="#e6f0ff"
                         />
+
+                        {/* Rim Light - back light for edge definition */}
+                        <directionalLight
+                            position={[0, 3, -10]}
+                            intensity={0.6}
+                            color="#f0e6ff"
+                        />
+
+                        {/* Accent Light 1 - warm highlight */}
+                        <pointLight
+                            position={[3, 4, 3]}
+                            intensity={0.4}
+                            color="#fff0e6"
+                            distance={15}
+                            decay={2}
+                        />
+
+                        {/* Accent Light 2 - cool highlight */}
+                        <pointLight
+                            position={[-4, 3, -2]}
+                            intensity={0.3}
+                            color="#e6f0ff"
+                            distance={12}
+                            decay={2}
+                        />
+
+                        {/* --- Procedural Ground Plane --- */}
+                        <mesh 
+                            rotation={[-Math.PI / 2, 0, 0]} 
+                            position={[0, -0.5, 0]} 
+                            receiveShadow
+                        >
+                            <planeGeometry args={[50, 50]} />
+                            <shadowMaterial opacity={0.4} />
+                        </mesh>
+
+                        {/* --- Tech Grid --- */}
+                        <Grid
+                            args={[50, 50]}
+                            position={[0, -0.49, 0]}
+                            cellSize={1}
+                            cellThickness={0.02}
+                            cellColor="#2a2a2a"
+                            sectionSize={5}
+                            sectionThickness={0.04}
+                            sectionColor="#3a3a3a"
+                            fadeDistance={25}
+                            fadeStrength={1}
+                        />
+
+                        {/* --- Minimal Particle System --- */}
+                        <Particles />
+
                         <Bounds clip observe={false} margin={1}>
                             {/* <FPSMonitor /> */}
                             <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
