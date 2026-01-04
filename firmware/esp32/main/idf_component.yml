@@ -1,2 +1,3 @@
 dependencies:
-  espressif/led_strip: "^2.4.1"
+  espressif/led_strip: ^2.4.1
+  k0i05/esp_ssd1306: ^1.2.7
