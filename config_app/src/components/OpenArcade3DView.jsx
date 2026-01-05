@@ -1,11 +1,14 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ChildModule, MemoizedChildModule } from "./ChildModule.jsx";
+import { MemoizedChildModule } from "./ChildModule.jsx";
 import { CameraController } from "./CameraController.jsx";
 import { useCameraController } from "../hooks/useCameraController.jsx";
 import { useState, useEffect, memo, useRef, useCallback, useMemo } from "react";
-import { useGLTF, Bounds, Grid, Float } from "@react-three/drei";
+import { useGLTF, Bounds, Grid } from "@react-three/drei";
 import ButtonMappingModal from "./ButtonMappingModal.jsx";
 import ButtonMappingsPanel from "./ButtonMappingsPanel.jsx";
+import HIDButtonMappingModal from "./HIDButtonMappingModal.jsx";
+import D2ConfigPanel from "./D2ConfigPanel.jsx";
+import DeviceStorage from "../services/DeviceStorage.js";
 import ControllerHUD from "./ControllerHUD.jsx";
 import * as THREE from "three";
 
@@ -13,31 +16,6 @@ import * as THREE from "three";
 useGLTF.preload("/OpenArcadeAssy_v2.glb");
 useGLTF.preload("/OpenArcadeAssyJoystick_v1.glb");
 
-// FPS Monitor Component - optimized
-function FPSMonitor() {
-    const fpsRef = useRef(0);
-    const frameCountRef = useRef(0);
-    const lastTimeRef = useRef(0);
-    const lastLogRef = useRef(0);
-
-    useFrame(() => {
-        frameCountRef.current++;
-        const now = performance.now();
-        if (now - lastTimeRef.current >= 1000) {
-            fpsRef.current = frameCountRef.current;
-            frameCountRef.current = 0;
-            lastTimeRef.current = now;
-
-            // Only log every 5 seconds to avoid console spam
-            if (now - lastLogRef.current >= 5000 && fpsRef.current < 30) {
-                console.warn(`Low FPS: ${fpsRef.current}`);
-                lastLogRef.current = now;
-            }
-        }
-    });
-
-    return null;
-}
 
 // Camera Setter Component
 function CameraSetter({ viewMode, currentModulePosition }) {
@@ -147,7 +125,18 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
     const cameraControl = useCameraController({ currentModuleIndex, modules, enabled: viewMode === '3d' });
 
     const handleButtonClick = useCallback((buttonName, mesh) => {
-        setSelectedButton({ name: buttonName, mesh, action: currentMappings[buttonName] || "" });
+        console.log(`handleButtonClick called: ${buttonName}, currentMappings:`, currentMappings);
+        
+        const buttonConfig = currentMappings[buttonName];
+        if (buttonConfig && typeof buttonConfig === 'object') {
+            // New HID configuration format
+            console.log('Setting HID config for button:', buttonName);
+            setSelectedButton({ name: buttonName, mesh, ...buttonConfig });
+        } else {
+            // Legacy format for backward compatibility
+            console.log('Setting legacy config for button:', buttonName);
+            setSelectedButton({ name: buttonName, mesh, action: buttonConfig || "" });
+        }
     }, [currentMappings]);
 
     const handleModuleClick = useCallback((moduleIndex) => {
@@ -159,20 +148,19 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
         setViewMode(viewMode === '3d' ? '2d' : '3d');
     };
 
-    const saveMapping = (buttonName, action) => {
-        setModules(prev => prev.map((mod, idx) =>
-            idx === currentModuleIndex
-                ? { ...mod, mappings: { ...mod.mappings, [buttonName]: action }, mappedButtons: Object.keys(mod.mappings).length + (action ? 1 : 0) }
-                : mod
-        ));
-        setSelectedButton(null);
-    };
-
-    const clearMapping = (buttonName) => {
+    const saveMapping = (buttonName, config) => {
         setModules(prev => prev.map((mod, idx) => {
             if (idx === currentModuleIndex) {
                 const newMappings = { ...mod.mappings };
-                delete newMappings[buttonName];
+                if (config && (config.type || config.input || config.action)) {
+                    // New HID configuration
+                    newMappings[buttonName] = config;
+                } else if (typeof config === 'string') {
+                    // Legacy format
+                    newMappings[buttonName] = config;
+                } else {
+                    delete newMappings[buttonName];
+                }
                 return { ...mod, mappings: newMappings, mappedButtons: Object.keys(newMappings).length };
             }
             return mod;
@@ -180,9 +168,46 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
         setSelectedButton(null);
     };
 
+    const clearMapping = (buttonName) => {
+        saveMapping(buttonName, null);
+    };
+
     const handleModuleChange = (index) => {
         setCurrentModuleIndex(index);
         setSelectedButton(null);
+    };
+
+    const clearAllMappings = () => {
+        setModules(prev => prev.map((mod, idx) => {
+            if (idx === currentModuleIndex) {
+                return { ...mod, mappings: {}, mappedButtons: 0 };
+            }
+            return mod;
+        }));
+        setSelectedButton(null);
+    };
+
+    const saveToDevice = async (moduleId) => {
+        const module = modules.find(mod => mod.id === moduleId);
+        if (module) {
+            try {
+                // Show loading state (could add toast/loading indicator here)
+                console.log('Saving configuration to device...');
+                
+                // Save to device storage simulation
+                DeviceStorage.saveModuleConfig(moduleId, module.mappings);
+                
+                // Simulate device sync
+                await DeviceStorage.syncToDevice(moduleId);
+                
+                console.log('Configuration saved successfully!');
+                // Could add success notification here
+                
+            } catch (error) {
+                console.error('Failed to save configuration:', error);
+                // Could add error notification here
+            }
+        }
     };
 
     return (
@@ -212,24 +237,29 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
                     <Canvas
                         orthographic={viewMode === '2d'}
                         camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
-                        style={{ background: "radial-gradient(circle at center, #1a1a2e 0%, #0a0a0a 100%)", width: "100%", height: "100%" }}
+                        style={{
+                            background: "radial-gradient(circle at center, #1a1a2e 0%, #0a0a0a 100%)",
+                            width: "100%",
+                            height: "100%",
+                            cursor: viewMode === '2d' ? 'crosshair' : 'grab'
+                        }}
                         shadows
-                        gl={{ 
+                        gl={{
                             antialias: true,
-                            shadowMap: { 
-                                enabled: true, 
-                                type: THREE.PCFSoftShadowMap 
-                            } 
+                            shadowMap: {
+                                enabled: true,
+                                type: THREE.PCFSoftShadowMap
+                            }
                         }}
                     >
                         {/* Fog for depth perception */}
-                        <fog attach="fog" args={["#0a0a0a", 8, 25]} />
+                        // <fog attach="fog" args={["#0a0a0a", 8, 25]} />
 
 
                         {/* --- Enhanced Lighting System --- */}
 
                         {/* Ambient base light for overall illumination */}
-                        <ambientLight intensity={0.4} color="#404060" />
+                        <ambientLight intensity={0.7} color="#404060" />
 
                         {/* Key Light - warm directional with shadows */}
                         <directionalLight
@@ -280,9 +310,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
                         />
 
                         {/* --- Procedural Ground Plane --- */}
-                        <mesh 
-                            rotation={[-Math.PI / 2, 0, 0]} 
-                            position={[0, -0.5, 0]} 
+                        <mesh
+                            rotation={[-Math.PI / 2, 0, 0]}
+                            position={[0, -0.5, 0]}
                             receiveShadow
                         >
                             <planeGeometry args={[50, 50]} />
@@ -312,12 +342,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
                             {modules.map((module, index) => (
                                 <MemoizedChildModule
                                     path={module.path}
-                                    onButtonClick={viewMode === '3d' ? handleButtonClick : null}
+                                    onButtonClick={handleButtonClick}
                                     onModuleClick={() => handleModuleClick(index)}
-                                    isEditable={viewMode === '3d' && index === currentModuleIndex}
+                                    isEditable={index === currentModuleIndex}
                                     position={module.position}
                                     viewMode={viewMode}
                                     isActive={index === currentModuleIndex}
+                                    mappings={module.mappings}
                                     key={module.id}
                                 />
                             ))}
@@ -350,22 +381,42 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
                         Switch to {viewMode === '3d' ? '2D Top-Down' : '3D'} View
                     </button>
                     <div style={{ flex: 1, overflow: 'auto' }}>
-                        <ButtonMappingsPanel
-                            mappings={currentMappings}
-                            moduleName={currentModule.name}
-                            onSelectButton={handleButtonClick}
-                        />
+                        {viewMode === '3d' ? (
+                            <ButtonMappingsPanel
+                                mappings={currentMappings}
+                                moduleName={currentModule.name}
+                                onSelectButton={handleButtonClick}
+                            />
+                        ) : (
+                            <D2ConfigPanel
+                                mappings={currentMappings}
+                                moduleName={currentModule.name}
+                                onSelectButton={handleButtonClick}
+                                onClearAll={clearAllMappings}
+                                moduleId={currentModule.id}
+                                onSaveToDevice={saveToDevice}
+                            />
+                        )}
                     </div>
                 </div>
 
                 {/* Modal Layer */}
                 {selectedButton && (
-                    <ButtonMappingModal
-                        button={selectedButton}
-                        onSave={saveMapping}
-                        onCancel={() => setSelectedButton(null)}
-                        onClear={clearMapping}
-                    />
+                    viewMode === '3d' ? (
+                        <ButtonMappingModal
+                            button={selectedButton}
+                            onSave={saveMapping}
+                            onCancel={() => setSelectedButton(null)}
+                            onClear={clearMapping}
+                        />
+                    ) : (
+                        <HIDButtonMappingModal
+                            button={selectedButton}
+                            onSave={saveMapping}
+                            onCancel={() => setSelectedButton(null)}
+                            onClear={clearMapping}
+                        />
+                    )
                 )}
             </div>
             <style>{`
