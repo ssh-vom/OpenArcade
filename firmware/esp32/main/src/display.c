@@ -2,9 +2,7 @@
 #include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "ssd1306.h"
-
-#define SCREEN_SDA 22
-#define SCREEN_SCL 21
+#include "pins.h"
 
 #define TAG "display"
 
