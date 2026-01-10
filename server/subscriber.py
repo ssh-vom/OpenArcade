@@ -27,7 +27,9 @@ def main():
 
     # Create Processes
     p_scanner = multiprocessing.Process(
-        target=scanner_process, args=(found_queue, stop_event), name="Scanner"
+        target=scanner_process,
+        args=(found_queue, stop_event),
+        name="Scanner",
     )
     p_aggregator = multiprocessing.Process(
         target=aggregator_process,
@@ -35,10 +37,16 @@ def main():
         name="Aggregator",
     )
     p_writer = multiprocessing.Process(
-        target=hid_writer_process, args=(hid_queue, stop_event), name="HIDWriter"
+        target=hid_writer_process,
+        args=(hid_queue, stop_event),
+        name="HIDWriter",
     )
 
-    processes = [p_scanner, p_aggregator, p_writer]
+    processes = [
+        p_scanner,
+        p_aggregator,
+        p_writer,
+    ]
 
     for p in processes:
         p.start()
@@ -50,7 +58,7 @@ def main():
             time.sleep(1)
     except KeyboardInterrupt:
         logger.info("\nShutdown signal received...")
-        stop_event.set()
+        stop_event.set()  # Signal to kill the program, this should also happen on temperature warning
 
     # Cleanup
     for p in processes:

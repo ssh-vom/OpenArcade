@@ -63,3 +63,5 @@ DEFAULT_MAPPING = {
     12: HID_KEY_SPACE,  # Select
     13: HID_KEY_ENTER,  # Start
 }
+
+SCANNER_DELAY = 10

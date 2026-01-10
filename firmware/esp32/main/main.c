@@ -62,6 +62,17 @@ static void nimble_host_task(void *param) {
   vTaskDelete(NULL);
 }
 
+static const controller_button_config_t controller_buttons[] = {
+    {BUTTON1_GPIO, true, 20, 800}, {BUTTON2_GPIO, true, 20, 800},
+    {BUTTON3_GPIO, true, 20, 800}, {BUTTON4_GPIO, true, 20, 800},
+    {BUTTON5_GPIO, true, 20, 800}, {BUTTON6_GPIO, true, 20, 800},
+    {BUTTON7_GPIO, true, 20, 800}, {BUTTON8_GPIO, true, 20, 800},
+    {JOYSTICK_L, true, 15, 0},     {JOYSTICK_R, true, 15, 0},
+    {JOYSTICK_U, true, 15, 0},     {JOYSTICK_D, true, 15, 0},
+    {BUTTON_SEL, true, 30, 1500},  {BUTTON_START, true, 30, 1500},
+    {BUTTON_PAIR, true, 50, 3000},
+};
+
 static controller_input_t input;
 
 static void controller_task(void *param) {
@@ -91,23 +102,12 @@ void app_main(void) {
 
   controller_input_init(&input);
 
-  controller_input_add_button(&input, BUTTON1_GPIO, true, 20, 800);
-  controller_input_add_button(&input, BUTTON2_GPIO, true, 20, 800);
-  controller_input_add_button(&input, BUTTON3_GPIO, true, 20, 800);
-  controller_input_add_button(&input, BUTTON4_GPIO, true, 20, 800);
-  controller_input_add_button(&input, BUTTON5_GPIO, true, 20, 800);
-  controller_input_add_button(&input, BUTTON6_GPIO, true, 20, 800);
-  controller_input_add_button(&input, BUTTON7_GPIO, true, 20, 800);
-  controller_input_add_button(&input, BUTTON8_GPIO, true, 20, 800);
-
-  controller_input_add_button(&input, JOYSTICK_L, true, 15, 0);
-  controller_input_add_button(&input, JOYSTICK_R, true, 15, 0);
-  controller_input_add_button(&input, JOYSTICK_U, true, 15, 0);
-  controller_input_add_button(&input, JOYSTICK_D, true, 15, 0);
-
-  controller_input_add_button(&input, BUTTON_SEL, true, 30, 1500);
-  controller_input_add_button(&input, BUTTON_START, true, 30, 1500);
-  controller_input_add_button(&input, BUTTON_PAIR, true, 50, 3000);
+  for (size_t i = 0;
+       i < sizeof(controller_buttons) / sizeof(controller_buttons[0]); i++) {
+    controller_input_add_button(
+        &input, controller_buttons[i].gpio, controller_buttons[i].active_low,
+        controller_buttons[i].debounce_ms, controller_buttons[i].hold_ms);
+  }
 
   ESP_ERROR_CHECK(display_init());
   display_set_state(DISPLAY_STATE_BOOT);

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import multiprocessing
+from constants import SCANNER_DELAY
 
 from bleak import BleakScanner
 
@@ -46,10 +47,10 @@ def scanner_process(
 
             except Exception as e:
                 logger.error(f"Scan Error: {e}")
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(SCANNER_DELAY * 0.5)
 
             # Small delay between scans
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(SCANNER_DELAY)
 
     try:
         asyncio.run(run())
