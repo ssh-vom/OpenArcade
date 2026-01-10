@@ -3,6 +3,7 @@
 #include "esp_log.h"
 #include "ssd1306.h"
 #include "pins.h"
+#include "esp_adc/adc_oneshot.h"
 
 #define TAG "display"
 
@@ -125,4 +126,49 @@ void display_set_battery(uint8_t percent) {
   if (screen) {
     display_draw_battery();
   }
+}
+
+
+uint8_t get_battery_value (uint8_t gpio) {
+
+  #define BATTERY_ADC_CHANNEL ADC_CHANNEL_6 //This is the ADC channel for GPIO34
+
+  #define BATTERY_PACK_MAX_VOLT 6
+  #define BATTERY_PACK_EMPTY_VOLT 4.4
+
+  #define BATTERY_DISPLAY_INCREMENTS 4 //determines how often we want to show battery drop (so 4 -> 100/4 = every 25%)
+
+  #define R1 100000
+  #define R2 100000
+  #define VOLTAGE_DIVIDER_RATIO ((R1+R2)/R1)
+  
+  #define DMAX 4096
+  #define ADC_VREF 3.3
+
+  //create adc unit handle for ADC1
+  adc_oneshot_unit_handle_t adc1_handle;
+  adc_oneshot_unit_init_cfg_t init_config1 = {
+      .unit_id = ADC_UNIT_1,
+      .ulp_mode = ADC_ULP_MODE_DISABLE,
+  };
+  ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
+
+  // configure adc channel
+  adc_oneshot_chan_cfg_t config = {
+    .bitwidth = ADC_BITWIDTH_DEFAULT,
+    .atten = ADC_ATTEN_DB_12,
+  };
+  ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, BATTERY_ADC_CHANNEL, &config));
+;
+
+  int adc_voltage; 
+  adc_oneshot_read(adc1_handle, BATTERY_ADC_CHANNEL, &adc_voltage);
+  float vout = (adc_voltage*ADC_VREF) / DMAX;
+
+  int battery_percent = (vout - BATTERY_PACK_EMPTY_VOLT) / (BATTERY_PACK_MAX_VOLT - BATTERY_PACK_EMPTY_VOLT);
+
+  int battery_level_displayed = (battery_percent / BATTERY_DISPLAY_INCREMENTS) * BATTERY_DISPLAY_INCREMENTS;
+
+  return battery_level_displayed;
+
 }
