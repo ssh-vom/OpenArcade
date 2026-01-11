@@ -5,5 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "asyncio>=4.0.0",
     "bleak>=1.1.1",
 ]
