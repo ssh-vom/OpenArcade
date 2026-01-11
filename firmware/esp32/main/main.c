@@ -8,6 +8,7 @@
 #include "display.h"
 #include "gap.h"
 #include "gatt_svc.h"
+#include "pins.h"
 
 /* Library function declarations */
 void ble_store_config_init(void);
