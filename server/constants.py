@@ -48,14 +48,14 @@ HID_KEY_SPACE = 0x2C
 # 8-11: Joy L, R, U, D
 # 12: Select, 13: Start, 14: Pair
 DEFAULT_MAPPING = {
-    0: HID_KEY_B,  # Button 1
-    1: HID_KEY_B,  # Button 2
-    2: HID_KEY_C,  # Button 3
-    3: HID_KEY_D,  # Button 4
-    4: HID_KEY_E,  # Button 5
-    5: HID_KEY_F,  # Button 6
-    6: HID_KEY_G,  # Button 7
-    7: HID_KEY_H,  # Button 8
+    0: HID_KEY_Z,  # Button 1
+    1: HID_KEY_C,  # Button 2
+    2: HID_KEY_SPACE,  # Button 3
+    3: HID_KEY_Z,  # Button 4
+    4: HID_KEY_C,  # Button 5
+    5: HID_KEY_LEFT,  # Button 6
+    6: HID_KEY_DOWN,  # Button 7
+    7: HID_KEY_RIGHT,  # Button 8
     8: HID_KEY_LEFT,  # Joy L
     9: HID_KEY_RIGHT,  # Joy R
     10: HID_KEY_UP,  # Joy U
