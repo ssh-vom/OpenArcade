@@ -3,6 +3,7 @@
  */
 #include "gatt_svc.h"
 #include "common.h"
+#include "display.h"
 #include "host/ble_gatt.h"
 #include "host/ble_hs.h"
 #include "nimble/nimble_port.h"
@@ -111,6 +112,9 @@ void gatt_svr_subscribe_cb(struct ble_gap_event *event) {
 
     ESP_LOGI(TAG, "Controller notify %s",
              notify_enabled ? "ENABLED" : "DISABLED");
+  }
+  if (notify_enabled) {
+    display_set_state(DISPLAY_STATE_CONNECTED);
   }
 }
 

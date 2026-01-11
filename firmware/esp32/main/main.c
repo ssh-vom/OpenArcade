@@ -98,7 +98,6 @@ void app_main(void) {
   esp_err_t ret;
 
   /* LED initialization */
-  // led_init();
 
   controller_input_init(&input);
 
@@ -108,7 +107,6 @@ void app_main(void) {
         &input, controller_buttons[i].gpio, controller_buttons[i].active_low,
         controller_buttons[i].debounce_ms, controller_buttons[i].hold_ms);
   }
-
   ESP_ERROR_CHECK(display_init());
   display_set_state(DISPLAY_STATE_BOOT);
 
@@ -146,6 +144,9 @@ void app_main(void) {
   if (rc != 0) {
     ESP_LOGE(TAG, "failed to initialize GATT server, error code: %d", rc);
     return;
+  }
+  if (ble_ready) {
+    display_set_state(DISPLAY_STATE_IDLE);
   }
 
   /* NimBLE host configuration initialization */

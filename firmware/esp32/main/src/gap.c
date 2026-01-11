@@ -1,5 +1,6 @@
 #include "gap.h"
 #include "common.h"
+#include "display.h"
 #include "gatt_svc.h"
 
 /* Low-latency controller-friendly params */
@@ -87,10 +88,12 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
 
   case BLE_GAP_EVENT_DISCONNECT:
     ESP_LOGI(TAG, "Disconnected");
+    display_set_state(DISPLAY_STATE_IDLE);
     start_advertising();
     return 0;
 
   case BLE_GAP_EVENT_SUBSCRIBE:
+    display_set_state(DISPLAY_STATE_CONNECTED);
     gatt_svr_subscribe_cb(event);
     return 0;
 
