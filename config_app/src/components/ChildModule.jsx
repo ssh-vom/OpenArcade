@@ -25,8 +25,8 @@ const ChildModule = memo(function ChildModule({
     const mouse = useRef(new THREE.Vector2());
 
     // Get button names and meshes for hit detection
-    const buttonNames = useRef(new Set());
-    const buttonMeshes = useRef(new Map());
+    const buttonMeshes = useRef(new Set());
+    const buttonNameByMesh = useRef(new Map());
 
     // Convert mouse position to normalized device coordinates
     const getMousePosition = useCallback((event) => {
@@ -43,21 +43,31 @@ const ChildModule = memo(function ChildModule({
 
         if (intersects.length > 0) {
             const intersectedMesh = intersects[0].object;
-            console.log('Intersected button:', intersectedMesh.name);
-            return intersectedMesh.name;
+            let buttonName = buttonNameByMesh.current.get(intersectedMesh.uuid);
+            if (!buttonName) {
+                let node = intersectedMesh;
+                while (node) {
+                    if (node.name && node.name.startsWith("button_")) {
+                        buttonName = node.name;
+                        break;
+                    }
+                    node = node.parent;
+                }
+            }
+            console.log('Intersected button:', buttonName || intersectedMesh.name);
+            return { name: buttonName || intersectedMesh.name, mesh: intersectedMesh };
         }
         return null;
     }, [camera]);
 
     const handleMouseClick = useCallback((event) => {
         getMousePosition(event);
-        const buttonName = getIntersectedButton();
+        const hit = getIntersectedButton();
 
-        if (buttonName) {
+        if (hit) {
             event.stopPropagation();
-            const mesh = buttonMeshes.current.get(buttonName);
             if (onButtonClick) {
-                onButtonClick(buttonName, mesh);
+                onButtonClick(hit.name, hit.mesh);
             }
         } else if (viewMode === '3d' && !isEditable && onModuleClick) {
             onModuleClick();
@@ -66,8 +76,8 @@ const ChildModule = memo(function ChildModule({
 
     const handleMouseMove = useCallback((event) => {
         getMousePosition(event);
-        const buttonName = getIntersectedButton();
-        setHoveredButton(buttonName);
+        const hit = getIntersectedButton();
+        setHoveredButton(hit ? hit.name : null);
     }, [getMousePosition, getIntersectedButton]);
 
     const handleMouseLeave = useCallback(() => {
@@ -83,17 +93,17 @@ const ChildModule = memo(function ChildModule({
 
     useEffect(() => {
         if (gltf && gltf.scene) {
-            buttonNames.current.clear();
             buttonMeshes.current.clear();
+            buttonNameByMesh.current.clear();
             gltf.scene.traverse((rootChild) => {
                 if (rootChild.name.startsWith('button_')) {
                     const buttonGroupName = rootChild.name;
                     // Helper to recursively find and register all meshes within this button group
                     const findMeshes = (node) => {
                         if (node.isMesh) {
-                            buttonNames.current.add(node.name);
-                            // Store the mesh, but use the buttonGroupName to identify its context if needed
-                            buttonMeshes.current.set(node.name, node);
+                            node.userData.buttonGroup = buttonGroupName;
+                            buttonMeshes.current.add(node);
+                            buttonNameByMesh.current.set(node.uuid, buttonGroupName);
                             console.log(`Found button mesh: ${node.name} under ${buttonGroupName}`, node);
                         }
                         if (node.children) {

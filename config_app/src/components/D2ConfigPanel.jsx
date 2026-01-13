@@ -206,7 +206,9 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                                                     padding: "2px 6px",
                                                     borderRadius: "3px",
                                                 }}>
-                                                    {config.action}
+                                                    {typeof config.action === "string"
+                                                        ? config.action
+                                                        : config.action?.label || config.action?.input || "Mapped"}
                                                 </div>
                                             </div>
                                         </button>

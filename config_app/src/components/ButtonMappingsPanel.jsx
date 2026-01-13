@@ -84,7 +84,11 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
                     </div>
                 ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {Object.entries(mappings).map(([buttonName, action]) => (
+                        {Object.entries(mappings).map(([buttonName, action]) => {
+                            const display = typeof action === "string"
+                                ? action
+                                : action?.action || action?.label || action?.input || "Unmapped";
+                            return (
                             <button
                                 key={buttonName}
                                 onClick={() => onSelectButton(buttonName, null)}
@@ -123,7 +127,7 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
                                         fontWeight: "500",
                                         color: "#e5e5e5",
                                     }}>
-                                        {action}
+                                        {display}
                                     </span>
                                     <span style={{
                                         color: "#404040",
@@ -133,7 +137,8 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
                                     </span>
                                 </div>
                             </button>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

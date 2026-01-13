@@ -169,10 +169,14 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         }
 
         const positions = [[-1.5, 0, 0], [0, 0, 0], [1.5, 0, 0], [3, 0, 0]];
-        const paths = ["/OpenArcadeAssy_v2.glb", "/OpenArcadeAssyJoystick_v1.glb"];
+        const realDevices = deviceEntries.filter(([deviceId]) => deviceId.includes(":"));
+        const entriesToRender = realDevices.length > 0 ? realDevices : deviceEntries;
 
-        const nextModules = deviceEntries.map(([deviceId, deviceConfig], index) => {
-            const layout = deviceConfig?.ui?.layout || defaultLayout;
+        const nextModules = entriesToRender.map(([deviceId, deviceConfig], index) => {
+            const uiLayout = deviceConfig?.ui?.layout;
+            const hasLayout = uiLayout && Object.keys(uiLayout).length > 0;
+            const layout = hasLayout ? uiLayout : defaultLayout;
+            const model = deviceConfig?.ui?.model;
             const mode = deviceConfig?.active_mode || "keyboard";
             const mappingConfig = deviceConfig?.modes?.[mode]?.mapping || {};
 
@@ -200,9 +204,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
             return {
                 id: index + 1,
-                name: deviceConfig?.name || `Module ${index + 1}`,
+                name: deviceConfig?.name || deviceId,
                 deviceId,
-                path: paths[index % paths.length],
+                path: model === "joystick" ? "/OpenArcadeAssyJoystick_v1.glb" : "/OpenArcadeAssy_v2.glb",
                 mappings,
                 position: positions[index % positions.length],
                 deviceLayout: layout,

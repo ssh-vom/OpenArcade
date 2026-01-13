@@ -7,6 +7,7 @@ export default class SerialConfigClient {
         this.pending = [];
         this.connected = false;
         this._readLoopRunning = false;
+        this._queue = Promise.resolve();
     }
 
     async connect() {
@@ -44,30 +45,35 @@ export default class SerialConfigClient {
     }
 
     async sendCommand(command) {
-        if (!this.connected || !this.writer) {
-            throw new Error("Serial port not connected");
-        }
-        const payload = `${JSON.stringify(command)}\n`;
-        let pendingResolve;
-        let pendingReject;
-        const pendingPromise = new Promise((resolve, reject) => {
-            pendingResolve = resolve;
-            pendingReject = reject;
-        });
-        const pending = { resolve: pendingResolve, reject: pendingReject };
-        this.pending.push(pending);
-
-        try {
-            await this.writer.write(new TextEncoder().encode(payload));
-        } catch (error) {
-            const index = this.pending.indexOf(pending);
-            if (index !== -1) {
-                this.pending.splice(index, 1);
+        const task = async () => {
+            if (!this.connected || !this.writer) {
+                throw new Error("Serial port not connected");
             }
-            throw error;
-        }
+            const payload = `${JSON.stringify(command)}\n`;
+            let pendingResolve;
+            let pendingReject;
+            const pendingPromise = new Promise((resolve, reject) => {
+                pendingResolve = resolve;
+                pendingReject = reject;
+            });
+            const pending = { resolve: pendingResolve, reject: pendingReject };
+            this.pending.push(pending);
 
-        return pendingPromise;
+            try {
+                await this.writer.write(new TextEncoder().encode(payload));
+            } catch (error) {
+                const index = this.pending.indexOf(pending);
+                if (index !== -1) {
+                    this.pending.splice(index, 1);
+                }
+                throw error;
+            }
+
+            return pendingPromise;
+        };
+
+        this._queue = this._queue.then(task, task);
+        return this._queue;
     }
 
     async listDevices() {
@@ -95,7 +101,7 @@ export default class SerialConfigClient {
             mapping,
         });
         if (!response.ok) {
-            throw new Error(response.error || "set_mapping_failed");
+            throw new Error(response.error || `set_mapping_failed:${JSON.stringify(response)}`);
         }
         return response;
     }
@@ -107,7 +113,7 @@ export default class SerialConfigClient {
             mode,
         });
         if (!response.ok) {
-            throw new Error(response.error || "set_active_mode_failed");
+            throw new Error(response.error || `set_active_mode_failed:${JSON.stringify(response)}`);
         }
         return response;
     }
@@ -155,13 +161,23 @@ export default class SerialConfigClient {
             return;
         }
 
+        if (typeof message.ok !== "boolean") {
+            return;
+        }
+
         this._resolvePending(message);
     }
 
     _resolvePending(message) {
         const pending = this.pending.shift();
-        if (pending) {
+        if (!pending) {
+            return;
+        }
+        if (message.ok) {
             pending.resolve(message);
+        } else {
+            const error = message.error || "request_failed";
+            pending.resolve({ ...message, error });
         }
     }
 }
