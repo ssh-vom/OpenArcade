@@ -75,3 +75,4 @@ Device IDs are BLE addresses for now.
   - `0` = bitfield
   - `1` = packed
   - `2` = axis
+- Some info on TLV: https://en.wikipedia.org/wiki/Type%E2%80%93length%E2%80%93value
