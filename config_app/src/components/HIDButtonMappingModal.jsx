@@ -22,10 +22,11 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                   (inputType === HID_INPUT_TYPES.GAMEPAD && inputOptions.find(opt => opt.value === selectedInput)?.isAnalog);
 
   const handleSave = () => {
+    const resolvedAction = action || getInputLabel(inputType, selectedInput);
     const config = {
       type: inputType,
       input: selectedInput,
-      action,
+      action: resolvedAction,
       label: getInputLabel(inputType, selectedInput)
     };
 
@@ -353,22 +354,22 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
           )}
           <button
             onClick={handleSave}
-            disabled={!selectedInput || !action}
+            disabled={!selectedInput}
             style={{
               padding: "8px 20px",
-              background: selectedInput && action ? "#3b82f6" : "#404040",
+              background: selectedInput ? "#3b82f6" : "#404040",
               color: "white",
               border: "none",
               borderRadius: "4px",
               fontSize: "13px",
               fontWeight: "500",
-              cursor: selectedInput && action ? "pointer" : "not-allowed",
+              cursor: selectedInput ? "pointer" : "not-allowed",
             }}
             onMouseOver={(e) => {
-              if (selectedInput && action) e.target.style.background = "#2563eb";
+              if (selectedInput) e.target.style.background = "#2563eb";
             }}
             onMouseOut={(e) => {
-              if (selectedInput && action) e.target.style.background = "#3b82f6";
+              if (selectedInput) e.target.style.background = "#3b82f6";
             }}
           >
             Save

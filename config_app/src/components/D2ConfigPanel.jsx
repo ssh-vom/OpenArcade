@@ -1,5 +1,4 @@
 import { HID_INPUT_TYPES } from "../services/HIDManager.js";
-import DeviceStorage from "../services/DeviceStorage.js";
 
 export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, onClearAll, moduleId, onSaveToDevice }) {
     // Group mappings by input type

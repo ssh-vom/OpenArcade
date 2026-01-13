@@ -11,6 +11,7 @@ import D2ConfigPanel from "./D2ConfigPanel.jsx";
 import DeviceStorage from "../services/DeviceStorage.js";
 import ControllerHUD from "./ControllerHUD.jsx";
 import * as THREE from "three";
+import { HID_INPUT_TYPES, getInputLabel } from "../services/HIDManager.js";
 
 // Preload GLBs with texture generation
 useGLTF.preload("/OpenArcadeAssy_v2.glb");
@@ -92,12 +93,13 @@ function Particles() {
     );
 }
 
-const OpenArcade3DView = memo(function OpenArcade3DView() {
+const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [selectedButton, setSelectedButton] = useState(null);
-    const [modules, setModules] = useState([
+    const defaultModules = useMemo(() => ([
         { id: 1, name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
         { id: 2, name: "Module B", deviceId: "OA-002", path: "/OpenArcadeAssyJoystick_v1.glb", mappings: {}, position: [0, 0, 0] },
-    ]);
+    ]), []);
+    const [modules, setModules] = useState(defaultModules);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [loaded, setLoaded] = useState(false);
     const [viewMode, setViewMode] = useState('3d'); // '3d' or '2d'
@@ -123,6 +125,118 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
     const currentModule = modules[currentModuleIndex];
     const currentMappings = currentModule.mappings;
     const cameraControl = useCameraController({ currentModuleIndex, modules, enabled: viewMode === '3d' });
+
+    const defaultLayout = useMemo(() => ({
+        button_1: "1",
+        button_2: "2",
+        button_3: "3",
+        button_4: "4",
+        button_5: "5",
+        button_6: "6",
+        button_7: "7",
+        button_8: "8",
+        button_start: "14",
+        button_bt: "15",
+    }), []);
+
+    const getControlIdForButton = useCallback((deviceLayout, buttonName) => {
+        if (deviceLayout && deviceLayout[buttonName]) {
+            return deviceLayout[buttonName];
+        }
+        return defaultLayout[buttonName];
+    }, [defaultLayout]);
+
+    const keyInputToHid = useCallback((inputValue) => {
+        if (!inputValue) return null;
+        if (inputValue.startsWith("key_")) {
+            const suffix = inputValue.slice(4).toUpperCase();
+            return `HID_KEY_${suffix}`;
+        }
+        return null;
+    }, []);
+
+    const hidToKeyInput = useCallback((keycodeName) => {
+        if (!keycodeName || typeof keycodeName !== "string") return null;
+        if (!keycodeName.startsWith("HID_KEY_")) return null;
+        const suffix = keycodeName.slice("HID_KEY_".length).toLowerCase();
+        return `key_${suffix}`;
+    }, []);
+
+    const applyDeviceConfigs = useCallback((devices) => {
+        const deviceEntries = Object.entries(devices || {});
+        if (deviceEntries.length === 0) {
+            return;
+        }
+
+        const positions = [[-1.5, 0, 0], [0, 0, 0], [1.5, 0, 0], [3, 0, 0]];
+        const paths = ["/OpenArcadeAssy_v2.glb", "/OpenArcadeAssyJoystick_v1.glb"];
+
+        const nextModules = deviceEntries.map(([deviceId, deviceConfig], index) => {
+            const layout = deviceConfig?.ui?.layout || defaultLayout;
+            const mode = deviceConfig?.active_mode || "keyboard";
+            const mappingConfig = deviceConfig?.modes?.[mode]?.mapping || {};
+
+            const reverseLayout = Object.entries(layout).reduce((acc, [buttonName, controlId]) => {
+                acc[String(controlId)] = buttonName;
+                return acc;
+            }, {});
+
+            const mappings = {};
+            Object.entries(mappingConfig).forEach(([controlId, mapping]) => {
+                const buttonName = reverseLayout[String(controlId)];
+                if (!buttonName) return;
+
+                const keycodeName = typeof mapping === "string" ? mapping : mapping?.keycode;
+                const inputValue = hidToKeyInput(keycodeName);
+                if (!inputValue) return;
+
+                mappings[buttonName] = {
+                    type: HID_INPUT_TYPES.KEYBOARD,
+                    input: inputValue,
+                    label: getInputLabel(HID_INPUT_TYPES.KEYBOARD, inputValue),
+                    action: keycodeName,
+                };
+            });
+
+            return {
+                id: index + 1,
+                name: deviceConfig?.name || `Module ${index + 1}`,
+                deviceId,
+                path: paths[index % paths.length],
+                mappings,
+                position: positions[index % positions.length],
+                deviceLayout: layout,
+            };
+        });
+
+        if (nextModules.length > 0) {
+            setModules(nextModules);
+            setCurrentModuleIndex(0);
+        }
+    }, [defaultLayout, hidToKeyInput]);
+
+    useEffect(() => {
+        if (!configClient) {
+            return;
+        }
+        let cancelled = false;
+
+        const loadDevices = async () => {
+            try {
+                const devices = await configClient.listDevices();
+                if (!cancelled) {
+                    applyDeviceConfigs(devices);
+                }
+            } catch (error) {
+                console.warn("Failed to load devices:", error);
+            }
+        };
+
+        loadDevices();
+        return () => {
+            cancelled = true;
+        };
+    }, [configClient, applyDeviceConfigs]);
 
     const handleButtonClick = useCallback((buttonName, mesh) => {
         console.log(`handleButtonClick called: ${buttonName}, currentMappings:`, currentMappings);
@@ -166,6 +280,26 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
             return mod;
         }));
         setSelectedButton(null);
+
+        if (!configClient || !currentModule?.deviceId) {
+            return;
+        }
+
+        const deviceLayout = currentModule.deviceLayout;
+        const controlId = getControlIdForButton(deviceLayout, buttonName);
+        if (!controlId || !config || config.type !== HID_INPUT_TYPES.KEYBOARD) {
+            return;
+        }
+
+        const keycodeName = keyInputToHid(config.input);
+        if (!keycodeName) {
+            return;
+        }
+
+        configClient.setMapping(currentModule.deviceId, "keyboard", controlId, { keycode: keycodeName })
+            .catch((error) => {
+                console.warn("Failed to update mapping:", error);
+            });
     };
 
     const clearMapping = (buttonName) => {
@@ -193,13 +327,27 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
             try {
                 // Show loading state (could add toast/loading indicator here)
                 console.log('Saving configuration to device...');
-                
-                // Save to device storage simulation
-                DeviceStorage.saveModuleConfig(moduleId, module.mappings);
-                
-                // Simulate device sync
-                await DeviceStorage.syncToDevice(moduleId);
-                
+
+                if (configClient && module.deviceId) {
+                    const layout = module.deviceLayout || defaultLayout;
+                    const mode = "keyboard";
+                    for (const [buttonName, mapping] of Object.entries(module.mappings)) {
+                        if (mapping?.type !== HID_INPUT_TYPES.KEYBOARD) {
+                            continue;
+                        }
+                        const controlId = getControlIdForButton(layout, buttonName);
+                        const keycodeName = keyInputToHid(mapping.input);
+                        if (!controlId || !keycodeName) {
+                            continue;
+                        }
+                        await configClient.setMapping(module.deviceId, mode, controlId, { keycode: keycodeName });
+                    }
+                    await configClient.setActiveMode(module.deviceId, mode);
+                } else {
+                    DeviceStorage.saveModuleConfig(moduleId, module.mappings);
+                    await DeviceStorage.syncToDevice(moduleId);
+                }
+
                 console.log('Configuration saved successfully!');
                 // Could add success notification here
                 
@@ -436,4 +584,3 @@ const OpenArcade3DView = memo(function OpenArcade3DView() {
 OpenArcade3DView.displayName = 'OpenArcade3DView';
 
 export { OpenArcade3DView };
-

@@ -83,7 +83,7 @@ def handle_command(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any
     return {"ok": False, "error": "unknown_cmd"}
 
 
-def run(device_path: str) -> int:
+def run(device_path: str, verbose: bool = False) -> int:
     store = ConfigStore()
     store.load()
 
@@ -97,15 +97,23 @@ def run(device_path: str) -> int:
         while True:
             line = read_line(fd)
             if line is None:
+                if verbose:
+                    print("Serial connection closed")
                 break
             if not line:
                 continue
             try:
                 message = json.loads(line)
             except json.JSONDecodeError:
+                if verbose:
+                    print("Invalid JSON received")
                 write_line(fd, {"ok": False, "error": "invalid_json"})
                 continue
+            if verbose:
+                print(f"Received: {message}")
             response = handle_command(store, message)
+            if verbose:
+                print(f"Responding: {response}")
             write_line(fd, response)
     except KeyboardInterrupt:
         return 0
@@ -120,8 +128,11 @@ def main() -> int:
     parser.add_argument(
         "--device", default="/dev/ttyGS0", help="Serial gadget device path"
     )
+    parser.add_argument(
+        "--verbose", action="store_true", help="Enable request logging"
+    )
     args = parser.parse_args()
-    return run(args.device)
+    return run(args.device, args.verbose)
 
 
 if __name__ == "__main__":

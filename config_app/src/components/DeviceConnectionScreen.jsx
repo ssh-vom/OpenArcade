@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 export default function DeviceConnectionScreen({ onConnect }) {
     const [scanning, setScanning] = useState(true);
     const [deviceFound, setDeviceFound] = useState(false);
+    const [error, setError] = useState("");
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -138,7 +139,14 @@ export default function DeviceConnectionScreen({ onConnect }) {
 
                 {/* Connect Button */}
                 <button
-                    onClick={onConnect}
+                    onClick={async () => {
+                        try {
+                            setError("");
+                            await onConnect();
+                        } catch (err) {
+                            setError(err?.message || "Failed to connect");
+                        }
+                    }}
                     disabled={!deviceFound}
                     style={{
                         width: "100%",
@@ -167,6 +175,16 @@ export default function DeviceConnectionScreen({ onConnect }) {
                 >
                     {deviceFound ? "Connect to Device" : "Waiting for Device..."}
                 </button>
+
+                {error && (
+                    <div style={{
+                        marginTop: "12px",
+                        color: "#f87171",
+                        fontSize: "12px",
+                    }}>
+                        {error}
+                    </div>
+                )}
 
                 {/* Help Text */}
                 <p style={{
