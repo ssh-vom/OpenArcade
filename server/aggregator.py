@@ -186,6 +186,9 @@ def aggregator_process(
             connected_clients[address] = client
             logger.info(f"Connected: {address}")
 
+            config_store.set_last_seen(address)
+            config_store.save()
+
             await client.start_notify(CHAR_UUID, make_notification_handler(address))
 
             # Init state
