@@ -17,7 +17,7 @@ def hid_writer_process(
     logger.info("HID Writer Process Started")
 
     # Configuration
-    HID_DEV_PATH = "/dev/hidg1"
+    HID_DEV_PATH = "/dev/hidg0"
     USE_MOCK = True  # Default to mock if file doesn't exist
 
     # Check if device exists
