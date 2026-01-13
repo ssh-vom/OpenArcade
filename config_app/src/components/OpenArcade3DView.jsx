@@ -169,8 +169,15 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         }
 
         const positions = [[-1.5, 0, 0], [0, 0, 0], [1.5, 0, 0], [3, 0, 0]];
-        const realDevices = deviceEntries.filter(([deviceId]) => deviceId.includes(":"));
-        const entriesToRender = realDevices.length > 0 ? realDevices : deviceEntries;
+        const connectedDevices = deviceEntries.filter(([, deviceConfig]) => deviceConfig?.connected);
+        if (connectedDevices.length === 0) {
+            setModules(defaultModules);
+            setCurrentModuleIndex(0);
+            return;
+        }
+
+        const realDevices = connectedDevices.filter(([deviceId]) => deviceId.includes(":"));
+        const entriesToRender = realDevices.length > 0 ? realDevices : connectedDevices;
 
         const nextModules = entriesToRender.map(([deviceId, deviceConfig], index) => {
             const uiLayout = deviceConfig?.ui?.layout;

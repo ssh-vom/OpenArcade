@@ -176,6 +176,8 @@ def aggregator_process(
             logger.warning(f"Disconnected: {c.address}")
             connected_clients.pop(c.address, None)
             device_states.pop(c.address, None)
+            config_store.set_connected(c.address, False)
+            config_store.save()
             # Update HID to clear stuck keys
             asyncio.create_task(update_hid_report())
 
@@ -186,7 +188,7 @@ def aggregator_process(
             connected_clients[address] = client
             logger.info(f"Connected: {address}")
 
-            config_store.set_last_seen(address)
+            config_store.set_connected(address, True)
             config_store.save()
 
             await client.start_notify(CHAR_UUID, make_notification_handler(address))

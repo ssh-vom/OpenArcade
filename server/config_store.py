@@ -35,6 +35,10 @@ class ConfigStore:
                 self._data["schema_version"] = self.schema_version
             if "devices" not in self._data:
                 self._data["devices"] = {}
+            else:
+                for device in self._data["devices"].values():
+                    if "connected" not in device:
+                        device["connected"] = False
 
             return deepcopy(self._data)
 
@@ -69,6 +73,12 @@ class ConfigStore:
         timestamp = datetime.now(timezone.utc).isoformat()
         return self.upsert_device(device_id, {"last_seen": timestamp})
 
+    def set_connected(self, device_id: str, connected: bool) -> Dict[str, Any]:
+        updates = {"connected": bool(connected)}
+        if connected:
+            updates["last_seen"] = datetime.now(timezone.utc).isoformat()
+        return self.upsert_device(device_id, updates)
+
     def set_descriptor(self, device_id: str, descriptor: Dict[str, Any]) -> Dict[str, Any]:
         return self.upsert_device(device_id, {"descriptor": descriptor})
 
@@ -90,6 +100,7 @@ class ConfigStore:
             device = {
                 "device_id": device_id,
                 "last_seen": None,
+                "connected": False,
                 "descriptor": None,
                 "active_mode": "keyboard",
                 "modes": {

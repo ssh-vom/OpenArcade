@@ -18,6 +18,7 @@ Device IDs are BLE addresses for now.
 {
   "device_id": "AA:BB:CC:DD:EE:FF",
   "last_seen": "2025-02-14T12:34:56Z",
+  "connected": true,
   "descriptor": {
     "protocol_version": 1,
     "report_format": 0,
