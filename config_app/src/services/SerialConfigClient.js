@@ -48,11 +48,26 @@ export default class SerialConfigClient {
             throw new Error("Serial port not connected");
         }
         const payload = `${JSON.stringify(command)}\n`;
-        await this.writer.write(new TextEncoder().encode(payload));
-
-        return new Promise((resolve, reject) => {
-            this.pending.push({ resolve, reject });
+        let pendingResolve;
+        let pendingReject;
+        const pendingPromise = new Promise((resolve, reject) => {
+            pendingResolve = resolve;
+            pendingReject = reject;
         });
+        const pending = { resolve: pendingResolve, reject: pendingReject };
+        this.pending.push(pending);
+
+        try {
+            await this.writer.write(new TextEncoder().encode(payload));
+        } catch (error) {
+            const index = this.pending.indexOf(pending);
+            if (index !== -1) {
+                this.pending.splice(index, 1);
+            }
+            throw error;
+        }
+
+        return pendingPromise;
     }
 
     async listDevices() {
