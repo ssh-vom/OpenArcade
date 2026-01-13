@@ -122,6 +122,9 @@ const ChildModule = memo(function ChildModule({
     }, [camera]);
 
     const handleMouseClick = useCallback((event) => {
+        if (viewMode === '3d') {
+            return;
+        }
         getMousePosition(event);
         const hit = getIntersectedButton();
 
@@ -136,10 +139,16 @@ const ChildModule = memo(function ChildModule({
     }, [viewMode, isEditable, getMousePosition, getIntersectedButton, onButtonClick, onModuleClick]);
 
     const handleMouseMove = useCallback((event) => {
+        if (viewMode === '3d') {
+            if (hoveredButton) {
+                setHoveredButton(null);
+            }
+            return;
+        }
         getMousePosition(event);
         const hit = getIntersectedButton();
         setHoveredButton(hit ? hit.name : null);
-    }, [getMousePosition, getIntersectedButton]);
+    }, [getMousePosition, getIntersectedButton, hoveredButton, viewMode]);
 
     const handleMouseLeave = useCallback(() => {
         setHoveredButton(null);
