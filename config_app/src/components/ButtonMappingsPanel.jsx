@@ -105,7 +105,7 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
                                     transition: "all 0.15s ease",
                                 }}
                                 onMouseOver={(e) => {
-                                    e.currentTarget.style.borderColor = "rgba(95, 208, 196, 0.4)";
+                                    e.currentTarget.style.borderColor = "rgba(215, 177, 90, 0.4)";
                                 }}
                                 onMouseOut={(e) => {
                                     e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";

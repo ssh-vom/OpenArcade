@@ -23,13 +23,13 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
     const getTypeTone = (type) => {
         switch (type) {
             case HID_INPUT_TYPES.GAMEPAD:
-                return { color: "#5b7cfa", border: "rgba(91, 124, 250, 0.3)" };
+                return { color: "#d7b15a", border: "rgba(215, 177, 90, 0.3)" };
             case HID_INPUT_TYPES.KEYBOARD:
-                return { color: "var(--oa-accent)", border: "rgba(95, 208, 196, 0.3)" };
+                return { color: "#f0d48a", border: "rgba(240, 212, 138, 0.3)" };
             case HID_INPUT_TYPES.ANALOG:
-                return { color: "var(--oa-warning)", border: "rgba(240, 192, 92, 0.3)" };
+                return { color: "#c08a4a", border: "rgba(192, 138, 74, 0.3)" };
             default:
-                return { color: "var(--oa-muted)", border: "rgba(142, 154, 168, 0.3)" };
+                return { color: "var(--oa-muted)", border: "rgba(154, 144, 126, 0.3)" };
         }
     };
 
@@ -282,8 +282,8 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                         style={{
                             flex: 2,
                             padding: "8px",
-                            background: "rgba(95, 208, 196, 0.16)",
-                            border: "1px solid rgba(95, 208, 196, 0.4)",
+                            background: "rgba(215, 177, 90, 0.16)",
+                            border: "1px solid rgba(215, 177, 90, 0.4)",
                             borderRadius: "8px",
                             color: "var(--oa-accent)",
                             fontSize: "12px",
@@ -291,8 +291,8 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                             cursor: "pointer",
                             transition: "all 0.2s",
                         }}
-                        onMouseOver={(e) => e.target.style.background = "rgba(95, 208, 196, 0.24)"}
-                        onMouseOut={(e) => e.target.style.background = "rgba(95, 208, 196, 0.16)"}
+                        onMouseOver={(e) => e.target.style.background = "rgba(215, 177, 90, 0.24)"}
+                        onMouseOut={(e) => e.target.style.background = "rgba(215, 177, 90, 0.16)"}
                     >
                         Save to Device
                     </button>

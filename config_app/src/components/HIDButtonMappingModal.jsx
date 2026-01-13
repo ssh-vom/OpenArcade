@@ -24,13 +24,13 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
   const getTypeTone = (type) => {
     switch (type) {
       case HID_INPUT_TYPES.GAMEPAD:
-        return { color: "#5b7cfa", border: "rgba(91, 124, 250, 0.3)" };
+        return { color: "#d7b15a", border: "rgba(215, 177, 90, 0.3)" };
       case HID_INPUT_TYPES.KEYBOARD:
-        return { color: "var(--oa-accent)", border: "rgba(95, 208, 196, 0.3)" };
+        return { color: "#f0d48a", border: "rgba(240, 212, 138, 0.3)" };
       case HID_INPUT_TYPES.ANALOG:
-        return { color: "var(--oa-warning)", border: "rgba(240, 192, 92, 0.3)" };
+        return { color: "#c08a4a", border: "rgba(192, 138, 74, 0.3)" };
       default:
-        return { color: "var(--oa-muted)", border: "rgba(142, 154, 168, 0.3)" };
+        return { color: "var(--oa-muted)", border: "rgba(154, 144, 126, 0.3)" };
     }
   };
 
@@ -133,9 +133,9 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
               style={{
                 flex: 1,
                 padding: "8px",
-                background: inputType === HID_INPUT_TYPES.GAMEPAD ? "rgba(91, 124, 250, 0.18)" : "rgba(255,255,255,0.03)",
-                color: inputType === HID_INPUT_TYPES.GAMEPAD ? "#dbe6ff" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.GAMEPAD ? "1px solid rgba(91, 124, 250, 0.5)" : "1px solid var(--oa-panel-border)",
+                background: inputType === HID_INPUT_TYPES.GAMEPAD ? "rgba(215, 177, 90, 0.2)" : "rgba(255,255,255,0.03)",
+                color: inputType === HID_INPUT_TYPES.GAMEPAD ? "#22180a" : "var(--oa-muted)",
+                border: inputType === HID_INPUT_TYPES.GAMEPAD ? "1px solid rgba(215, 177, 90, 0.5)" : "1px solid var(--oa-panel-border)",
                 borderRadius: "8px",
                 fontSize: "12px",
                 fontWeight: "600",
@@ -151,9 +151,9 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
               style={{
                 flex: 1,
                 padding: "8px",
-                background: inputType === HID_INPUT_TYPES.KEYBOARD ? "rgba(95, 208, 196, 0.18)" : "rgba(255,255,255,0.03)",
+                background: inputType === HID_INPUT_TYPES.KEYBOARD ? "rgba(240, 212, 138, 0.2)" : "rgba(255,255,255,0.03)",
                 color: inputType === HID_INPUT_TYPES.KEYBOARD ? "#0b0d10" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.KEYBOARD ? "1px solid rgba(95, 208, 196, 0.5)" : "1px solid var(--oa-panel-border)",
+                border: inputType === HID_INPUT_TYPES.KEYBOARD ? "1px solid rgba(240, 212, 138, 0.5)" : "1px solid var(--oa-panel-border)",
                 borderRadius: "8px",
                 fontSize: "12px",
                 fontWeight: "600",
@@ -169,9 +169,9 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
               style={{
                 flex: 1,
                 padding: "8px",
-                background: inputType === HID_INPUT_TYPES.ANALOG ? "rgba(240, 192, 92, 0.18)" : "rgba(255,255,255,0.03)",
+                background: inputType === HID_INPUT_TYPES.ANALOG ? "rgba(192, 138, 74, 0.2)" : "rgba(255,255,255,0.03)",
                 color: inputType === HID_INPUT_TYPES.ANALOG ? "#251c09" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.ANALOG ? "1px solid rgba(240, 192, 92, 0.5)" : "1px solid var(--oa-panel-border)",
+                border: inputType === HID_INPUT_TYPES.ANALOG ? "1px solid rgba(192, 138, 74, 0.5)" : "1px solid var(--oa-panel-border)",
                 borderRadius: "8px",
                 fontSize: "12px",
                 fontWeight: "600",

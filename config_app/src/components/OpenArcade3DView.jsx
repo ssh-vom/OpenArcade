@@ -84,7 +84,7 @@ function Particles() {
             </bufferGeometry>
             <pointsMaterial
                 size={0.05}
-                color="#5aa19a"
+                color="#b68d47"
                 transparent
                 opacity={0.6}
                 sizeAttenuation
@@ -376,7 +376,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 display: "flex",
                 flexDirection: "column",
                 overflow: "hidden",
-                background: "radial-gradient(900px circle at 18% 8%, rgba(95, 208, 196, 0.12), transparent 60%), radial-gradient(700px circle at 88% 6%, rgba(240, 192, 92, 0.1), transparent 55%), var(--oa-bg)",
+                background: "radial-gradient(900px circle at 18% 8%, rgba(215, 177, 90, 0.14), transparent 60%), radial-gradient(700px circle at 88% 6%, rgba(240, 204, 122, 0.1), transparent 55%), var(--oa-bg)",
                 opacity: loaded ? 1 : 0,
                 transition: "opacity 0.5s ease-in-out"
             }}>
@@ -400,7 +400,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             orthographic={viewMode === '2d'}
                             camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
                             style={{
-                                background: "radial-gradient(1200px circle at 24% 0%, rgba(95, 208, 196, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 192, 92, 0.08), transparent 60%), #0a0d12",
+                            background: "radial-gradient(1200px circle at 24% 0%, rgba(215, 177, 90, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 204, 122, 0.08), transparent 60%), #0a0a0b",
                                 width: "100%",
                                 height: "100%",
                                 cursor: viewMode === '2d' ? 'pointer' : 'grab'
@@ -421,13 +421,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             {/* --- Enhanced Lighting System --- */}
 
                             {/* Ambient base light for overall illumination */}
-                            <ambientLight intensity={0.7} color="#404060" />
+                        <ambientLight intensity={0.7} color="#3a3120" />
 
                             {/* Key Light - warm directional with shadows */}
                             <directionalLight
                                 position={[5, 12, 8]}
                                 intensity={1.2}
-                                color="#fff5e6"
+                            color="#ffe3b5"
                                 castShadow
                                 shadow-mapSize={[2048, 2048]}
                                 shadow-camera-far={50}
@@ -443,21 +443,21 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             <directionalLight
                                 position={[-8, 6, 4]}
                                 intensity={0.5}
-                                color="#e6f0ff"
+                            color="#d8c19a"
                             />
 
                             {/* Rim Light - back light for edge definition */}
                             <directionalLight
                                 position={[0, 3, -10]}
                                 intensity={0.6}
-                                color="#f0e6ff"
+                            color="#9a7d4e"
                             />
 
                             {/* Accent Light 1 - warm highlight */}
                             <pointLight
                                 position={[3, 4, 3]}
                                 intensity={0.4}
-                                color="#fff0e6"
+                            color="#f3d2a1"
                                 distance={15}
                                 decay={2}
                             />
@@ -466,7 +466,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             <pointLight
                                 position={[-4, 3, -2]}
                                 intensity={0.3}
-                                color="#e6f0ff"
+                            color="#c9a56a"
                                 distance={12}
                                 decay={2}
                             />
@@ -487,10 +487,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                 position={[0, -0.49, 0]}
                                 cellSize={1}
                                 cellThickness={0.02}
-                                cellColor="#1c2732"
+                            cellColor="#241f15"
                                 sectionSize={5}
                                 sectionThickness={0.04}
-                                sectionColor="#223042"
+                            sectionColor="#302716"
                                 fadeDistance={25}
                                 fadeStrength={1}
                             />

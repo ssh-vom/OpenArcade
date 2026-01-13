@@ -29,13 +29,13 @@ export default function ControllerHUD({
                 <div style={{
                     width: "48px",
                     height: "48px",
-                    background: "linear-gradient(135deg, rgba(95, 208, 196, 0.2), rgba(240, 192, 92, 0.2))",
+                    background: "linear-gradient(135deg, rgba(215, 177, 90, 0.2), rgba(240, 204, 122, 0.2))",
                     borderRadius: "12px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     border: "1px solid rgba(255,255,255,0.12)",
-                    boxShadow: "0 10px 24px rgba(95, 208, 196, 0.25)",
+                    boxShadow: "0 10px 24px rgba(215, 177, 90, 0.25)",
                 }}>
                     <img
                         src={oaLogo}
@@ -115,9 +115,9 @@ export default function ControllerHUD({
                         alignItems: "center",
                         gap: "6px",
                         padding: "4px 8px",
-                        background: isConnected ? "rgba(95, 208, 196, 0.12)" : "rgba(230, 118, 108, 0.12)",
+                        background: isConnected ? "rgba(215, 177, 90, 0.12)" : "rgba(196, 88, 68, 0.12)",
                         borderRadius: "6px",
-                        border: `1px solid ${isConnected ? "rgba(95, 208, 196, 0.35)" : "rgba(230, 118, 108, 0.35)"}`,
+                        border: `1px solid ${isConnected ? "rgba(215, 177, 90, 0.35)" : "rgba(196, 88, 68, 0.35)"}`,
                         color: isConnected ? "var(--oa-accent)" : "var(--oa-danger)",
                         textTransform: "uppercase",
                         letterSpacing: "0.04em",
@@ -135,12 +135,12 @@ export default function ControllerHUD({
                         style={{
                             padding: "8px 12px",
                             background: viewMode === "3d"
-                                ? "rgba(95, 208, 196, 0.16)"
-                                : "rgba(240, 192, 92, 0.16)",
+                                ? "rgba(215, 177, 90, 0.16)"
+                                : "rgba(240, 204, 122, 0.16)",
                             color: viewMode === "3d" ? "var(--oa-accent)" : "var(--oa-warning)",
                             border: viewMode === "3d"
-                                ? "1px solid rgba(95, 208, 196, 0.4)"
-                                : "1px solid rgba(240, 192, 92, 0.4)",
+                                ? "1px solid rgba(215, 177, 90, 0.4)"
+                                : "1px solid rgba(240, 204, 122, 0.4)",
                             borderRadius: "10px",
                             cursor: "pointer",
                             fontSize: "11px",

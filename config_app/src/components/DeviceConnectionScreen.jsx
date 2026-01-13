@@ -19,7 +19,7 @@ export default function DeviceConnectionScreen({ onConnect }) {
         <div style={{
             width: "100vw",
             height: "100vh",
-            background: "radial-gradient(900px circle at 15% 0%, rgba(95, 208, 196, 0.14), transparent 60%), radial-gradient(700px circle at 85% 10%, rgba(240, 192, 92, 0.1), transparent 55%), var(--oa-bg)",
+            background: "radial-gradient(900px circle at 15% 0%, rgba(215, 177, 90, 0.16), transparent 60%), radial-gradient(700px circle at 85% 10%, rgba(240, 204, 122, 0.1), transparent 55%), var(--oa-bg)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -41,13 +41,13 @@ export default function DeviceConnectionScreen({ onConnect }) {
                 <div style={{
                     width: "64px",
                     height: "64px",
-                    background: "linear-gradient(135deg, rgba(95, 208, 196, 0.2), rgba(240, 192, 92, 0.2))",
+                    background: "linear-gradient(135deg, rgba(215, 177, 90, 0.2), rgba(240, 204, 122, 0.2))",
                     borderRadius: "14px",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: "24px",
-                    boxShadow: "0 12px 28px rgba(95, 208, 196, 0.22)",
+                    boxShadow: "0 12px 28px rgba(215, 177, 90, 0.22)",
                     border: "1px solid rgba(255,255,255,0.12)",
                 }}>
                     <img
@@ -167,7 +167,7 @@ export default function DeviceConnectionScreen({ onConnect }) {
                             ? "#0b0d10"
                             : "var(--oa-muted)",
                         border: deviceFound
-                            ? "1px solid rgba(95, 208, 196, 0.4)"
+                            ? "1px solid rgba(215, 177, 90, 0.4)"
                             : "1px solid var(--oa-panel-border)",
                         borderRadius: "12px",
                         fontSize: "14px",
