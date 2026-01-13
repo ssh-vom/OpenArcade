@@ -1,21 +1,25 @@
+import oaLogo from "../assets/oa-logo.svg";
+
 export default function ControllerHUD({ controllerName, moduleCount, currentModule, modules, onModuleChange, isConnected }) {
     return (
         <>
         <div style={{
             width: "300px",
             height: "100%",
-            background: "#121212",
-            borderRight: "1px solid #2a2a2a",
+            background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
+            borderRight: "1px solid var(--oa-panel-border)",
             display: "flex",
             flexDirection: "column",
             zIndex: 10,
             flexShrink: 0,
             animation: "slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both",
+            backdropFilter: "blur(10px)",
+            boxShadow: "var(--oa-shadow-soft)",
         }}>
             {/* Header */}
             <div style={{
                 padding: "20px",
-                borderBottom: "1px solid #2a2a2a",
+                borderBottom: "1px solid var(--oa-panel-border)",
             }}>
                 <div style={{
                     display: "flex",
@@ -26,19 +30,26 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                     <div style={{
                         width: "28px",
                         height: "28px",
-                        background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                        background: "linear-gradient(135deg, rgba(95, 208, 196, 0.2), rgba(240, 192, 92, 0.2))",
                         borderRadius: "6px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "14px",
-                        color: "white",
-                        fontWeight: "bold",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        boxShadow: "0 6px 16px rgba(95, 208, 196, 0.2)",
                     }}>
-                        OA
+                        <img
+                            src={oaLogo}
+                            alt="OpenArcade"
+                            style={{
+                                width: "18px",
+                                height: "18px",
+                                filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.35))",
+                            }}
+                        />
                     </div>
                     <span style={{
-                        color: "#fff",
+                        color: "var(--oa-text)",
                         fontWeight: "600",
                         fontSize: "15px",
                         letterSpacing: "-0.01em",
@@ -51,17 +62,19 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    fontSize: "12px",
+                    fontSize: "11px",
                 }}>
                     <div style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
                         padding: "4px 8px",
-                        background: isConnected ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
+                        background: isConnected ? "rgba(95, 208, 196, 0.12)" : "rgba(230, 118, 108, 0.12)",
                         borderRadius: "4px",
-                        border: `1px solid ${isConnected ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)"}`,
-                        color: isConnected ? "#4ade80" : "#f87171",
+                        border: `1px solid ${isConnected ? "rgba(95, 208, 196, 0.35)" : "rgba(230, 118, 108, 0.35)"}`,
+                        color: isConnected ? "var(--oa-accent)" : "var(--oa-danger)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
                     }}>
                         <div style={{
                             width: "6px",
@@ -79,7 +92,7 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                 <div style={{
                     fontSize: "11px",
                     fontWeight: "600",
-                    color: "#525252",
+                    color: "var(--oa-muted)",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     marginBottom: "12px",
@@ -87,7 +100,7 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                     Device
                 </div>
                 <div style={{
-                    color: "#e5e5e5",
+                    color: "var(--oa-text)",
                     fontSize: "14px",
                     fontWeight: "500",
                     marginBottom: "4px",
@@ -95,7 +108,7 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                     {controllerName}
                 </div>
                 <div style={{
-                    color: "#737373",
+                    color: "var(--oa-muted)",
                     fontSize: "13px",
                 }}>
                     {moduleCount} Connected Modules
@@ -107,7 +120,7 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                 <div style={{
                     fontSize: "11px",
                     fontWeight: "600",
-                    color: "#525252",
+                    color: "var(--oa-muted)",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     marginBottom: "12px",
@@ -126,10 +139,10 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                 width: "100%",
                                 textAlign: "left",
                                 padding: "10px 12px",
-                                background: currentModule === index ? "#262626" : "transparent",
-                                border: "1px solid", // placeholder
-                                borderColor: currentModule === index ? "#404040" : "transparent",
-                                borderRadius: "6px",
+                                background: currentModule === index ? "rgba(95, 208, 196, 0.14)" : "rgba(255,255,255,0.02)",
+                                border: "1px solid",
+                                borderColor: currentModule === index ? "rgba(95, 208, 196, 0.35)" : "transparent",
+                                borderRadius: "8px",
                                 cursor: "pointer",
                                 transition: "all 0.15s ease",
                                 display: "flex",
@@ -138,15 +151,15 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                 opacity: isModuleConnected ? 1 : 0.5,
                             }}
                             onMouseOver={(e) => {
-                                if (currentModule !== index) e.currentTarget.style.background = "#1a1a1a";
+                                if (currentModule !== index) e.currentTarget.style.background = "rgba(255,255,255,0.05)";
                             }}
                             onMouseOut={(e) => {
-                                if (currentModule !== index) e.currentTarget.style.background = "transparent";
+                                if (currentModule !== index) e.currentTarget.style.background = "rgba(255,255,255,0.02)";
                             }}
                         >
                             <div>
                                 <div style={{
-                                    color: currentModule === index ? "#fff" : "#a3a3a3",
+                                    color: currentModule === index ? "var(--oa-text)" : "var(--oa-muted)",
                                     fontSize: "13px",
                                     fontWeight: "500",
                                     marginBottom: "2px",
@@ -154,14 +167,14 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                     {module.name}
                                 </div>
                                 <div style={{
-                                    color: "#525252",
+                                    color: "var(--oa-muted)",
                                     fontSize: "11px",
                                 }}>
                                     {module.mappedButtons || 0} mapped
                                 </div>
                                 {module.deviceId && (
                                     <div style={{
-                                        color: "#404040",
+                                        color: "var(--oa-muted)",
                                         fontSize: "10px",
                                         fontFamily: "monospace",
                                         marginTop: "2px",
@@ -171,7 +184,7 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                 )}
                                 {!isModuleConnected && (
                                     <div style={{
-                                        color: "#525252",
+                                        color: "var(--oa-muted)",
                                         fontSize: "10px",
                                         marginTop: "2px",
                                     }}>
@@ -184,7 +197,7 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                     width: "6px",
                                     height: "6px",
                                     borderRadius: "50%",
-                                    background: "#3b82f6",
+                                    background: "var(--oa-accent)",
                                 }} />
                             )}
                         </button>
@@ -196,9 +209,9 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
             {/* Footer */}
             <div style={{
                 padding: "16px 20px",
-                borderTop: "1px solid #2a2a2a",
+                borderTop: "1px solid var(--oa-panel-border)",
                 fontSize: "11px",
-                color: "#404040",
+                color: "var(--oa-muted)",
                 display: "flex",
                 justifyContent: "space-between",
             }}>

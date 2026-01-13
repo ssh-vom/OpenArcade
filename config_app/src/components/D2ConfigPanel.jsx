@@ -13,19 +13,23 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
 
     const getTypeIcon = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '🎮';
-            case HID_INPUT_TYPES.KEYBOARD: return '⌨️';
-            case HID_INPUT_TYPES.ANALOG: return '🕹️';
-            default: return '❓';
+            case HID_INPUT_TYPES.GAMEPAD: return 'GP';
+            case HID_INPUT_TYPES.KEYBOARD: return 'KB';
+            case HID_INPUT_TYPES.ANALOG: return 'AX';
+            default: return 'NA';
         }
     };
 
-    const getTypeColor = (type) => {
+    const getTypeTone = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#3b82f6';
-            case HID_INPUT_TYPES.KEYBOARD: return '#10b981';
-            case HID_INPUT_TYPES.ANALOG: return '#f59e0b';
-            default: return '#6b7280';
+            case HID_INPUT_TYPES.GAMEPAD:
+                return { color: "#5b7cfa", border: "rgba(91, 124, 250, 0.3)" };
+            case HID_INPUT_TYPES.KEYBOARD:
+                return { color: "var(--oa-accent)", border: "rgba(95, 208, 196, 0.3)" };
+            case HID_INPUT_TYPES.ANALOG:
+                return { color: "var(--oa-warning)", border: "rgba(240, 192, 92, 0.3)" };
+            default:
+                return { color: "var(--oa-muted)", border: "rgba(142, 154, 168, 0.3)" };
         }
     };
 
@@ -43,24 +47,26 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
         <div style={{
             width: "300px",
             height: "100%",
-            background: "#121212",
-            borderLeft: "1px solid #2a2a2a",
+            background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
+            borderLeft: "1px solid var(--oa-panel-border)",
             display: "flex",
             flexDirection: "column",
             zIndex: 10,
             flexShrink: 0,
             animation: "slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both",
+            backdropFilter: "blur(10px)",
+            boxShadow: "var(--oa-shadow-soft)",
         }}>
             {/* Header */}
             <div style={{
                 padding: "20px",
-                borderBottom: "1px solid #2a2a2a",
-                background: "#121212",
+                borderBottom: "1px solid var(--oa-panel-border)",
+                background: "transparent",
             }}>
                 <div style={{
                     fontSize: "11px",
                     fontWeight: "600",
-                    color: "#525252",
+                    color: "var(--oa-muted)",
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
                     marginBottom: "8px",
@@ -71,7 +77,7 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                     margin: 0,
                     fontSize: "15px",
                     fontWeight: "600",
-                    color: "#ffffff",
+                    color: "var(--oa-text)",
                 }}>
                     {moduleName}
                 </h3>
@@ -80,8 +86,8 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
             {/* Device Status */}
             <div style={{
                 padding: "16px 20px",
-                borderBottom: "1px solid #2a2a2a",
-                background: "#1a1a1a",
+                borderBottom: "1px solid var(--oa-panel-border)",
+                background: "rgba(255,255,255,0.02)",
             }}>
                 <div style={{
                     display: "flex",
@@ -93,10 +99,10 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                         width: "8px",
                         height: "8px",
                         borderRadius: "50%",
-                        background: isConnected ? "#10b981" : "#525252",
+                        background: isConnected ? "var(--oa-accent)" : "var(--oa-muted)",
                         animation: isConnected ? "pulse 2s infinite" : "none",
                     }} />
-                    <span style={{ color: "#a3a3a3" }}>
+                    <span style={{ color: "var(--oa-muted)" }}>
                         {isConnected ? "Device Connected" : "Device Offline"}
                     </span>
                 </div>
@@ -108,16 +114,18 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                     <div style={{
                         padding: "40px 0",
                         textAlign: "center",
-                        color: "#404040",
+                        color: "var(--oa-muted)",
                         fontSize: "13px",
-                        border: "1px dashed #2a2a2a",
+                        border: "1px dashed var(--oa-panel-border)",
                         borderRadius: "8px",
-                        background: "rgba(255,255,255,0.01)"
+                        background: "rgba(255,255,255,0.02)"
                     }}>
-                        <div style={{ fontSize: "24px", marginBottom: "12px" }}>🎮</div>
+                        <div style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "12px" }}>
+                            Awaiting Mapping
+                        </div>
                         No buttons configured.
                         <br />
-                        <span style={{ fontSize: "11px", color: "#525252", display: "block", marginTop: "8px" }}>
+                        <span style={{ fontSize: "11px", color: "var(--oa-muted)", display: "block", marginTop: "8px" }}>
                             Click a button in the 2D view
                             <br />to configure HID input.
                         </span>
@@ -125,99 +133,118 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                 ) : (
                     <div>
                         {/* Type Groups */}
-                        {Object.entries(groupedMappings).map(([type, typeMappings]) => (
-                            <div key={type} style={{ marginBottom: "24px" }}>
-                                {/* Type Header */}
-                                <div style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "8px",
-                                    marginBottom: "12px",
-                                    fontSize: "12px",
-                                    color: getTypeColor(type),
-                                    fontWeight: "600",
-                                }}>
-                                    <span>{getTypeIcon(type)}</span>
-                                    <span>{getTypeLabel(type)}</span>
-                                    <span style={{
-                                        color: "#525252",
-                                        background: "#1a1a1a",
-                                        padding: "2px 6px",
-                                        borderRadius: "10px",
-                                        border: "1px solid #2a2a2a",
-                                        marginLeft: "auto"
+                        {Object.entries(groupedMappings).map(([type, typeMappings]) => {
+                            const tone = getTypeTone(type);
+                            return (
+                                <div key={type} style={{ marginBottom: "24px" }}>
+                                    <div style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        marginBottom: "12px",
+                                        fontSize: "12px",
+                                        color: tone.color,
+                                        fontWeight: "600",
                                     }}>
-                                        {typeMappings.length}
-                                    </span>
-                                </div>
+                                        <span style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "26px",
+                                            height: "22px",
+                                            borderRadius: "6px",
+                                            background: "rgba(255,255,255,0.04)",
+                                            border: `1px solid ${tone.border}`,
+                                            fontSize: "10px",
+                                            letterSpacing: "0.08em",
+                                        }}>
+                                            {getTypeIcon(type)}
+                                        </span>
+                                        <span>{getTypeLabel(type)}</span>
+                                        <span style={{
+                                            color: "var(--oa-muted)",
+                                            background: "rgba(255,255,255,0.03)",
+                                            padding: "2px 6px",
+                                            borderRadius: "10px",
+                                            border: "1px solid var(--oa-panel-border)",
+                                            marginLeft: "auto"
+                                        }}>
+                                            {typeMappings.length}
+                                        </span>
+                                    </div>
 
-                                {/* Mappings for this type */}
-                                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                    {typeMappings.map(({ buttonName, config }) => (
-                                        <button
-                                            key={buttonName}
-                                            onClick={() => onSelectButton(buttonName, null)}
-                                            style={{
-                                                width: "100%",
-                                                textAlign: "left",
-                                                padding: "10px",
-                                                background: "#1a1a1a",
-                                                border: `1px solid ${getTypeColor(type)}20`,
-                                                borderRadius: "6px",
-                                                cursor: "pointer",
-                                                transition: "all 0.15s ease",
-                                            }}
-                                            onMouseOver={(e) => {
-                                                e.currentTarget.style.borderColor = getTypeColor(type);
-                                                e.currentTarget.style.background = "#262626";
-                                            }}
-                                            onMouseOut={(e) => {
-                                                e.currentTarget.style.borderColor = getTypeColor(type) + "20";
-                                                e.currentTarget.style.background = "#1a1a1a";
-                                            }}
-                                        >
-                                            <div style={{
-                                                fontSize: "10px",
-                                                color: "#737373",
-                                                marginBottom: "3px",
-                                                fontFamily: "monospace",
-                                            }}>
-                                                {buttonName}
-                                            </div>
-                                            <div style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                            }}>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                        {typeMappings.map(({ buttonName, config }) => (
+                                            <button
+                                                key={buttonName}
+                                                onClick={() => onSelectButton(buttonName, null)}
+                                                style={{
+                                                    width: "100%",
+                                                    textAlign: "left",
+                                                    padding: "10px",
+                                                    background: "rgba(255,255,255,0.03)",
+                                                    border: `1px solid ${tone.border}`,
+                                                    borderRadius: "8px",
+                                                    cursor: "pointer",
+                                                    transition: "all 0.15s ease",
+                                                }}
+                                                onMouseOver={(e) => {
+                                                    e.currentTarget.style.borderColor = tone.color;
+                                                    e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    e.currentTarget.style.borderColor = tone.border;
+                                                    e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                                                }}
+                                            >
+                                                <div style={{
+                                                    fontSize: "10px",
+                                                    color: "var(--oa-muted)",
+                                                    marginBottom: "3px",
+                                                    fontFamily: "monospace",
+                                                }}>
+                                                    {buttonName}
+                                                </div>
                                                 <div style={{
                                                     display: "flex",
                                                     alignItems: "center",
-                                                    gap: "6px",
-                                                    fontSize: "12px",
-                                                    color: "#e5e5e5",
+                                                    justifyContent: "space-between",
                                                 }}>
-                                                    <span style={{ fontSize: "10px", opacity: 0.7 }}>
-                                                        {getTypeIcon(config.type)}
-                                                    </span>
-                                                    <span>{config.label || config.input}</span>
+                                                    <div style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: "6px",
+                                                        fontSize: "12px",
+                                                        color: "var(--oa-text)",
+                                                    }}>
+                                                        <span style={{
+                                                            fontSize: "9px",
+                                                            opacity: 0.8,
+                                                            letterSpacing: "0.08em",
+                                                            color: tone.color,
+                                                        }}>
+                                                            {getTypeIcon(config.type)}
+                                                        </span>
+                                                        <span>{config.label || config.input}</span>
+                                                    </div>
+                                                    <div style={{
+                                                        fontSize: "10px",
+                                                        color: "var(--oa-muted)",
+                                                        background: "rgba(255,255,255,0.04)",
+                                                        padding: "2px 6px",
+                                                        borderRadius: "3px",
+                                                    }}>
+                                                        {typeof config.action === "string"
+                                                            ? config.action
+                                                            : config.action?.label || config.action?.input || "Mapped"}
+                                                    </div>
                                                 </div>
-                                                <div style={{
-                                                    fontSize: "10px",
-                                                    color: "#404040",
-                                                    background: "#262626",
-                                                    padding: "2px 6px",
-                                                    borderRadius: "3px",
-                                                }}>
-                                                    {typeof config.action === "string"
-                                                        ? config.action
-                                                        : config.action?.label || config.action?.input || "Mapped"}
-                                                </div>
-                                            </div>
-                                        </button>
-                                    ))}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -225,8 +252,8 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
             {/* Action Bar */}
             <div style={{
                 padding: "16px 20px",
-                borderTop: "1px solid #2a2a2a",
-                background: "#171717",
+                borderTop: "1px solid var(--oa-panel-border)",
+                background: "transparent",
             }}>
                 <div style={{ display: "flex", gap: "8px" }}>
                     {Object.keys(mappings).length > 0 && (
@@ -235,17 +262,17 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                             style={{
                                 flex: 1,
                                 padding: "8px",
-                                background: "rgba(239, 68, 68, 0.1)",
-                                border: "1px solid rgba(239, 68, 68, 0.2)",
-                                borderRadius: "4px",
-                                color: "#f87171",
+                                background: "rgba(230, 118, 108, 0.12)",
+                                border: "1px solid rgba(230, 118, 108, 0.35)",
+                                borderRadius: "8px",
+                                color: "var(--oa-danger)",
                                 fontSize: "12px",
                                 fontWeight: "500",
                                 cursor: "pointer",
                                 transition: "all 0.2s",
                             }}
-                            onMouseOver={(e) => e.target.style.background = "rgba(239, 68, 68, 0.15)"}
-                            onMouseOut={(e) => e.target.style.background = "rgba(239, 68, 68, 0.1)"}
+                            onMouseOver={(e) => e.target.style.background = "rgba(230, 118, 108, 0.2)"}
+                            onMouseOut={(e) => e.target.style.background = "rgba(230, 118, 108, 0.12)"}
                         >
                             Clear All
                         </button>
@@ -255,19 +282,19 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                         style={{
                             flex: 2,
                             padding: "8px",
-                            background: "rgba(59, 130, 246, 0.1)",
-                            border: "1px solid rgba(59, 130, 246, 0.2)",
-                            borderRadius: "4px",
-                            color: "#3b82f6",
+                            background: "rgba(95, 208, 196, 0.16)",
+                            border: "1px solid rgba(95, 208, 196, 0.4)",
+                            borderRadius: "8px",
+                            color: "var(--oa-accent)",
                             fontSize: "12px",
                             fontWeight: "500",
                             cursor: "pointer",
                             transition: "all 0.2s",
                         }}
-                        onMouseOver={(e) => e.target.style.background = "rgba(59, 130, 246, 0.15)"}
-                        onMouseOut={(e) => e.target.style.background = "rgba(59, 130, 246, 0.1)"}
+                        onMouseOver={(e) => e.target.style.background = "rgba(95, 208, 196, 0.24)"}
+                        onMouseOut={(e) => e.target.style.background = "rgba(95, 208, 196, 0.16)"}
                     >
-                        💾 Save to Device
+                        Save to Device
                     </button>
                 </div>
             </div>

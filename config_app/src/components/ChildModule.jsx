@@ -190,7 +190,7 @@ const ChildModule = memo(function ChildModule({
     }, [gltf]);
 
     useEffect(() => {
-        const highlightColor = new THREE.Color("#3b82f6");
+        const highlightColor = new THREE.Color("#5fd0c4");
 
         buttonMeshes.current.forEach((mesh) => {
             const groupName = mesh.userData.buttonGroup;
@@ -238,19 +238,19 @@ const ChildModule = memo(function ChildModule({
 
     const getTypeIcon = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '🎮';
-            case HID_INPUT_TYPES.KEYBOARD: return '⌨️';
-            case HID_INPUT_TYPES.ANALOG: return '🕹️';
-            default: return '❓';
+            case HID_INPUT_TYPES.GAMEPAD: return 'GP';
+            case HID_INPUT_TYPES.KEYBOARD: return 'KB';
+            case HID_INPUT_TYPES.ANALOG: return 'AX';
+            default: return 'NA';
         }
     };
 
     const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#3b82f6';
-            case HID_INPUT_TYPES.KEYBOARD: return '#10b981';
-            case HID_INPUT_TYPES.ANALOG: return '#f59e0b';
-            default: return '#6b7280';
+            case HID_INPUT_TYPES.GAMEPAD: return '#5b7cfa';
+            case HID_INPUT_TYPES.KEYBOARD: return '#5fd0c4';
+            case HID_INPUT_TYPES.ANALOG: return '#f0c05c';
+            default: return '#8e9aa8';
         }
     };
 
@@ -267,7 +267,7 @@ const ChildModule = memo(function ChildModule({
                     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} ref={glowRef}>
                         <ringGeometry args={[0.28, 0.42, 48]} />
                         <meshBasicMaterial
-                            color="#3b82f6"
+                            color="#5fd0c4"
                             transparent
                             opacity={0.15}
                             side={THREE.DoubleSide}
@@ -279,7 +279,7 @@ const ChildModule = memo(function ChildModule({
                     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
                         <ringGeometry args={[0.24, 0.26, 48]} />
                         <meshBasicMaterial
-                            color="#3b82f6"
+                            color="#5fd0c4"
                             transparent
                             opacity={0.6}
                             side={THREE.DoubleSide}
@@ -290,7 +290,7 @@ const ChildModule = memo(function ChildModule({
                     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
                         <ringGeometry args={[0.20, 0.22, 48]} />
                         <meshBasicMaterial
-                            color="#3b82f6"
+                            color="#5fd0c4"
                             transparent
                             opacity={0.9}
                             side={THREE.DoubleSide}
@@ -327,7 +327,13 @@ const ChildModule = memo(function ChildModule({
                         alignItems: 'center',
                         gap: '4px'
                     }}>
-                        <span>{getTypeIcon(mappings[hoveredButton].type)}</span>
+                        <span style={{
+                            fontSize: "9px",
+                            letterSpacing: "0.08em",
+                            color: getTypeColor(mappings[hoveredButton].type),
+                        }}>
+                            {getTypeIcon(mappings[hoveredButton].type)}
+                        </span>
                         <span>{mappings[hoveredButton].label || mappings[hoveredButton].action}</span>
                     </div>
                 </Html>
@@ -341,14 +347,14 @@ const ChildModule = memo(function ChildModule({
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
                     <div style={{
-                        background: '#3b82f6',
+                        background: '#5fd0c4',
                         color: '#ffffff',
                         padding: '2px 6px',
                         borderRadius: '3px',
                         fontSize: '10px',
                         fontWeight: '600',
                         whiteSpace: 'nowrap',
-                        boxShadow: '0 2px 8px rgba(59, 130, 246, 0.4)'
+                        boxShadow: '0 2px 8px rgba(95, 208, 196, 0.35)'
                     }}>
                         Click to Configure
                     </div>
@@ -375,7 +381,7 @@ function IndicatorRing({ buttonName, gltf }) {
         <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.04, 0.055, 32]} />
             <meshBasicMaterial
-                color="#3b82f6"
+                color="#5fd0c4"
                 transparent
                 opacity={0.9}
                 side={THREE.DoubleSide}

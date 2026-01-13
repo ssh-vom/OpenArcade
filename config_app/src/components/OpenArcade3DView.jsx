@@ -83,7 +83,7 @@ function Particles() {
             </bufferGeometry>
             <pointsMaterial
                 size={0.05}
-                color="#5a5a7a"
+                color="#5aa19a"
                 transparent
                 opacity={0.6}
                 sizeAttenuation
@@ -374,7 +374,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 height: "100vh",
                 display: "flex",
                 overflow: "hidden",
-                background: "#0a0a0a",
+                background: "radial-gradient(900px circle at 18% 8%, rgba(95, 208, 196, 0.12), transparent 60%), radial-gradient(700px circle at 88% 6%, rgba(240, 192, 92, 0.1), transparent 55%), var(--oa-bg)",
                 opacity: loaded ? 1 : 0,
                 transition: "opacity 0.5s ease-in-out"
             }}>
@@ -395,10 +395,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                         orthographic={viewMode === '2d'}
                         camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
                         style={{
-                            background: "radial-gradient(circle at center, #1a1a2e 0%, #0a0a0a 100%)",
+                            background: "radial-gradient(1200px circle at 24% 0%, rgba(95, 208, 196, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 192, 92, 0.08), transparent 60%), #0a0d12",
                             width: "100%",
                             height: "100%",
-                            cursor: viewMode === '2d' ? 'crosshair' : 'grab'
+                            cursor: viewMode === '2d' ? 'pointer' : 'grab'
                         }}
                         shadows
                         gl={{
@@ -482,10 +482,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             position={[0, -0.49, 0]}
                             cellSize={1}
                             cellThickness={0.02}
-                            cellColor="#2a2a2a"
+                            cellColor="#1c2732"
                             sectionSize={5}
                             sectionThickness={0.04}
-                            sectionColor="#3a3a3a"
+                            sectionColor="#223042"
                             fadeDistance={25}
                             fadeStrength={1}
                         />
@@ -525,17 +525,27 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                     <button
                         onClick={toggleViewMode}
                         style={{
-                            margin: '10px',
-                            padding: '10px',
-                            background: '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
+                            margin: '12px',
+                            padding: '10px 12px',
+                            background: viewMode === '3d'
+                                ? "rgba(95, 208, 196, 0.16)"
+                                : "rgba(240, 192, 92, 0.16)",
+                            color: viewMode === '3d' ? "var(--oa-accent)" : "var(--oa-warning)",
+                            border: viewMode === '3d'
+                                ? "1px solid rgba(95, 208, 196, 0.4)"
+                                : "1px solid rgba(240, 192, 92, 0.4)",
+                            borderRadius: '10px',
                             cursor: 'pointer',
-                            flexShrink: 0
+                            flexShrink: 0,
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            letterSpacing: "0.02em",
+                            textTransform: "uppercase",
+                            transition: "all 0.2s ease",
+                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)"
                         }}
                     >
-                        Switch to {viewMode === '3d' ? '2D Top-Down' : '3D'} View
+                        {viewMode === '3d' ? 'Switch to 2D Top-Down' : 'Switch to 3D'} View
                     </button>
                     <div style={{ flex: 1, overflow: 'auto' }}>
                         {viewMode === '3d' ? (
