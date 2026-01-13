@@ -3,7 +3,7 @@ import { MemoizedChildModule } from "./ChildModule.jsx";
 import { CameraController } from "./CameraController.jsx";
 import { useCameraController } from "../hooks/useCameraController.jsx";
 import { useState, useEffect, memo, useRef, useCallback, useMemo } from "react";
-import { useGLTF, Bounds, Grid } from "@react-three/drei";
+import { useGLTF, Bounds } from "@react-three/drei";
 import ButtonMappingModal from "./ButtonMappingModal.jsx";
 import ButtonMappingsPanel from "./ButtonMappingsPanel.jsx";
 import HIDButtonMappingModal from "./HIDButtonMappingModal.jsx";
@@ -403,7 +403,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             orthographic={viewMode === '2d'}
                             camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
                             style={{
-                            background: "radial-gradient(1200px circle at 24% 0%, rgba(215, 177, 90, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 204, 122, 0.08), transparent 60%), #0a0a0b",
+                                background: "radial-gradient(1200px circle at 24% 0%, rgba(215, 177, 90, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 204, 122, 0.08), transparent 60%), #0a0a0b",
                                 width: "100%",
                                 height: "100%",
                                 cursor: viewMode === '2d' ? 'pointer' : 'grab'
@@ -424,13 +424,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             {/* --- Enhanced Lighting System --- */}
 
                             {/* Ambient base light for overall illumination */}
-                        <ambientLight intensity={0.85} color="#2c323a" />
+                            <ambientLight intensity={0.85} color="#2c323a" />
 
                             {/* Key Light - warm directional with shadows */}
                             <directionalLight
                                 position={[5, 12, 8]}
                                 intensity={1.2}
-                            color="#f7f8fb"
+                                color="#f7f8fb"
                                 castShadow
                                 shadow-mapSize={[2048, 2048]}
                                 shadow-camera-far={50}
@@ -446,21 +446,21 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             <directionalLight
                                 position={[-8, 6, 4]}
                                 intensity={0.5}
-                            color="#b8c9dd"
+                                color="#b8c9dd"
                             />
 
                             {/* Rim Light - back light for edge definition */}
                             <directionalLight
                                 position={[0, 3, -10]}
                                 intensity={0.6}
-                            color="#8aa2bf"
+                                color="#8aa2bf"
                             />
 
                             {/* Accent Light 1 - warm highlight */}
                             <pointLight
                                 position={[3, 4, 3]}
                                 intensity={0.4}
-                            color="#e6edf5"
+                                color="#e6edf5"
                                 distance={15}
                                 decay={2}
                             />
@@ -469,7 +469,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             <pointLight
                                 position={[-4, 3, -2]}
                                 intensity={0.3}
-                            color="#9bb0c6"
+                                color="#9bb0c6"
                                 distance={12}
                                 decay={2}
                             />
@@ -484,20 +484,20 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                 <shadowMaterial opacity={0.4} />
                             </mesh>
 
-                        {/* --- Tech Grid --- */}
-                        <gridHelper
-                            args={[40, 40, "#f0c46c", "#5f4a28"]}
-                            position={[0, -0.15, 0]}
-                        />
-                        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]}>
-                            <planeGeometry args={[40, 40, 40, 40]} />
-                            <meshBasicMaterial
-                                color="#5f4a28"
-                                wireframe
-                                transparent
-                                opacity={0.35}
+                            {/* --- Tech Grid --- */}
+                            <gridHelper
+                                args={[40, 40, "#f0c46c", "#5f4a28"]}
+                                position={[0, -0.15, 0]}
                             />
-                        </mesh>
+                            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]}>
+                                <planeGeometry args={[40, 40, 40, 40]} />
+                                <meshBasicMaterial
+                                    color="#5f4a28"
+                                    wireframe
+                                    transparent
+                                    opacity={0.35}
+                                />
+                            </mesh>
 
                             {/* --- Minimal Particle System --- */}
                             <Particles />
