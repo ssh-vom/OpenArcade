@@ -261,46 +261,6 @@ const ChildModule = memo(function ChildModule({
             scale={isEditable ? 4.5 : 3.5}
             onClick={handleModuleClick}
         >
-            {/* Selection indicator ring */}
-            {isEditable && viewMode === '3d' && (
-                <>
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} ref={glowRef}>
-                        <ringGeometry args={[0.28, 0.42, 48]} />
-                        <meshBasicMaterial
-                            color="#d7b15a"
-                            transparent
-                            opacity={0.15}
-                            side={THREE.DoubleSide}
-                            blending={THREE.AdditiveBlending}
-                            depthWrite={true}
-                            renderOrder={100}
-                        />
-                    </mesh>
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
-                        <ringGeometry args={[0.24, 0.26, 48]} />
-                        <meshBasicMaterial
-                            color="#d7b15a"
-                            transparent
-                            opacity={0.6}
-                            side={THREE.DoubleSide}
-                            depthWrite={false}
-                            renderOrder={100}
-                        />
-                    </mesh>
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]}>
-                        <ringGeometry args={[0.20, 0.22, 48]} />
-                        <meshBasicMaterial
-                            color="#d7b15a"
-                            transparent
-                            opacity={0.9}
-                            side={THREE.DoubleSide}
-                            depthWrite={false}
-                            renderOrder={100}
-                        />
-                    </mesh>
-                </>
-            )}
-
             {/* GLB Scene */}
             {gltf.scene && (
                 <primitive object={gltf.scene} />
