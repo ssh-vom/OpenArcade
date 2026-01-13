@@ -14,9 +14,17 @@ from default_descriptor import default_descriptor
 logger = logging.getLogger("OpenArcade")
 
 KEYCODES = {
-    name: value
-    for name, value in vars(const).items()
-    if name.startswith("HID_KEY_")
+    name: value for name, value in vars(const).items() if name.startswith("HID_KEY_")
+}
+MODIFIER_KEYCODES = {
+    const.HID_KEY_LEFT_CONTROL: 0x01,
+    const.HID_KEY_LEFT_SHIFT: 0x02,
+    const.HID_KEY_LEFT_ALT: 0x04,
+    const.HID_KEY_LEFT_GUI: 0x08,
+    const.HID_KEY_RIGHT_CONTROL: 0x10,
+    const.HID_KEY_RIGHT_SHIFT: 0x20,
+    const.HID_KEY_RIGHT_ALT: 0x40,
+    const.HID_KEY_RIGHT_GUI: 0x80,
 }
 DEFAULT_CONTROLS = [control.to_dict() for control in default_descriptor().controls]
 
@@ -45,11 +53,7 @@ def build_mapping(device_cfg, default_controls=None):
     active_mode = device_cfg.get("active_mode") or "keyboard"
     descriptor = device_cfg.get("descriptor") or {}
     controls = descriptor.get("controls") or (default_controls or DEFAULT_CONTROLS)
-    mapping_cfg = (
-        device_cfg.get("modes", {})
-        .get(active_mode, {})
-        .get("mapping", {})
-    )
+    mapping_cfg = device_cfg.get("modes", {}).get(active_mode, {}).get("mapping", {})
 
     mapping = {}
     for control in controls:
@@ -59,7 +63,9 @@ def build_mapping(device_cfg, default_controls=None):
         control_id = control.get("id")
         mapping_entry = None
         if control_id is not None:
-            mapping_entry = mapping_cfg.get(str(control_id), mapping_cfg.get(control_id))
+            mapping_entry = mapping_cfg.get(
+                str(control_id), mapping_cfg.get(control_id)
+            )
         keycode = resolve_keycode(mapping_entry)
         if keycode is None:
             keycode = DEFAULT_MAPPING.get(bit_index)
@@ -125,13 +131,24 @@ def aggregator_process(
                     active_keys.add(key_code)
 
         # 2. Construct HID Report (Boot Keyboard: 8 bytes)
-        # Byte 0: Modifiers (0 for now)
+        # Byte 0: Modifiers
         # Byte 1: Reserved (0)
         # Byte 2-7: Keycodes (Up to 6 keys)
         report = bytearray(8)
 
+        modifiers = 0
+        non_modifier_keys = []
+        for key_code in active_keys:
+            modifier_bit = MODIFIER_KEYCODES.get(key_code)
+            if modifier_bit is not None:
+                modifiers |= modifier_bit
+            else:
+                non_modifier_keys.append(key_code)
+
+        report[0] = modifiers
+
         # Sort keys for consistency
-        sorted_keys = sorted(list(active_keys))
+        sorted_keys = sorted(non_modifier_keys)
 
         # Populate report (limit to 6 keys for boot protocol compatibility)
         for i in range(min(len(sorted_keys), 6)):
