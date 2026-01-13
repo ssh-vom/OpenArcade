@@ -16,6 +16,7 @@ sdkconfig.*
 **.fdb_latexmk
 **.env
 **/build/
+**/__pycache__/
 node_modules/
 node_modules
 
