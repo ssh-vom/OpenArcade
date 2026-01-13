@@ -481,19 +481,20 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                 <shadowMaterial opacity={0.4} />
                             </mesh>
 
-                            {/* --- Tech Grid --- */}
-                            <Grid
-                                args={[50, 50]}
-                                position={[0, -0.49, 0]}
-                                cellSize={1}
-                                cellThickness={0.02}
-                            cellColor="#241f15"
-                                sectionSize={5}
-                                sectionThickness={0.04}
-                            sectionColor="#302716"
-                                fadeDistance={25}
-                                fadeStrength={1}
+                        {/* --- Tech Grid --- */}
+                        <gridHelper
+                            args={[40, 40, "#f0c46c", "#5f4a28"]}
+                            position={[0, -0.15, 0]}
+                        />
+                        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]}>
+                            <planeGeometry args={[40, 40, 40, 40]} />
+                            <meshBasicMaterial
+                                color="#5f4a28"
+                                wireframe
+                                transparent
+                                opacity={0.35}
                             />
+                        </mesh>
 
                             {/* --- Minimal Particle System --- */}
                             <Particles />
