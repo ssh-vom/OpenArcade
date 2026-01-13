@@ -2,7 +2,69 @@ import { useGLTF, Html } from "@react-three/drei";
 import { useRef, memo, useEffect, useState, useCallback } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { HID_INPUT_TYPES } from "../services/HIDManager.js";
+import { ANALOG_INPUTS, GAMEPAD_INPUTS, HID_INPUT_TYPES, KEYBOARD_INPUTS, getInputLabel } from "../services/HIDManager.js";
+
+const GAMEPAD_INPUT_KEYS = new Set(Object.keys(GAMEPAD_INPUTS));
+const KEYBOARD_INPUT_KEYS = new Set(Object.keys(KEYBOARD_INPUTS));
+const ANALOG_INPUT_KEYS = new Set(Object.keys(ANALOG_INPUTS));
+
+const resolveMappingType = (mapping, inputValue) => {
+    if (mapping?.type) {
+        return typeof mapping.type === "string" ? mapping.type.toLowerCase() : mapping.type;
+    }
+
+    if (mapping?.analogConfig) {
+        return HID_INPUT_TYPES.ANALOG;
+    }
+
+    if (inputValue) {
+        if (ANALOG_INPUT_KEYS.has(inputValue)) {
+            return HID_INPUT_TYPES.ANALOG;
+        }
+        if (GAMEPAD_INPUT_KEYS.has(inputValue)) {
+            return HID_INPUT_TYPES.GAMEPAD;
+        }
+        if (
+            KEYBOARD_INPUT_KEYS.has(inputValue) ||
+            inputValue.startsWith("key_") ||
+            inputValue.startsWith("HID_KEY_")
+        ) {
+            return HID_INPUT_TYPES.KEYBOARD;
+        }
+    }
+
+    return HID_INPUT_TYPES.KEYBOARD;
+};
+
+const normalizeMapping = (mapping) => {
+    if (!mapping) {
+        return null;
+    }
+
+    if (typeof mapping === "string") {
+        return {
+            type: HID_INPUT_TYPES.KEYBOARD,
+            label: mapping,
+            action: mapping,
+        };
+    }
+
+    const rawInputValue = mapping.input || mapping.label || mapping.action || "";
+    const inputValue = typeof rawInputValue === "string" ? rawInputValue : "";
+    const type = resolveMappingType(mapping, inputValue);
+    const label =
+        mapping.label ||
+        (mapping.input ? getInputLabel(type, mapping.input) : null) ||
+        (typeof mapping.action === "string" ? mapping.action : null) ||
+        inputValue ||
+        "";
+
+    return {
+        ...mapping,
+        type,
+        label,
+    };
+};
 
 const ChildModule = memo(function ChildModule({
     path,
@@ -12,7 +74,8 @@ const ChildModule = memo(function ChildModule({
     position: propPosition = [-1, 0, 0],
     viewMode = '3d',
     isActive = true,
-    mappings = {}
+    mappings = {},
+    mappingFilter = "all"
 }) {
     const gltf = useGLTF(path);
     const groupRef = useRef();
@@ -20,6 +83,7 @@ const ChildModule = memo(function ChildModule({
     const frameCountRef = useRef(0);
     const lastAnimationUpdate = useRef(0);
     const [hoveredButton, setHoveredButton] = useState(null);
+    const [buttonLabelPositions, setButtonLabelPositions] = useState({});
     const { camera, gl } = useThree();
     const raycaster = useRef(new THREE.Raycaster());
     const mouse = useRef(new THREE.Vector2());
@@ -165,6 +229,13 @@ const ChildModule = memo(function ChildModule({
         if (gltf && gltf.scene) {
             buttonMeshes.current.clear();
             buttonNameByMesh.current.clear();
+            const labelPositions = {};
+
+            gltf.scene.updateWorldMatrix(true, true);
+            if (groupRef.current) {
+                groupRef.current.updateWorldMatrix(true, true);
+            }
+
             gltf.scene.traverse((rootChild) => {
                 if (rootChild.name.startsWith('button_')) {
                     const buttonGroupName = rootChild.name;
@@ -183,8 +254,24 @@ const ChildModule = memo(function ChildModule({
                     };
 
                     findMeshes(rootChild);
+
+                    const box = new THREE.Box3().setFromObject(rootChild);
+                    const center = new THREE.Vector3();
+                    if (!box.isEmpty()) {
+                        box.getCenter(center);
+                    } else {
+                        rootChild.getWorldPosition(center);
+                    }
+
+                    if (groupRef.current) {
+                        groupRef.current.worldToLocal(center);
+                    }
+
+                    center.y += 0.035;
+                    labelPositions[buttonGroupName] = [center.x, center.y, center.z];
                 }
             });
+            setButtonLabelPositions(labelPositions);
             console.log('Total button meshes found:', buttonMeshes.current.size);
         }
     }, [gltf]);
@@ -254,6 +341,11 @@ const ChildModule = memo(function ChildModule({
         }
     };
 
+    const normalizedFilter = typeof mappingFilter === "string" ? mappingFilter.toLowerCase() : mappingFilter;
+    const hoveredMapping = hoveredButton ? normalizeMapping(mappings[hoveredButton]) : null;
+    const showHoveredMapping =
+        hoveredMapping && (normalizedFilter === "all" || hoveredMapping.type === normalizedFilter);
+
     return (
         <group
             ref={groupRef}
@@ -266,8 +358,54 @@ const ChildModule = memo(function ChildModule({
                 <primitive object={gltf.scene} />
             )}
 
+            {/* Mapping badges for 2D mode */}
+            {viewMode === '2d' && Object.entries(mappings).map(([buttonName, mapping]) => {
+                const normalizedMapping = normalizeMapping(mapping);
+                if (!normalizedMapping) return null;
+                if (normalizedFilter !== "all" && normalizedMapping.type !== normalizedFilter) return null;
+                const position = buttonLabelPositions[buttonName];
+                if (!position) return null;
+                const label = normalizedMapping.label;
+                if (!label) return null;
+                const typeColor = getTypeColor(normalizedMapping.type);
+
+                return (
+                    <Html
+                        key={`${buttonName}-mapping`}
+                        position={position}
+                        center
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                        <div style={{
+                            background: 'rgba(0, 0, 0, 0.72)',
+                            color: '#ffffff',
+                            padding: '2px 6px',
+                            borderRadius: '999px',
+                            fontSize: '9px',
+                            fontWeight: '600',
+                            whiteSpace: 'nowrap',
+                            border: `1px solid ${typeColor}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.35)',
+                            backdropFilter: 'blur(6px)'
+                        }}>
+                            <span style={{
+                                fontSize: '8px',
+                                letterSpacing: '0.08em',
+                                color: typeColor,
+                            }}>
+                                {getTypeIcon(normalizedMapping.type)}
+                            </span>
+                            <span>{label}</span>
+                        </div>
+                    </Html>
+                );
+            })}
+
             {/* Hover overlays for 2D mode */}
-            {viewMode === '2d' && hoveredButton && mappings[hoveredButton] && (
+            {viewMode === '2d' && hoveredButton && showHoveredMapping && (
                 <Html
                     position={[0, 0.15, 0]}
                     center
@@ -281,7 +419,7 @@ const ChildModule = memo(function ChildModule({
                         fontSize: '11px',
                         fontWeight: '500',
                         whiteSpace: 'nowrap',
-                        border: `1px solid ${getTypeColor(mappings[hoveredButton].type)}`,
+                        border: `1px solid ${getTypeColor(hoveredMapping.type)}`,
                         backdropFilter: 'blur(4px)',
                         display: 'flex',
                         alignItems: 'center',
@@ -290,11 +428,11 @@ const ChildModule = memo(function ChildModule({
                         <span style={{
                             fontSize: "9px",
                             letterSpacing: "0.08em",
-                            color: getTypeColor(mappings[hoveredButton].type),
+                            color: getTypeColor(hoveredMapping.type),
                         }}>
-                            {getTypeIcon(mappings[hoveredButton].type)}
+                            {getTypeIcon(hoveredMapping.type)}
                         </span>
-                        <span>{mappings[hoveredButton].label || mappings[hoveredButton].action}</span>
+                        <span>{hoveredMapping.label}</span>
                     </div>
                 </Html>
             )}
@@ -356,6 +494,7 @@ const MemoizedChildModule = memo(ChildModule, (prevProps, nextProps) => {
         prevProps.isEditable === nextProps.isEditable &&
         prevProps.viewMode === nextProps.viewMode &&
         prevProps.isActive === nextProps.isActive &&
+        prevProps.mappingFilter === nextProps.mappingFilter &&
         JSON.stringify(prevProps.position) === JSON.stringify(nextProps.position) &&
         JSON.stringify(prevProps.mappings) === JSON.stringify(nextProps.mappings)
     );

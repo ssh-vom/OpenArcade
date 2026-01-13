@@ -104,6 +104,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [loaded, setLoaded] = useState(false);
     const [viewMode, setViewMode] = useState('2d'); // '3d' or '2d'
+    const [mappingFilter, setMappingFilter] = useState("all");
 
     useEffect(() => {
         const timer = setTimeout(() => setLoaded(true), 50);
@@ -389,6 +390,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                     onModuleChange={handleModuleChange}
                     isConnected={modules.some((module) => module.connected !== false)}
                     viewMode={viewMode}
+                    mappingFilter={mappingFilter}
+                    onMappingFilterChange={setMappingFilter}
                     onToggleView={toggleViewMode}
                 />
 
@@ -512,6 +515,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                         viewMode={viewMode}
                                         isActive={index === currentModuleIndex}
                                         mappings={module.mappings}
+                                        mappingFilter={mappingFilter}
                                         key={module.id}
                                     />
                                 ))}

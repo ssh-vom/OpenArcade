@@ -1,4 +1,5 @@
 import oaLogo from "../assets/oa-logo.svg";
+import { HID_INPUT_TYPES } from "../services/HIDManager.js";
 
 export default function ControllerHUD({
     controllerName,
@@ -8,8 +9,17 @@ export default function ControllerHUD({
     onModuleChange,
     isConnected,
     viewMode,
+    mappingFilter,
+    onMappingFilterChange,
     onToggleView,
 }) {
+    const filterOptions = [
+        { value: "all", label: "All" },
+        { value: HID_INPUT_TYPES.KEYBOARD, label: "KB" },
+        { value: HID_INPUT_TYPES.GAMEPAD, label: "GP" },
+        { value: HID_INPUT_TYPES.ANALOG, label: "AX" },
+    ];
+
     return (
         <div style={{
             width: "100%",
@@ -130,6 +140,54 @@ export default function ControllerHUD({
                         }} />
                         {isConnected ? "Online" : "Offline"}
                     </div>
+                    {viewMode === "2d" && (
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "4px 6px",
+                            background: "rgba(255,255,255,0.04)",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                        }}>
+                            <span style={{
+                                fontSize: "9px",
+                                fontWeight: "600",
+                                color: "var(--oa-muted)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.08em",
+                            }}>
+                                Maps
+                            </span>
+                            <div style={{ display: "flex", gap: "4px" }}>
+                                {filterOptions.map((option) => {
+                                    const isActive = mappingFilter === option.value;
+                                    return (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => onMappingFilterChange(option.value)}
+                                            style={{
+                                                padding: "4px 6px",
+                                                background: isActive ? "rgba(215, 177, 90, 0.2)" : "transparent",
+                                                color: isActive ? "var(--oa-accent)" : "var(--oa-muted)",
+                                                border: isActive
+                                                    ? "1px solid rgba(215, 177, 90, 0.5)"
+                                                    : "1px solid rgba(255,255,255,0.08)",
+                                                borderRadius: "8px",
+                                                cursor: "pointer",
+                                                fontSize: "10px",
+                                                fontWeight: "600",
+                                                letterSpacing: "0.05em",
+                                                textTransform: "uppercase",
+                                            }}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                     <button
                         onClick={onToggleView}
                         style={{
