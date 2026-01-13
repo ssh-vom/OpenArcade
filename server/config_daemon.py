@@ -109,6 +109,7 @@ def run(device_path: str, verbose: bool = False) -> int:
                     print("Invalid JSON received")
                 write_line(fd, {"ok": False, "error": "invalid_json"})
                 continue
+            store.load()
             if verbose:
                 print(f"Received: {message}")
             response = handle_command(store, message)
