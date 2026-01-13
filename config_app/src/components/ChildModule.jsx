@@ -23,6 +23,67 @@ const ChildModule = memo(function ChildModule({
     const { camera, gl } = useThree();
     const raycaster = useRef(new THREE.Raycaster());
     const mouse = useRef(new THREE.Vector2());
+    const buttonMaterialState = useRef(new Map());
+
+    function prepareHighlightMaterial(mesh) {
+        const storeMaterial = (material) => {
+            if (!material || buttonMaterialState.current.has(material.uuid)) {
+                return;
+            }
+
+            const original = {
+                uuid: material.uuid,
+                emissive: material.emissive ? material.emissive.clone() : null,
+                emissiveIntensity: material.emissiveIntensity ?? 0,
+            };
+
+            buttonMaterialState.current.set(material.uuid, original);
+        };
+
+        const cloneMaterial = (material) => {
+            if (!material) {
+                return material;
+            }
+            const cloned = material.clone();
+            storeMaterial(cloned);
+            return cloned;
+        };
+
+        if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map((mat) => cloneMaterial(mat));
+        } else if (mesh.material) {
+            mesh.material = cloneMaterial(mesh.material);
+        }
+    }
+
+    function applyHighlight(mesh, enabled, color) {
+        const updateMaterial = (material) => {
+            if (!material) {
+                return;
+            }
+
+            const original = buttonMaterialState.current.get(material.uuid);
+            if (!original) {
+                return;
+            }
+
+            if (material.emissive) {
+                if (enabled) {
+                    material.emissive.copy(color);
+                    material.emissiveIntensity = 0.45;
+                } else {
+                    material.emissive.copy(original.emissive || new THREE.Color(0x000000));
+                    material.emissiveIntensity = original.emissiveIntensity;
+                }
+            }
+        };
+
+        if (Array.isArray(mesh.material)) {
+            mesh.material.forEach(updateMaterial);
+        } else {
+            updateMaterial(mesh.material);
+        }
+    }
 
     // Get button names and meshes for hit detection
     const buttonMeshes = useRef(new Set());
@@ -104,6 +165,7 @@ const ChildModule = memo(function ChildModule({
                             node.userData.buttonGroup = buttonGroupName;
                             buttonMeshes.current.add(node);
                             buttonNameByMesh.current.set(node.uuid, buttonGroupName);
+                            prepareHighlightMaterial(node);
                             console.log(`Found button mesh: ${node.name} under ${buttonGroupName}`, node);
                         }
                         if (node.children) {
@@ -117,6 +179,16 @@ const ChildModule = memo(function ChildModule({
             console.log('Total button meshes found:', buttonMeshes.current.size);
         }
     }, [gltf]);
+
+    useEffect(() => {
+        const highlightColor = new THREE.Color("#3b82f6");
+
+        buttonMeshes.current.forEach((mesh) => {
+            const groupName = mesh.userData.buttonGroup;
+            const isTarget = viewMode === "2d" && hoveredButton && groupName === hoveredButton;
+            applyHighlight(mesh, isTarget, highlightColor);
+        });
+    }, [hoveredButton, viewMode]);
 
     // Attach mouse event listeners for raycasting
     useEffect(() => {
@@ -250,14 +322,6 @@ const ChildModule = memo(function ChildModule({
                         <span>{mappings[hoveredButton].label || mappings[hoveredButton].action}</span>
                     </div>
                 </Html>
-            )}
-
-            {/* Hover indicator ring - positioned dynamically based on button */}
-            {viewMode === '2d' && hoveredButton && (
-                <IndicatorRing
-                    buttonName={hoveredButton}
-                    gltf={gltf}
-                />
             )}
 
             {/* Cursor hint when hovered */}
