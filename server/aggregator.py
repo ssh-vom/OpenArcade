@@ -1,13 +1,95 @@
 import asyncio
 import logging
 import multiprocessing
+import os
 import struct
 
 from bleak import BleakClient
 
+import constants as const
+from config_store import ConfigStore
 from constants import CHAR_UUID, DEFAULT_MAPPING
+from default_descriptor import default_descriptor
 
 logger = logging.getLogger("OpenArcade")
+
+KEYCODES = {
+    name: value
+    for name, value in vars(const).items()
+    if name.startswith("HID_KEY_")
+}
+DEFAULT_CONTROLS = [control.to_dict() for control in default_descriptor().controls]
+
+
+def resolve_keycode(entry):
+    if entry is None:
+        return None
+    if isinstance(entry, int):
+        return entry
+    if isinstance(entry, dict):
+        entry = entry.get("keycode")
+    if isinstance(entry, str):
+        if entry in KEYCODES:
+            return KEYCODES[entry]
+        if entry.startswith("0x"):
+            try:
+                return int(entry, 16)
+            except ValueError:
+                return None
+        if entry.isdigit():
+            return int(entry)
+    return None
+
+
+def build_mapping(device_cfg, default_controls=None):
+    active_mode = device_cfg.get("active_mode") or "keyboard"
+    descriptor = device_cfg.get("descriptor") or {}
+    controls = descriptor.get("controls") or (default_controls or DEFAULT_CONTROLS)
+    mapping_cfg = (
+        device_cfg.get("modes", {})
+        .get(active_mode, {})
+        .get("mapping", {})
+    )
+
+    mapping = {}
+    for control in controls:
+        bit_index = control.get("bit_index")
+        if bit_index is None:
+            continue
+        control_id = control.get("id")
+        mapping_entry = None
+        if control_id is not None:
+            mapping_entry = mapping_cfg.get(str(control_id), mapping_cfg.get(control_id))
+        keycode = resolve_keycode(mapping_entry)
+        if keycode is None:
+            keycode = DEFAULT_MAPPING.get(bit_index)
+        if keycode is not None:
+            mapping[bit_index] = keycode
+
+    for bit_index, keycode in DEFAULT_MAPPING.items():
+        mapping.setdefault(bit_index, keycode)
+
+    return mapping
+
+
+def build_mapping_cache(config_snapshot, default_controls=None):
+    controls = default_controls or DEFAULT_CONTROLS
+    return {
+        device_id: build_mapping(device_cfg, controls)
+        for device_id, device_cfg in config_snapshot.get("devices", {}).items()
+    }
+
+
+def refresh_mapping_cache(config_store, previous_mtime, default_controls=None):
+    try:
+        mtime = os.path.getmtime(config_store.path)
+    except OSError:
+        mtime = None
+    if mtime == previous_mtime:
+        return None
+    snapshot = config_store.load()
+    cache = build_mapping_cache(snapshot, default_controls)
+    return snapshot, cache, mtime
 
 
 def aggregator_process(
@@ -24,6 +106,10 @@ def aggregator_process(
     connected_clients: dict[str, BleakClient] = {}
     device_states: dict[str, int] = {}  # Address -> 32-bit State
 
+    config_store = ConfigStore()
+    config_mtime = None
+    mapping_cache = build_mapping_cache(config_store.load())
+
     async def update_hid_report():
         """
         Combines states from all devices, applies mapping, and sends HID report.
@@ -32,8 +118,7 @@ def aggregator_process(
 
         # 1. Aggregate and Map
         for addr, state in device_states.items():
-            # In the future, we can look up specific profiles based on 'addr'
-            mapping = DEFAULT_MAPPING
+            mapping = mapping_cache.get(addr, DEFAULT_MAPPING)
 
             for bit_index, key_code in mapping.items():
                 if (state >> bit_index) & 1:
@@ -112,6 +197,10 @@ def aggregator_process(
             connected_clients.pop(address, None)
 
     async def run():
+        nonlocal mapping_cache, config_mtime
+        refresh = refresh_mapping_cache(config_store, config_mtime)
+        if refresh:
+            _, mapping_cache, config_mtime = refresh
         while not stop_event.is_set():
             # Process new devices
             while not found_queue.empty():
@@ -122,6 +211,9 @@ def aggregator_process(
                 except Exception:
                     break
 
+            refresh = refresh_mapping_cache(config_store, config_mtime)
+            if refresh:
+                _, mapping_cache, config_mtime = refresh
             # Keep loop alive
             await asyncio.sleep(0.5)
 
