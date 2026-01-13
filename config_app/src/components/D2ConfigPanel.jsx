@@ -1,6 +1,6 @@
 import { HID_INPUT_TYPES } from "../services/HIDManager.js";
 
-export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, onClearAll, moduleId, onSaveToDevice }) {
+export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, onClearAll, moduleId, onSaveToDevice, isConnected = true }) {
     // Group mappings by input type
     const groupedMappings = Object.entries(mappings).reduce((groups, [buttonName, config]) => {
         const type = config?.type || 'unknown';
@@ -93,10 +93,12 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                         width: "8px",
                         height: "8px",
                         borderRadius: "50%",
-                        background: "#10b981",
-                        animation: "pulse 2s infinite",
+                        background: isConnected ? "#10b981" : "#525252",
+                        animation: isConnected ? "pulse 2s infinite" : "none",
                     }} />
-                    <span style={{ color: "#a3a3a3" }}>Device Connected</span>
+                    <span style={{ color: "#a3a3a3" }}>
+                        {isConnected ? "Device Connected" : "Device Offline"}
+                    </span>
                 </div>
             </div>
 

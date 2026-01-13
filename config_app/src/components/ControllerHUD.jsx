@@ -116,7 +116,9 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                 </div>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {modules.map((module, index) => (
+                    {modules.map((module, index) => {
+                        const isModuleConnected = module.connected !== false;
+                        return (
                         <button
                             key={module.id}
                             onClick={() => onModuleChange(index)}
@@ -133,6 +135,7 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
+                                opacity: isModuleConnected ? 1 : 0.5,
                             }}
                             onMouseOver={(e) => {
                                 if (currentModule !== index) e.currentTarget.style.background = "#1a1a1a";
@@ -166,6 +169,15 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                         {module.deviceId}
                                     </div>
                                 )}
+                                {!isModuleConnected && (
+                                    <div style={{
+                                        color: "#525252",
+                                        fontSize: "10px",
+                                        marginTop: "2px",
+                                    }}>
+                                        Offline
+                                    </div>
+                                )}
                             </div>
                             {currentModule === index && (
                                 <div style={{
@@ -176,7 +188,8 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                                 }} />
                             )}
                         </button>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
             

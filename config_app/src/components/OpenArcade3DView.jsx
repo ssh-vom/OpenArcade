@@ -169,15 +169,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         }
 
         const positions = [[-1.5, 0, 0], [0, 0, 0], [1.5, 0, 0], [3, 0, 0]];
-        const connectedDevices = deviceEntries.filter(([, deviceConfig]) => deviceConfig?.connected);
-        if (connectedDevices.length === 0) {
-            setModules(defaultModules);
-            setCurrentModuleIndex(0);
-            return;
-        }
-
-        const realDevices = connectedDevices.filter(([deviceId]) => deviceId.includes(":"));
-        const entriesToRender = realDevices.length > 0 ? realDevices : connectedDevices;
+        const realDevices = deviceEntries.filter(([deviceId]) => deviceId.includes(":"));
+        const entriesToRender = realDevices.length > 0 ? realDevices : deviceEntries;
 
         const nextModules = entriesToRender.map(([deviceId, deviceConfig], index) => {
             const uiLayout = deviceConfig?.ui?.layout;
@@ -217,13 +210,18 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 mappings,
                 position: positions[index % positions.length],
                 deviceLayout: layout,
+                connected: deviceConfig?.connected !== false,
             };
         });
 
         if (nextModules.length > 0) {
             setModules(nextModules);
             setCurrentModuleIndex(0);
+            return;
         }
+
+        setModules(defaultModules);
+        setCurrentModuleIndex(0);
     }, [defaultLayout, hidToKeyInput]);
 
     useEffect(() => {
@@ -388,7 +386,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                     currentModule={currentModuleIndex}
                     modules={modules.map(m => ({ ...m, mappedButtons: Object.keys(m.mappings).length }))}
                     onModuleChange={handleModuleChange}
-                    isConnected={true}
+                    isConnected={modules.some((module) => module.connected !== false)}
                 />
 
                 {/* Main Canvas Area */}
@@ -554,6 +552,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                 onClearAll={clearAllMappings}
                                 moduleId={currentModule.id}
                                 onSaveToDevice={saveToDevice}
+                                isConnected={currentModule.connected !== false}
                             />
                         )}
                     </div>
