@@ -24,9 +24,19 @@ if [ -d "$GADGET_DIR" ]; then
         rm "$GADGET_DIR/configs/c.1/hid.usb0" || true
     fi
 
+    # Unlink ACM function from config before removing
+    if [ -L "$GADGET_DIR/configs/c.1/acm.usb0" ]; then
+        rm "$GADGET_DIR/configs/c.1/acm.usb0" || true
+    fi
+
     # Remove HID function if it exists
     if [ -d "$GADGET_DIR/functions/hid.usb0" ]; then
         rmdir "$GADGET_DIR/functions/hid.usb0" || true
+    fi
+
+    # Remove ACM function if it exists
+    if [ -d "$GADGET_DIR/functions/acm.usb0" ]; then
+        rmdir "$GADGET_DIR/functions/acm.usb0" || true
     fi
 
     # Finally remove the gadget directory
@@ -72,7 +82,13 @@ echo -ne \
 ln -s functions/hid.usb0 configs/c.1/
 
 # ------------------------------------------------------------
-# 4. Enable gadget
+# 4. Create ACM (WebSerial) function
+# ------------------------------------------------------------
+mkdir -p functions/acm.usb0
+ln -s functions/acm.usb0 configs/c.1/
+
+# ------------------------------------------------------------
+# 5. Enable gadget
 # ------------------------------------------------------------
 UDC_NAME=$(ls /sys/class/udc | head -n 1 || true)
 if [ -z "$UDC_NAME" ]; then
@@ -84,4 +100,3 @@ echo "[*] Binding to UDC: $UDC_NAME"
 echo "$UDC_NAME" > UDC
 
 echo "[✓] USB HID gadget setup complete!"
-
