@@ -21,13 +21,14 @@ useGLTF.preload("/OpenArcadeAssyJoystick_v1.glb");
 // Camera Setter Component
 function CameraSetter({ viewMode, currentModulePosition }) {
     const { camera } = useThree();
+    const orthoZoom = 1000;
 
     useEffect(() => {
         if (viewMode === '2d') {
             // Position camera above the current module in 2D mode
             camera.position.set(currentModulePosition[0], 5, currentModulePosition[2]);
             camera.rotation.set(-Math.PI / 2, 0, 0);
-            camera.zoom = 5;
+            camera.zoom = orthoZoom;
             camera.updateProjectionMatrix();
         } else {
             // Reset to 3D view
@@ -102,7 +103,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [modules, setModules] = useState(defaultModules);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
     const [loaded, setLoaded] = useState(false);
-    const [viewMode, setViewMode] = useState('3d'); // '3d' or '2d'
+    const [viewMode, setViewMode] = useState('2d'); // '3d' or '2d'
 
     useEffect(() => {
         const timer = setTimeout(() => setLoaded(true), 50);
@@ -249,7 +250,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
     const handleButtonClick = useCallback((buttonName, mesh) => {
         console.log(`handleButtonClick called: ${buttonName}, currentMappings:`, currentMappings);
-        
+
         const buttonConfig = currentMappings[buttonName];
         if (buttonConfig && typeof buttonConfig === 'object') {
             // New HID configuration format
@@ -359,7 +360,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
                 console.log('Configuration saved successfully!');
                 // Could add success notification here
-                
+
             } catch (error) {
                 console.error('Failed to save configuration:', error);
                 // Could add error notification here
@@ -373,13 +374,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 width: "100vw",
                 height: "100vh",
                 display: "flex",
+                flexDirection: "column",
                 overflow: "hidden",
                 background: "radial-gradient(900px circle at 18% 8%, rgba(95, 208, 196, 0.12), transparent 60%), radial-gradient(700px circle at 88% 6%, rgba(240, 192, 92, 0.1), transparent 55%), var(--oa-bg)",
                 opacity: loaded ? 1 : 0,
                 transition: "opacity 0.5s ease-in-out"
             }}>
 
-                {/* Left Sidebar (HUD) */}
                 <ControllerHUD
                     controllerName="OpenArcade Controller v1.0"
                     moduleCount={modules.length}
@@ -387,184 +388,164 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                     modules={modules.map(m => ({ ...m, mappedButtons: Object.keys(m.mappings).length }))}
                     onModuleChange={handleModuleChange}
                     isConnected={modules.some((module) => module.connected !== false)}
+                    viewMode={viewMode}
+                    onToggleView={toggleViewMode}
                 />
 
-                {/* Main Canvas Area */}
-                <div style={{ flex: 1, position: "relative", animation: "fadeIn 0.8s ease-out 0.2s both" }}>
-                    <Canvas
-                        orthographic={viewMode === '2d'}
-                        camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
-                        style={{
-                            background: "radial-gradient(1200px circle at 24% 0%, rgba(95, 208, 196, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 192, 92, 0.08), transparent 60%), #0a0d12",
-                            width: "100%",
-                            height: "100%",
-                            cursor: viewMode === '2d' ? 'pointer' : 'grab'
-                        }}
-                        shadows
-                        gl={{
-                            antialias: true,
-                            shadowMap: {
-                                enabled: true,
-                                type: THREE.PCFSoftShadowMap
-                            }
-                        }}
-                    >
-                        {/* Fog for depth perception */}
+                <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+                    {/* Main Canvas Area */}
+                    <div style={{ flex: 1, position: "relative", animation: "fadeIn 0.8s ease-out 0.2s both" }}>
+                        <Canvas
+                            key={viewMode}
+                            orthographic={viewMode === '2d'}
+                            camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
+                            style={{
+                                background: "radial-gradient(1200px circle at 24% 0%, rgba(95, 208, 196, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 192, 92, 0.08), transparent 60%), #0a0d12",
+                                width: "100%",
+                                height: "100%",
+                                cursor: viewMode === '2d' ? 'pointer' : 'grab'
+                            }}
+                            shadows
+                            gl={{
+                                antialias: true,
+                                shadowMap: {
+                                    enabled: true,
+                                    type: THREE.PCFSoftShadowMap
+                                }
+                            }}
+                        >
+                            {/* Fog for depth perception */}
                         // <fog attach="fog" args={["#0a0a0a", 8, 25]} />
 
 
-                        {/* --- Enhanced Lighting System --- */}
+                            {/* --- Enhanced Lighting System --- */}
 
-                        {/* Ambient base light for overall illumination */}
-                        <ambientLight intensity={0.7} color="#404060" />
+                            {/* Ambient base light for overall illumination */}
+                            <ambientLight intensity={0.7} color="#404060" />
 
-                        {/* Key Light - warm directional with shadows */}
-                        <directionalLight
-                            position={[5, 12, 8]}
-                            intensity={1.2}
-                            color="#fff5e6"
-                            castShadow
-                            shadow-mapSize={[2048, 2048]}
-                            shadow-camera-far={50}
-                            shadow-camera-left={-15}
-                            shadow-camera-right={15}
-                            shadow-camera-top={15}
-                            shadow-camera-bottom={-15}
-                            shadow-bias={0.0001}
-                            shadow-radius={3}
-                        />
+                            {/* Key Light - warm directional with shadows */}
+                            <directionalLight
+                                position={[5, 12, 8]}
+                                intensity={1.2}
+                                color="#fff5e6"
+                                castShadow
+                                shadow-mapSize={[2048, 2048]}
+                                shadow-camera-far={50}
+                                shadow-camera-left={-15}
+                                shadow-camera-right={15}
+                                shadow-camera-top={15}
+                                shadow-camera-bottom={-15}
+                                shadow-bias={0.0001}
+                                shadow-radius={3}
+                            />
 
-                        {/* Fill Light - cool soft light */}
-                        <directionalLight
-                            position={[-8, 6, 4]}
-                            intensity={0.5}
-                            color="#e6f0ff"
-                        />
+                            {/* Fill Light - cool soft light */}
+                            <directionalLight
+                                position={[-8, 6, 4]}
+                                intensity={0.5}
+                                color="#e6f0ff"
+                            />
 
-                        {/* Rim Light - back light for edge definition */}
-                        <directionalLight
-                            position={[0, 3, -10]}
-                            intensity={0.6}
-                            color="#f0e6ff"
-                        />
+                            {/* Rim Light - back light for edge definition */}
+                            <directionalLight
+                                position={[0, 3, -10]}
+                                intensity={0.6}
+                                color="#f0e6ff"
+                            />
 
-                        {/* Accent Light 1 - warm highlight */}
-                        <pointLight
-                            position={[3, 4, 3]}
-                            intensity={0.4}
-                            color="#fff0e6"
-                            distance={15}
-                            decay={2}
-                        />
+                            {/* Accent Light 1 - warm highlight */}
+                            <pointLight
+                                position={[3, 4, 3]}
+                                intensity={0.4}
+                                color="#fff0e6"
+                                distance={15}
+                                decay={2}
+                            />
 
-                        {/* Accent Light 2 - cool highlight */}
-                        <pointLight
-                            position={[-4, 3, -2]}
-                            intensity={0.3}
-                            color="#e6f0ff"
-                            distance={12}
-                            decay={2}
-                        />
+                            {/* Accent Light 2 - cool highlight */}
+                            <pointLight
+                                position={[-4, 3, -2]}
+                                intensity={0.3}
+                                color="#e6f0ff"
+                                distance={12}
+                                decay={2}
+                            />
 
-                        {/* --- Procedural Ground Plane --- */}
-                        <mesh
-                            rotation={[-Math.PI / 2, 0, 0]}
-                            position={[0, -0.5, 0]}
-                            receiveShadow
-                        >
-                            <planeGeometry args={[50, 50]} />
-                            <shadowMaterial opacity={0.4} />
-                        </mesh>
+                            {/* --- Procedural Ground Plane --- */}
+                            <mesh
+                                rotation={[-Math.PI / 2, 0, 0]}
+                                position={[0, -0.5, 0]}
+                                receiveShadow
+                            >
+                                <planeGeometry args={[50, 50]} />
+                                <shadowMaterial opacity={0.4} />
+                            </mesh>
 
-                        {/* --- Tech Grid --- */}
-                        <Grid
-                            args={[50, 50]}
-                            position={[0, -0.49, 0]}
-                            cellSize={1}
-                            cellThickness={0.02}
-                            cellColor="#1c2732"
-                            sectionSize={5}
-                            sectionThickness={0.04}
-                            sectionColor="#223042"
-                            fadeDistance={25}
-                            fadeStrength={1}
-                        />
+                            {/* --- Tech Grid --- */}
+                            <Grid
+                                args={[50, 50]}
+                                position={[0, -0.49, 0]}
+                                cellSize={1}
+                                cellThickness={0.02}
+                                cellColor="#1c2732"
+                                sectionSize={5}
+                                sectionThickness={0.04}
+                                sectionColor="#223042"
+                                fadeDistance={25}
+                                fadeStrength={1}
+                            />
 
-                        {/* --- Minimal Particle System --- */}
-                        <Particles />
+                            {/* --- Minimal Particle System --- */}
+                            <Particles />
 
-                        <Bounds clip observe={false} margin={1}>
-                            {/* <FPSMonitor /> */}
-                            <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
-                            {modules.map((module, index) => (
-                                <MemoizedChildModule
-                                    path={module.path}
-                                    onButtonClick={handleButtonClick}
-                                    onModuleClick={() => handleModuleClick(index)}
-                                    isEditable={index === currentModuleIndex}
-                                    position={module.position}
-                                    viewMode={viewMode}
-                                    isActive={index === currentModuleIndex}
-                                    mappings={module.mappings}
-                                    key={module.id}
+                            <Bounds clip observe={false} margin={1}>
+                                {/* <FPSMonitor /> */}
+                                <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
+                                {modules.map((module, index) => (
+                                    <MemoizedChildModule
+                                        path={module.path}
+                                        onButtonClick={handleButtonClick}
+                                        onModuleClick={() => handleModuleClick(index)}
+                                        isEditable={index === currentModuleIndex}
+                                        position={module.position}
+                                        viewMode={viewMode}
+                                        isActive={index === currentModuleIndex}
+                                        mappings={module.mappings}
+                                        key={module.id}
+                                    />
+                                ))}
+                            </Bounds>
+                            {viewMode === '3d' && (
+                                <CameraController
+                                    targetRef={cameraControl.targetRef}
+                                    cameraPositionRef={cameraControl.cameraPositionRef}
+                                    animationStart={cameraControl.animationStart}
                                 />
-                            ))}
-                        </Bounds>
-                        {viewMode === '3d' && (
-                            <CameraController
-                                targetRef={cameraControl.targetRef}
-                                cameraPositionRef={cameraControl.cameraPositionRef}
-                                animationStart={cameraControl.animationStart}
-                            />
-                        )}
-                    </Canvas>
-                </div>
+                            )}
+                        </Canvas>
+                    </div>
 
-                {/* Right Sidebar (Inspector) */}
-                <div style={{ display: 'flex', flexDirection: 'column', width: '300px', height: '100%' }}>
-                    <button
-                        onClick={toggleViewMode}
-                        style={{
-                            margin: '12px',
-                            padding: '10px 12px',
-                            background: viewMode === '3d'
-                                ? "rgba(95, 208, 196, 0.16)"
-                                : "rgba(240, 192, 92, 0.16)",
-                            color: viewMode === '3d' ? "var(--oa-accent)" : "var(--oa-warning)",
-                            border: viewMode === '3d'
-                                ? "1px solid rgba(95, 208, 196, 0.4)"
-                                : "1px solid rgba(240, 192, 92, 0.4)",
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            flexShrink: 0,
-                            fontSize: "12px",
-                            fontWeight: "600",
-                            letterSpacing: "0.02em",
-                            textTransform: "uppercase",
-                            transition: "all 0.2s ease",
-                            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)"
-                        }}
-                    >
-                        {viewMode === '3d' ? 'Switch to 2D Top-Down' : 'Switch to 3D'} View
-                    </button>
-                    <div style={{ flex: 1, overflow: 'auto' }}>
-                        {viewMode === '3d' ? (
-                            <ButtonMappingsPanel
-                                mappings={currentMappings}
-                                moduleName={currentModule.name}
-                                onSelectButton={handleButtonClick}
-                            />
-                        ) : (
-                            <D2ConfigPanel
-                                mappings={currentMappings}
-                                moduleName={currentModule.name}
-                                onSelectButton={handleButtonClick}
-                                onClearAll={clearAllMappings}
-                                moduleId={currentModule.id}
-                                onSaveToDevice={saveToDevice}
-                                isConnected={currentModule.connected !== false}
-                            />
-                        )}
+                    {/* Right Sidebar (Inspector) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '300px', height: '100%' }}>
+                        <div style={{ flex: 1, overflow: 'auto' }}>
+                            {viewMode === '3d' ? (
+                                <ButtonMappingsPanel
+                                    mappings={currentMappings}
+                                    moduleName={currentModule.name}
+                                    onSelectButton={handleButtonClick}
+                                />
+                            ) : (
+                                <D2ConfigPanel
+                                    mappings={currentMappings}
+                                    moduleName={currentModule.name}
+                                    onSelectButton={handleButtonClick}
+                                    onClearAll={clearAllMappings}
+                                    moduleId={currentModule.id}
+                                    onSaveToDevice={saveToDevice}
+                                    isConnected={currentModule.connected !== false}
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
 
