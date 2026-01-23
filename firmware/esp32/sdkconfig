@@ -853,6 +853,24 @@ CONFIG_EFUSE_MAX_BLK_LEN=192
 # end of eFuse Bit Manager
 
 #
+# ADC and ADC Calibration
+#
+# CONFIG_ADC_ONESHOT_CTRL_FUNC_IN_IRAM is not set
+# CONFIG_ADC_CONTINUOUS_ISR_IRAM_SAFE is not set
+
+#
+# ADC Calibration Configurations
+#
+CONFIG_ADC_CALI_EFUSE_TP_ENABLE=y
+CONFIG_ADC_CALI_EFUSE_VREF_ENABLE=y
+CONFIG_ADC_CALI_LUT_ENABLE=y
+# end of ADC Calibration Configurations
+
+CONFIG_ADC_DISABLE_DAC_OUTPUT=y
+# CONFIG_ADC_ENABLE_DEBUG_LOG is not set
+# end of ADC and ADC Calibration
+
+#
 # Wireless Coexistence
 #
 CONFIG_ESP_COEX_ENABLED=y

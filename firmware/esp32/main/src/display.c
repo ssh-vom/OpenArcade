@@ -1,10 +1,10 @@
 #include "display.h"
+#include "battery.h"
 #include "driver/i2c_master.h"
+#include "esp_adc/adc_oneshot.h"
 #include "esp_log.h"
+#include "pins.h"
 #include "ssd1306.h"
-
-#define SCREEN_SDA 22
-#define SCREEN_SCL 21
 
 #define TAG "display"
 
@@ -35,7 +35,19 @@ static void display_draw_battery(void) {
   if (!screen)
     return;
   char buf[16];
-  snprintf(buf, sizeof(buf), "BAT: [####-]");
+  char bar[6];
+  uint8_t pct = battery_pct;
+  uint8_t buckets = (pct + 19) / 20;
+  if (buckets > 5) {
+    buckets = 5;
+  }
+
+  for (uint8_t i = 0; i < 5; i++) {
+    bar[i] = (i < buckets) ? '#' : '-';
+  }
+  bar[5] = '\0';
+
+  snprintf(buf, sizeof(buf), "BAT: [%s]", bar);
   ssd1306_display_text(screen, 7, buf, false);
 }
 
