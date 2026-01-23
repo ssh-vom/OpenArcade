@@ -130,7 +130,7 @@ void display_set_battery(uint8_t percent) {
 }
 
 
-uint8_t get_battery_value (uint8_t gpio) {
+uint8_t get_battery_value () {
 
   //create adc unit handle for ADC1
   adc_oneshot_unit_handle_t adc1_handle;
@@ -149,10 +149,11 @@ uint8_t get_battery_value (uint8_t gpio) {
 ;
 
   int adc_voltage; 
+  adc_oneshot_del_unit(adc1_handle);
   adc_oneshot_read(adc1_handle, BATTERY_ADC_CHANNEL, &adc_voltage);
   float vout = ((adc_voltage*ADC_VREF) / DMAX)*VOLTAGE_DIVIDER_RATIO;
 
-  int battery_percent = (vout - BATTERY_PACK_EMPTY_VOLT) / (BATTERY_PACK_MAX_VOLT - BATTERY_PACK_EMPTY_VOLT);
+  int battery_percent = ((vout - BATTERY_PACK_EMPTY_VOLT) / (BATTERY_PACK_MAX_VOLT - BATTERY_PACK_EMPTY_VOLT))*100;
 
   int battery_level_displayed = (battery_percent / BATTERY_DISPLAY_INCREMENTS) * BATTERY_DISPLAY_INCREMENTS;
 
