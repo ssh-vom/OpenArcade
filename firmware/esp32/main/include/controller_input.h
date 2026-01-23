@@ -47,6 +47,13 @@ typedef struct {
 } controller_button_t;
 
 typedef struct {
+  uint8_t gpio;
+  bool active_low;
+  uint32_t debounce_ms;
+  uint32_t hold_ms;
+} controller_button_config_t;
+
+typedef struct {
   controller_button_t buttons[MAX_BUTTONS];
   uint8_t count;
   controller_state_t state;

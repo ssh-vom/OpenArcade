@@ -1,0 +1,57 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap");
+
+:root {
+  font-family: "Space Grotesk", "Sora", "IBM Plex Sans", "Helvetica Neue", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --oa-bg: #090909;
+  --oa-bg-glow: radial-gradient(900px circle at 15% -10%, rgba(215, 177, 90, 0.18), transparent 60%);
+  --oa-bg-warm: radial-gradient(780px circle at 85% -5%, rgba(240, 204, 122, 0.12), transparent 55%);
+  --oa-panel: #111010;
+  --oa-panel-alt: #171414;
+  --oa-panel-border: #2b2416;
+  --oa-text: #f1ede3;
+  --oa-muted: #9a907e;
+  --oa-accent: #d7b15a;
+  --oa-accent-strong: #f0c46c;
+  --oa-accent-soft: rgba(215, 177, 90, 0.16);
+  --oa-danger: #c45844;
+  --oa-warning: #f1cc7a;
+  --oa-shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.55);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--oa-text);
+  background: var(--oa-bg-glow), var(--oa-bg-warm), var(--oa-bg);
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  font-family: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(215, 177, 90, 0.45);
+  outline-offset: 2px;
+}

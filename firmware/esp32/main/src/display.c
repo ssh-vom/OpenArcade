@@ -34,7 +34,7 @@ static void display_draw_battery(void) {
   if (!screen)
     return;
   char buf[16];
-  snprintf(buf, sizeof(buf), "BAT %u%%", battery_pct);
+  snprintf(buf, sizeof(buf), "BAT: [####-]");
   ssd1306_display_text(screen, 7, buf, false);
 }
 
@@ -88,7 +88,7 @@ void display_set_state(display_state_t state) {
 
   case DISPLAY_STATE_IDLE:
     display_draw_header("Idle");
-    ssd1306_display_text(screen, 2, "Press PAIR", false);
+    ssd1306_display_text(screen, 2, "PAIR", false);
     break;
 
   case DISPLAY_STATE_PAIRING:
