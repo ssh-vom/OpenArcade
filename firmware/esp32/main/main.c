@@ -80,11 +80,9 @@ static controller_input_t input;
 static void controller_task(void *param) {
   ESP_LOGI(TAG, "Controller Task has been started!");
 
-  adc_oneshot_unit_handle_t adc1_handle = configure_adc_handle();
   while (1) {
     uint32_t now_ms = esp_timer_get_time() / 1000;
     // ESP_LOGI(TAG, "%d", bp);
-    get_battery_value(&adc1_handle);
 
     controller_input_update(&input, now_ms);
     controller_state_t st = controller_input_get_state(&input);
@@ -94,6 +92,17 @@ static void controller_task(void *param) {
     }
 
     vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
+
+static void battery_task(void *param) {
+  ESP_LOGI(TAG, "Battery Task has been started!");
+
+  adc_oneshot_unit_handle_t adc1_handle = configure_adc_handle();
+  while (1) {
+    uint8_t battery_percent = get_battery_value(&adc1_handle);
+    display_set_battery(battery_percent);
+    vTaskDelay(pdMS_TO_TICKS(2000));
   }
 }
 
@@ -113,8 +122,8 @@ void app_main(void) {
         controller_buttons[i].debounce_ms, controller_buttons[i].hold_ms);
   }
 
-  // ESP_ERROR_CHECK(display_init());
-  // display_set_state(DISPLAY_STATE_BOOT);
+  ESP_ERROR_CHECK(display_init());
+  display_set_state(DISPLAY_STATE_BOOT);
 
   /*
    * NVS flash initialization
@@ -153,9 +162,9 @@ void app_main(void) {
     return;
   }
 
-  // if (ble_ready) {
-  //   display_set_state(DISPLAY_STATE_IDLE);
-  // }
+  if (ble_ready) {
+    display_set_state(DISPLAY_STATE_IDLE);
+  }
 
   /* NimBLE host configuration initialization */
   nimble_host_config_init();
@@ -163,5 +172,6 @@ void app_main(void) {
   /* Start NimBLE host task thread and return */
   xTaskCreate(nimble_host_task, "NimBLE Host", 4 * 1024, NULL, 6, NULL);
   xTaskCreate(controller_task, "Controller State", 4 * 1024, NULL, 5, NULL);
+  xTaskCreate(battery_task, "Battery", 3 * 1024, NULL, 4, NULL);
   return;
 }

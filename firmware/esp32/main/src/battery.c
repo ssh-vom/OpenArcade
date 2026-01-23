@@ -35,8 +35,9 @@ uint8_t get_battery_value(adc_oneshot_unit_handle_t *adc_handle) {
   int battery_level_displayed = (battery_percent / BATTERY_DISPLAY_INCREMENTS) *
                                 BATTERY_DISPLAY_INCREMENTS;
 
-  ESP_LOGI("BATTERY", "adc=%d vout=%.3f max=%.2f empty=%.2f bp=%d", adc_voltage,
-           vout, (double)BATTERY_PACK_MAX_VOLT, (double)BATTERY_PACK_EMPTY_VOLT,
-           battery_level_displayed);
+  // ESP_LOGI("BATTERY", "adc=%d vout=%.3f max=%.2f empty=%.2f bp=%d",
+  // adc_voltage,
+  //          vout, (double)BATTERY_PACK_MAX_VOLT,
+  //          (double)BATTERY_PACK_EMPTY_VOLT, battery_level_displayed);
   return battery_level_displayed;
 };
