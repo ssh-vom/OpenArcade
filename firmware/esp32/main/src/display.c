@@ -4,6 +4,7 @@
 #include "ssd1306.h"
 #include "pins.h"
 #include "esp_adc/adc_oneshot.h"
+#include "battery.h"
 
 #define TAG "display"
 
@@ -131,20 +132,6 @@ void display_set_battery(uint8_t percent) {
 
 uint8_t get_battery_value (uint8_t gpio) {
 
-  #define BATTERY_ADC_CHANNEL ADC_CHANNEL_6 //This is the ADC channel for GPIO34
-
-  #define BATTERY_PACK_MAX_VOLT 6
-  #define BATTERY_PACK_EMPTY_VOLT 4.4
-
-  #define BATTERY_DISPLAY_INCREMENTS 4 //determines how often we want to show battery drop (so 4 -> 100/4 = every 25%)
-
-  #define R1 100000
-  #define R2 100000
-  #define VOLTAGE_DIVIDER_RATIO ((R1+R2)/R1)
-  
-  #define DMAX 4096
-  #define ADC_VREF 3.3
-
   //create adc unit handle for ADC1
   adc_oneshot_unit_handle_t adc1_handle;
   adc_oneshot_unit_init_cfg_t init_config1 = {
@@ -163,7 +150,7 @@ uint8_t get_battery_value (uint8_t gpio) {
 
   int adc_voltage; 
   adc_oneshot_read(adc1_handle, BATTERY_ADC_CHANNEL, &adc_voltage);
-  float vout = (adc_voltage*ADC_VREF) / DMAX;
+  float vout = ((adc_voltage*ADC_VREF) / DMAX)*VOLTAGE_DIVIDER_RATIO;
 
   int battery_percent = (vout - BATTERY_PACK_EMPTY_VOLT) / (BATTERY_PACK_MAX_VOLT - BATTERY_PACK_EMPTY_VOLT);
 
