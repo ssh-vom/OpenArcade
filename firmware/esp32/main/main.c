@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Unlicense OR CC0-1.0
  */
 /* Includes */
+#include "battery.h"
 #include "common.h"
 #include "controller_input.h"
 #include "display.h"
+#include "esp_adc/adc_oneshot.h"
 #include "gap.h"
 #include "gatt_svc.h"
 #include "pins.h"
@@ -78,8 +80,11 @@ static controller_input_t input;
 static void controller_task(void *param) {
   ESP_LOGI(TAG, "Controller Task has been started!");
 
+  adc_oneshot_unit_handle_t adc1_handle = configure_adc_handle();
   while (1) {
     uint32_t now_ms = esp_timer_get_time() / 1000;
+    // ESP_LOGI(TAG, "%d", bp);
+    get_battery_value(&adc1_handle);
 
     controller_input_update(&input, now_ms);
     controller_state_t st = controller_input_get_state(&input);
@@ -107,8 +112,9 @@ void app_main(void) {
         &input, controller_buttons[i].gpio, controller_buttons[i].active_low,
         controller_buttons[i].debounce_ms, controller_buttons[i].hold_ms);
   }
-  ESP_ERROR_CHECK(display_init());
-  display_set_state(DISPLAY_STATE_BOOT);
+
+  // ESP_ERROR_CHECK(display_init());
+  // display_set_state(DISPLAY_STATE_BOOT);
 
   /*
    * NVS flash initialization
@@ -146,9 +152,10 @@ void app_main(void) {
     ESP_LOGE(TAG, "failed to initialize GATT server, error code: %d", rc);
     return;
   }
-  if (ble_ready) {
-    display_set_state(DISPLAY_STATE_IDLE);
-  }
+
+  // if (ble_ready) {
+  //   display_set_state(DISPLAY_STATE_IDLE);
+  // }
 
   /* NimBLE host configuration initialization */
   nimble_host_config_init();

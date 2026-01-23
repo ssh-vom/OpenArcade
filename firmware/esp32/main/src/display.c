@@ -1,10 +1,10 @@
 #include "display.h"
-#include "driver/i2c_master.h"
-#include "esp_log.h"
-#include "ssd1306.h"
-#include "pins.h"
-#include "esp_adc/adc_oneshot.h"
 #include "battery.h"
+#include "driver/i2c_master.h"
+#include "esp_adc/adc_oneshot.h"
+#include "esp_log.h"
+#include "pins.h"
+#include "ssd1306.h"
 
 #define TAG "display"
 
@@ -127,36 +127,4 @@ void display_set_battery(uint8_t percent) {
   if (screen) {
     display_draw_battery();
   }
-}
-
-
-uint8_t get_battery_value () {
-
-  //create adc unit handle for ADC1
-  adc_oneshot_unit_handle_t adc1_handle;
-  adc_oneshot_unit_init_cfg_t init_config1 = {
-      .unit_id = ADC_UNIT_1,
-      .ulp_mode = ADC_ULP_MODE_DISABLE,
-  };
-  ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
-
-  // configure adc channel
-  adc_oneshot_chan_cfg_t config = {
-    .bitwidth = ADC_BITWIDTH_DEFAULT,
-    .atten = ADC_ATTEN_DB_12,
-  };
-  ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, BATTERY_ADC_CHANNEL, &config));
-;
-
-  int adc_voltage; 
-  adc_oneshot_del_unit(adc1_handle);
-  adc_oneshot_read(adc1_handle, BATTERY_ADC_CHANNEL, &adc_voltage);
-  float vout = ((adc_voltage*ADC_VREF) / DMAX)*VOLTAGE_DIVIDER_RATIO;
-
-  int battery_percent = ((vout - BATTERY_PACK_EMPTY_VOLT) / (BATTERY_PACK_MAX_VOLT - BATTERY_PACK_EMPTY_VOLT))*100;
-
-  int battery_level_displayed = (battery_percent / BATTERY_DISPLAY_INCREMENTS) * BATTERY_DISPLAY_INCREMENTS;
-
-  return battery_level_displayed;
-
 }

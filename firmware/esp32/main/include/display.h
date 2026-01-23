@@ -18,6 +18,5 @@ esp_err_t display_init(void);
 void display_set_state(display_state_t state);
 void display_refresh(void);
 void display_set_battery(uint8_t percent);
-uint8_t get_battery_value();
 
 #endif // DISPLAY_H
