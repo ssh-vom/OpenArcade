@@ -27,6 +27,11 @@ static uint16_t controller_state_chr_handle;
 static uint16_t conn_handle = BLE_HS_CONN_HANDLE_NONE;
 static bool notify_enabled = false;
 
+void gatt_svc_reset_connection_state(void) {
+  notify_enabled = false;
+  conn_handle = BLE_HS_CONN_HANDLE_NONE;
+}
+
 /* ================================
  * GATT Definition
  * ================================ */

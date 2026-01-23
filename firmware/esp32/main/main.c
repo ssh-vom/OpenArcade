@@ -19,7 +19,6 @@ static void nimble_host_config_init(void);
 static void nimble_host_task(void *param);
 
 static volatile bool ble_ready = false;
-int get_button_state(int GPIO);
 // pull down reads 0 when not pressed
 
 /* Private functions */
@@ -127,6 +126,7 @@ void app_main(void) {
 
   /* NimBLE stack initialization */
   ret = nimble_port_init();
+
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "failed to initialize nimble stack, error code: %d ", ret);
     return;

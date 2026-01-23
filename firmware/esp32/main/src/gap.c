@@ -2,18 +2,47 @@
 #include "common.h"
 #include "display.h"
 #include "gatt_svc.h"
+#include "esp_timer.h"
 
 /* Low-latency controller-friendly params */
 #define CONN_ITVL_MIN 6 // 7.5 ms
 #define CONN_ITVL_MAX 12
 #define SLAVE_LATENCY 0
 #define SUP_TIMEOUT 100 // 1s
+#define ADV_RESTART_DELAY_MS 2000
 
 static uint8_t own_addr_type;
+static esp_timer_handle_t adv_restart_timer;
 
 /* Forward declarations */
 static void start_advertising(void);
 static int gap_event_handler(struct ble_gap_event *event, void *arg);
+static void schedule_advertising_restart(void);
+
+static void adv_restart_cb(void *arg) {
+  display_set_state(DISPLAY_STATE_PAIRING);
+  start_advertising();
+}
+
+static void schedule_advertising_restart(void) {
+  if (adv_restart_timer == NULL) {
+    esp_timer_create_args_t timer_args = {
+        .callback = adv_restart_cb,
+        .arg = NULL,
+        .dispatch_method = ESP_TIMER_TASK,
+        .name = "adv_restart",
+    };
+
+    int rc = esp_timer_create(&timer_args, &adv_restart_timer);
+    if (rc != ESP_OK) {
+      ESP_LOGE(TAG, "Failed to create adv restart timer rc=%d", rc);
+      return;
+    }
+  }
+
+  esp_timer_stop(adv_restart_timer);
+  esp_timer_start_once(adv_restart_timer, ADV_RESTART_DELAY_MS * 1000);
+}
 
 /* ================================
  * Advertising
@@ -74,6 +103,10 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
       return 0;
     }
 
+    if (adv_restart_timer != NULL) {
+      esp_timer_stop(adv_restart_timer);
+    }
+
     rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
     if (rc == 0) {
       struct ble_gap_upd_params params = {
@@ -88,13 +121,25 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
 
   case BLE_GAP_EVENT_DISCONNECT:
     ESP_LOGI(TAG, "Disconnected");
+    gatt_svc_reset_connection_state();
     display_set_state(DISPLAY_STATE_IDLE);
-    start_advertising();
+    schedule_advertising_restart();
     return 0;
 
   case BLE_GAP_EVENT_SUBSCRIBE:
     display_set_state(DISPLAY_STATE_CONNECTED);
     gatt_svr_subscribe_cb(event);
+    return 0;
+
+  case BLE_GAP_EVENT_NOTIFY_TX:
+    if (event->notify_tx.status != 0) {
+      ESP_LOGW(TAG, "Notify failed, status=%d", event->notify_tx.status);
+      gatt_svc_reset_connection_state();
+      display_set_state(DISPLAY_STATE_IDLE);
+      ble_gap_terminate(event->notify_tx.conn_handle,
+                        BLE_ERR_REM_USER_CONN_TERM);
+      schedule_advertising_restart();
+    }
     return 0;
 
   case BLE_GAP_EVENT_ADV_COMPLETE:
