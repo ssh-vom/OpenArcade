@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import oaLogo from "../assets/oa-logo.svg";
 
 export default function DeviceConnectionScreen({ onConnect }) {
     const [scanning, setScanning] = useState(true);
     const [deviceFound, setDeviceFound] = useState(false);
+    const [error, setError] = useState("");
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -17,38 +19,46 @@ export default function DeviceConnectionScreen({ onConnect }) {
         <div style={{
             width: "100vw",
             height: "100vh",
-            background: "#0a0a0a",
+            background: "radial-gradient(900px circle at 15% 0%, rgba(215, 177, 90, 0.16), transparent 60%), radial-gradient(700px circle at 85% 10%, rgba(240, 204, 122, 0.1), transparent 55%), var(--oa-bg)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             animation: "fadeIn 0.5s ease-in",
         }}>
             <div style={{
-                background: "#121212",
-                borderRadius: "12px",
-                padding: "48px",
+                background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
+                borderRadius: "18px",
+                padding: "52px",
                 maxWidth: "500px",
                 width: "90%",
                 textAlign: "center",
-                border: "1px solid #2a2a2a",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+                border: "1px solid var(--oa-panel-border)",
+                boxShadow: "var(--oa-shadow-soft)",
                 animation: "slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both",
+                backdropFilter: "blur(12px)",
             }}>
                 {/* Logo */}
                 <div style={{
                     width: "64px",
                     height: "64px",
-                    background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
-                    borderRadius: "12px",
+                    background: "linear-gradient(135deg, rgba(215, 177, 90, 0.2), rgba(240, 204, 122, 0.2))",
+                    borderRadius: "14px",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "28px",
-                    color: "white",
-                    fontWeight: "bold",
                     marginBottom: "24px",
+                    boxShadow: "0 12px 28px rgba(215, 177, 90, 0.22)",
+                    border: "1px solid rgba(255,255,255,0.12)",
                 }}>
-                    OA
+                    <img
+                        src={oaLogo}
+                        alt="OpenArcade"
+                        style={{
+                            width: "34px",
+                            height: "34px",
+                            filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.35))",
+                        }}
+                    />
                 </div>
 
                 {/* Title */}
@@ -56,7 +66,7 @@ export default function DeviceConnectionScreen({ onConnect }) {
                     margin: "0 0 12px 0",
                     fontSize: "24px",
                     fontWeight: "600",
-                    color: "#ffffff",
+                    color: "var(--oa-text)",
                 }}>
                     OpenArcade Configurator
                 </h1>
@@ -65,7 +75,7 @@ export default function DeviceConnectionScreen({ onConnect }) {
                 <p style={{
                     margin: "0 0 32px 0",
                     fontSize: "14px",
-                    color: "#737373",
+                    color: "var(--oa-muted)",
                     lineHeight: "1.6",
                 }}>
                     Connect your OpenArcade controller to configure button mappings and module profiles.
@@ -73,11 +83,11 @@ export default function DeviceConnectionScreen({ onConnect }) {
 
                 {/* Device Status */}
                 <div style={{
-                    background: "#1a1a1a",
-                    borderRadius: "8px",
+                    background: "rgba(255,255,255,0.02)",
+                    borderRadius: "10px",
                     padding: "20px",
                     marginBottom: "24px",
-                    border: "1px solid #2a2a2a",
+                    border: "1px solid var(--oa-panel-border)",
                 }}>
                     {scanning ? (
                         <div style={{
@@ -85,13 +95,13 @@ export default function DeviceConnectionScreen({ onConnect }) {
                             alignItems: "center",
                             justifyContent: "center",
                             gap: "12px",
-                            color: "#a3a3a3",
+                            color: "var(--oa-muted)",
                             fontSize: "14px",
                         }}>
                             <div style={{
                                 width: "16px",
                                 height: "16px",
-                                border: "2px solid #3b82f6",
+                                border: "2px solid var(--oa-accent)",
                                 borderTopColor: "transparent",
                                 borderRadius: "50%",
                                 animation: "spin 1s linear infinite",
@@ -103,32 +113,32 @@ export default function DeviceConnectionScreen({ onConnect }) {
                             display: "flex",
                             alignItems: "center",
                             gap: "12px",
-                            color: "#4ade80",
+                            color: "var(--oa-accent)",
                             fontSize: "14px",
                             animation: "fadeIn 0.3s ease-in",
                         }}>
                             <div style={{
                                 width: "16px",
                                 height: "16px",
-                                background: "#4ade80",
+                                background: "var(--oa-accent)",
                                 borderRadius: "50%",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 fontSize: "10px",
-                                color: "#0a0a0a",
+                                color: "#0b0d10",
                                 fontWeight: "bold",
                             }}>
                                 ✓
                             </div>
                             <div style={{ textAlign: "left" }}>
                                 <div style={{ fontWeight: "500" }}>Controller Found</div>
-                                <div style={{ color: "#525252", fontSize: "12px" }}>OpenArcade Controller v1.0</div>
+                                <div style={{ color: "var(--oa-muted)", fontSize: "12px" }}>OpenArcade Controller v1.0</div>
                             </div>
                         </div>
                     ) : (
                         <div style={{
-                            color: "#f87171",
+                            color: "var(--oa-danger)",
                             fontSize: "14px",
                         }}>
                             No device found
@@ -138,41 +148,60 @@ export default function DeviceConnectionScreen({ onConnect }) {
 
                 {/* Connect Button */}
                 <button
-                    onClick={onConnect}
+                    onClick={async () => {
+                        try {
+                            setError("");
+                            await onConnect();
+                        } catch (err) {
+                            setError(err?.message || "Failed to connect");
+                        }
+                    }}
                     disabled={!deviceFound}
                     style={{
                         width: "100%",
                         padding: "14px 24px",
                         background: deviceFound
-                            ? "#3b82f6"
-                            : "#262626",
+                            ? "var(--oa-accent)"
+                            : "rgba(255,255,255,0.04)",
                         color: deviceFound
-                            ? "#ffffff"
-                            : "#525252",
+                            ? "#0b0d10"
+                            : "var(--oa-muted)",
                         border: deviceFound
-                            ? "1px solid #3b82f6"
-                            : "1px solid #2a2a2a",
-                        borderRadius: "8px",
+                            ? "1px solid rgba(215, 177, 90, 0.4)"
+                            : "1px solid var(--oa-panel-border)",
+                        borderRadius: "12px",
                         fontSize: "14px",
-                        fontWeight: "500",
+                        fontWeight: "600",
+                        letterSpacing: "0.02em",
+                        textTransform: "uppercase",
                         cursor: deviceFound ? "pointer" : "not-allowed",
                         transition: "all 0.2s ease",
                     }}
                     onMouseOver={(e) => {
-                        if (deviceFound) e.target.style.background = "#2563eb";
+                        if (deviceFound) e.target.style.background = "var(--oa-accent-strong)";
                     }}
                     onMouseOut={(e) => {
-                        if (deviceFound) e.target.style.background = "#3b82f6";
+                        if (deviceFound) e.target.style.background = "var(--oa-accent)";
                     }}
                 >
                     {deviceFound ? "Connect to Device" : "Waiting for Device..."}
                 </button>
 
+                {error && (
+                    <div style={{
+                        marginTop: "12px",
+                        color: "var(--oa-danger)",
+                        fontSize: "12px",
+                    }}>
+                        {error}
+                    </div>
+                )}
+
                 {/* Help Text */}
                 <p style={{
                     margin: "16px 0 0 0",
                     fontSize: "12px",
-                    color: "#404040",
+                    color: "var(--oa-muted)",
                 }}>
                     Make sure your controller is powered on and connected via USB
                 </p>

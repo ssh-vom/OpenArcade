@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   HID_INPUT_TYPES, 
   getInputOptions, 
@@ -21,11 +21,28 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
   const isAnalog = inputType === HID_INPUT_TYPES.ANALOG || 
                   (inputType === HID_INPUT_TYPES.GAMEPAD && inputOptions.find(opt => opt.value === selectedInput)?.isAnalog);
 
+  const getTypeTone = (type) => {
+    switch (type) {
+      case HID_INPUT_TYPES.GAMEPAD:
+        return { color: "#d7b15a", border: "rgba(215, 177, 90, 0.3)" };
+      case HID_INPUT_TYPES.KEYBOARD:
+        return { color: "#f0d48a", border: "rgba(240, 212, 138, 0.3)" };
+      case HID_INPUT_TYPES.ANALOG:
+        return { color: "#c08a4a", border: "rgba(192, 138, 74, 0.3)" };
+      default:
+        return { color: "var(--oa-muted)", border: "rgba(154, 144, 126, 0.3)" };
+    }
+  };
+
+  const activeTone = getTypeTone(inputType);
+  const activeTypeColor = activeTone.color;
+
   const handleSave = () => {
+    const resolvedAction = action || getInputLabel(inputType, selectedInput);
     const config = {
       type: inputType,
       input: selectedInput,
-      action,
+      action: resolvedAction,
       label: getInputLabel(inputType, selectedInput)
     };
 
@@ -57,7 +74,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
       left: 0,
       right: 0,
       bottom: 0,
-      background: "rgba(0, 0, 0, 0.6)",
+      background: "rgba(6, 10, 14, 0.72)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -67,15 +84,15 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
     onClick={onCancel}
     >
       <div style={{
-        background: "#171717",
-        borderRadius: "8px",
+        background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
+        borderRadius: "16px",
         padding: "24px",
         width: "480px",
         maxWidth: "90%",
         maxHeight: "90vh",
         overflowY: "auto",
-        border: "1px solid #333",
-        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4)",
+        border: "1px solid var(--oa-panel-border)",
+        boxShadow: "var(--oa-shadow-soft)",
       }}
       onClick={(e) => e.stopPropagation()}
       >
@@ -83,9 +100,9 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
         <div style={{
           fontSize: "11px",
           fontWeight: "600",
-          color: "#525252",
+          color: "var(--oa-muted)",
           textTransform: "uppercase",
-          letterSpacing: "0.05em",
+          letterSpacing: "0.08em",
           marginBottom: "8px",
         }}>
           Configure Input
@@ -95,7 +112,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
           margin: "0 0 20px 0",
           fontSize: "18px",
           fontWeight: "600",
-          color: "#fff",
+          color: "var(--oa-text)",
         }}>
           {button.name}
         </h2>
@@ -106,7 +123,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             display: "block",
             marginBottom: "8px",
             fontSize: "13px",
-            color: "#a3a3a3",
+            color: "var(--oa-muted)",
           }}>
             Input Type
           </label>
@@ -116,45 +133,54 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
               style={{
                 flex: 1,
                 padding: "8px",
-                background: inputType === HID_INPUT_TYPES.GAMEPAD ? "#3b82f6" : "#262626",
-                color: inputType === HID_INPUT_TYPES.GAMEPAD ? "white" : "#a3a3a3",
-                border: "1px solid #404040",
-                borderRadius: "4px",
+                background: inputType === HID_INPUT_TYPES.GAMEPAD ? "rgba(215, 177, 90, 0.2)" : "rgba(255,255,255,0.03)",
+                color: inputType === HID_INPUT_TYPES.GAMEPAD ? "#22180a" : "var(--oa-muted)",
+                border: inputType === HID_INPUT_TYPES.GAMEPAD ? "1px solid rgba(215, 177, 90, 0.5)" : "1px solid var(--oa-panel-border)",
+                borderRadius: "8px",
                 fontSize: "12px",
+                fontWeight: "600",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
                 cursor: "pointer",
               }}
             >
-              🎮 Gamepad
+              Gamepad
             </button>
             <button
               onClick={() => handleInputTypeChange(HID_INPUT_TYPES.KEYBOARD)}
               style={{
                 flex: 1,
                 padding: "8px",
-                background: inputType === HID_INPUT_TYPES.KEYBOARD ? "#3b82f6" : "#262626",
-                color: inputType === HID_INPUT_TYPES.KEYBOARD ? "white" : "#a3a3a3",
-                border: "1px solid #404040",
-                borderRadius: "4px",
+                background: inputType === HID_INPUT_TYPES.KEYBOARD ? "rgba(240, 212, 138, 0.2)" : "rgba(255,255,255,0.03)",
+                color: inputType === HID_INPUT_TYPES.KEYBOARD ? "#0b0d10" : "var(--oa-muted)",
+                border: inputType === HID_INPUT_TYPES.KEYBOARD ? "1px solid rgba(240, 212, 138, 0.5)" : "1px solid var(--oa-panel-border)",
+                borderRadius: "8px",
                 fontSize: "12px",
+                fontWeight: "600",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
                 cursor: "pointer",
               }}
             >
-              ⌨️ Keyboard
+              Keyboard
             </button>
             <button
               onClick={() => handleInputTypeChange(HID_INPUT_TYPES.ANALOG)}
               style={{
                 flex: 1,
                 padding: "8px",
-                background: inputType === HID_INPUT_TYPES.ANALOG ? "#3b82f6" : "#262626",
-                color: inputType === HID_INPUT_TYPES.ANALOG ? "white" : "#a3a3a3",
-                border: "1px solid #404040",
-                borderRadius: "4px",
+                background: inputType === HID_INPUT_TYPES.ANALOG ? "rgba(192, 138, 74, 0.2)" : "rgba(255,255,255,0.03)",
+                color: inputType === HID_INPUT_TYPES.ANALOG ? "#251c09" : "var(--oa-muted)",
+                border: inputType === HID_INPUT_TYPES.ANALOG ? "1px solid rgba(192, 138, 74, 0.5)" : "1px solid var(--oa-panel-border)",
+                borderRadius: "8px",
                 fontSize: "12px",
+                fontWeight: "600",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
                 cursor: "pointer",
               }}
             >
-              🕹️ Analog
+              Analog
             </button>
           </div>
         </div>
@@ -165,7 +191,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             display: "block",
             marginBottom: "8px",
             fontSize: "13px",
-            color: "#a3a3a3",
+            color: "var(--oa-muted)",
           }}>
             Select {inputType === HID_INPUT_TYPES.GAMEPAD ? "Button" : inputType === HID_INPUT_TYPES.KEYBOARD ? "Key" : "Axis"}
           </label>
@@ -175,11 +201,11 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             style={{
               width: "100%",
               padding: "10px 12px",
-              background: "#262626",
-              border: "1px solid #404040",
-              borderRadius: "6px",
+              background: "rgba(255,255,255,0.03)",
+              border: `1px solid ${activeTone.border}`,
+              borderRadius: "8px",
               fontSize: "14px",
-              color: "white",
+              color: "var(--oa-text)",
               outline: "none",
             }}
           >
@@ -201,15 +227,15 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
           <div style={{ 
             marginBottom: "20px", 
             padding: "16px", 
-            background: "#1a1a1a", 
-            borderRadius: "6px", 
-            border: "1px solid #333" 
+            background: "rgba(255,255,255,0.03)", 
+            borderRadius: "10px", 
+            border: `1px solid ${activeTone.border}` 
           }}>
             <label style={{
               display: "block",
               marginBottom: "12px",
               fontSize: "13px",
-              color: "#a3a3a3",
+              color: "var(--oa-muted)",
             }}>
               Analog Settings
             </label>
@@ -219,7 +245,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                 display: "block",
                 marginBottom: "4px",
                 fontSize: "12px",
-                color: "#737373",
+                color: "var(--oa-muted)",
               }}>
                 Threshold: {analogConfig.threshold.toFixed(2)}
               </label>
@@ -230,7 +256,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                 step="0.05"
                 value={analogConfig.threshold}
                 onChange={(e) => setAnalogConfig({...analogConfig, threshold: parseFloat(e.target.value)})}
-                style={{ width: "100%" }}
+                style={{ width: "100%", accentColor: activeTypeColor }}
               />
             </div>
 
@@ -239,7 +265,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                 display: "block",
                 marginBottom: "4px",
                 fontSize: "12px",
-                color: "#737373",
+                color: "var(--oa-muted)",
               }}>
                 Sensitivity: {analogConfig.sensitivity.toFixed(1)}
               </label>
@@ -250,7 +276,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                 step="0.1"
                 value={analogConfig.sensitivity}
                 onChange={(e) => setAnalogConfig({...analogConfig, sensitivity: parseFloat(e.target.value)})}
-                style={{ width: "100%" }}
+                style={{ width: "100%", accentColor: activeTypeColor }}
               />
             </div>
           </div>
@@ -262,7 +288,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             display: "block",
             marginBottom: "8px",
             fontSize: "13px",
-            color: "#a3a3a3",
+            color: "var(--oa-muted)",
           }}>
             Action Name
           </label>
@@ -275,16 +301,16 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             style={{
               width: "100%",
               padding: "10px 12px",
-              background: "#262626",
-              border: "1px solid #404040",
-              borderRadius: "6px",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "8px",
               fontSize: "14px",
-              color: "white",
+              color: "var(--oa-text)",
               outline: "none",
               transition: "border-color 0.15s ease",
             }}
-            onFocus={(e) => e.target.style.borderColor = "#3b82f6"}
-            onBlur={(e) => e.target.style.borderColor = "#404040"}
+            onFocus={(e) => e.target.style.borderColor = "var(--oa-accent)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--oa-panel-border)"}
             onKeyDown={(e) => { if(e.key === 'Enter') handleSave() }}
           />
         </div>
@@ -293,21 +319,21 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
         {button.action && (
           <div style={{
             padding: "12px",
-            background: "#1a1a1a",
-            borderRadius: "4px",
+            background: "rgba(255,255,255,0.03)",
+            borderRadius: "10px",
             marginBottom: "20px",
-            border: "1px solid #333"
+            border: "1px solid rgba(255,255,255,0.06)"
           }}>
             <div style={{
               fontSize: "11px",
-              color: "#525252",
+              color: "var(--oa-muted)",
               marginBottom: "4px",
             }}>
               Current Mapping
             </div>
             <div style={{
               fontSize: "13px",
-              color: "#a3a3a3",
+              color: "var(--oa-muted)",
             }}>
               {button.type}: {button.label || button.input} → {button.action}
             </div>
@@ -325,13 +351,13 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             style={{
               padding: "8px 16px",
               background: "transparent",
-              color: "#a3a3a3",
+              color: "var(--oa-muted)",
               border: "none",
               fontSize: "13px",
               cursor: "pointer",
             }}
-            onMouseOver={(e) => e.target.style.color = "#fff"}
-            onMouseOut={(e) => e.target.style.color = "#a3a3a3"}
+            onMouseOver={(e) => e.target.style.color = "var(--oa-text)"}
+            onMouseOut={(e) => e.target.style.color = "var(--oa-muted)"}
           >
             Cancel
           </button>
@@ -340,10 +366,10 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
               onClick={() => onClear(button.name)}
               style={{
                 padding: "8px 12px",
-                background: "rgba(239, 68, 68, 0.1)",
-                color: "#f87171",
-                border: "1px solid rgba(239, 68, 68, 0.2)",
-                borderRadius: "4px",
+                background: "rgba(230, 118, 108, 0.12)",
+                color: "var(--oa-danger)",
+                border: "1px solid rgba(230, 118, 108, 0.35)",
+                borderRadius: "8px",
                 fontSize: "13px",
                 cursor: "pointer",
               }}
@@ -353,22 +379,22 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
           )}
           <button
             onClick={handleSave}
-            disabled={!selectedInput || !action}
+            disabled={!selectedInput}
             style={{
               padding: "8px 20px",
-              background: selectedInput && action ? "#3b82f6" : "#404040",
-              color: "white",
+              background: selectedInput ? "var(--oa-accent)" : "rgba(255,255,255,0.08)",
+              color: selectedInput ? "#0b0d10" : "var(--oa-muted)",
               border: "none",
-              borderRadius: "4px",
+              borderRadius: "8px",
               fontSize: "13px",
               fontWeight: "500",
-              cursor: selectedInput && action ? "pointer" : "not-allowed",
+              cursor: selectedInput ? "pointer" : "not-allowed",
             }}
             onMouseOver={(e) => {
-              if (selectedInput && action) e.target.style.background = "#2563eb";
+              if (selectedInput) e.target.style.background = "var(--oa-accent-strong)";
             }}
             onMouseOut={(e) => {
-              if (selectedInput && action) e.target.style.background = "#3b82f6";
+              if (selectedInput) e.target.style.background = "var(--oa-accent)";
             }}
           >
             Save

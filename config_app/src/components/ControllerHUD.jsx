@@ -1,67 +1,136 @@
-export default function ControllerHUD({ controllerName, moduleCount, currentModule, modules, onModuleChange, isConnected }) {
+import oaLogo from "../assets/oa-logo.svg";
+import { HID_INPUT_TYPES } from "../services/HIDManager.js";
+
+export default function ControllerHUD({
+    controllerName,
+    moduleCount,
+    currentModule,
+    modules,
+    onModuleChange,
+    isConnected,
+    viewMode,
+    mappingFilter,
+    onMappingFilterChange,
+    onToggleView,
+}) {
+    const filterOptions = [
+        { value: "all", label: "All" },
+        { value: HID_INPUT_TYPES.KEYBOARD, label: "KB" },
+        { value: HID_INPUT_TYPES.GAMEPAD, label: "GP" },
+        { value: HID_INPUT_TYPES.ANALOG, label: "AX" },
+    ];
+
     return (
-        <>
         <div style={{
-            width: "300px",
-            height: "100%",
-            background: "#121212",
-            borderRight: "1px solid #2a2a2a",
+            width: "100%",
+            height: "72px",
+            background: "linear-gradient(90deg, rgba(18, 24, 32, 0.98) 0%, rgba(10, 14, 19, 0.94) 100%)",
+            borderBottom: "1px solid var(--oa-panel-border)",
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 20px",
             zIndex: 10,
             flexShrink: 0,
-            animation: "slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both",
+            backdropFilter: "blur(10px)",
+            boxShadow: "var(--oa-shadow-soft)",
         }}>
-            {/* Header */}
-            <div style={{
-                padding: "20px",
-                borderBottom: "1px solid #2a2a2a",
-            }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                 <div style={{
+                    width: "48px",
+                    height: "48px",
+                    background: "linear-gradient(135deg, rgba(215, 177, 90, 0.2), rgba(240, 204, 122, 0.2))",
+                    borderRadius: "12px",
                     display: "flex",
                     alignItems: "center",
-                    gap: "10px",
-                    marginBottom: "12px",
+                    justifyContent: "center",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    boxShadow: "0 10px 24px rgba(215, 177, 90, 0.25)",
                 }}>
+                    <img
+                        src={oaLogo}
+                        alt="OpenArcade"
+                        style={{
+                        width: "32px",
+                        height: "32px",
+                            filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))",
+                        }}
+                    />
+                </div>
+                <div>
                     <div style={{
-                        width: "28px",
-                        height: "28px",
-                        background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
-                        borderRadius: "6px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "14px",
-                        color: "white",
-                        fontWeight: "bold",
-                    }}>
-                        OA
-                    </div>
-                    <span style={{
-                        color: "#fff",
+                        color: "var(--oa-text)",
                         fontWeight: "600",
-                        fontSize: "15px",
+                        fontSize: "16px",
                         letterSpacing: "-0.01em",
                     }}>
                         OpenArcade
+                    </div>
+                    <div style={{
+                        color: "var(--oa-muted)",
+                        fontSize: "12px",
+                    }}>
+                        {controllerName} • {moduleCount} module{moduleCount === 1 ? "" : "s"}
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <span style={{
+                        fontSize: "10px",
+                        fontWeight: "600",
+                        color: "var(--oa-muted)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.12em",
+                    }}>
+                        Active Module
                     </span>
+                    <select
+                        value={String(currentModule)}
+                        onChange={(e) => onModuleChange(Number(e.target.value))}
+                        style={{
+                            minWidth: "240px",
+                            padding: "8px 10px",
+                            background: "rgba(255,255,255,0.04)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            borderRadius: "10px",
+                            color: "var(--oa-text)",
+                            fontSize: "12px",
+                            outline: "none",
+                            appearance: "none",
+                        }}
+                    >
+                        {modules.map((module, index) => {
+                            const status = module.connected === false ? "offline" : "online";
+                            const deviceLabel = module.deviceId ? ` · ${module.deviceId}` : "";
+                            const label = `${module.name}${deviceLabel} · ${status}`;
+                            return (
+                                <option key={module.id} value={index}>
+                                    {label}
+                                </option>
+                            );
+                        })}
+                    </select>
                 </div>
 
                 <div style={{
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    fontSize: "12px",
+                    fontSize: "11px",
                 }}>
                     <div style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
                         padding: "4px 8px",
-                        background: isConnected ? "rgba(34, 197, 94, 0.1)" : "rgba(239, 68, 68, 0.1)",
-                        borderRadius: "4px",
-                        border: `1px solid ${isConnected ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)"}`,
-                        color: isConnected ? "#4ade80" : "#f87171",
+                        background: isConnected ? "rgba(215, 177, 90, 0.12)" : "rgba(196, 88, 68, 0.12)",
+                        borderRadius: "6px",
+                        border: `1px solid ${isConnected ? "rgba(215, 177, 90, 0.35)" : "rgba(196, 88, 68, 0.35)"}`,
+                        color: isConnected ? "var(--oa-accent)" : "var(--oa-danger)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
                     }}>
                         <div style={{
                             width: "6px",
@@ -71,140 +140,78 @@ export default function ControllerHUD({ controllerName, moduleCount, currentModu
                         }} />
                         {isConnected ? "Online" : "Offline"}
                     </div>
-                </div>
-            </div>
-
-            {/* Controller Info */}
-            <div style={{ padding: "24px 20px 8px 20px" }}>
-                <div style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "#525252",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "12px",
-                }}>
-                    Device
-                </div>
-                <div style={{
-                    color: "#e5e5e5",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    marginBottom: "4px",
-                }}>
-                    {controllerName}
-                </div>
-                <div style={{
-                    color: "#737373",
-                    fontSize: "13px",
-                }}>
-                    {moduleCount} Connected Modules
-                </div>
-            </div>
-
-            {/* Modules List */}
-            <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
-                <div style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "#525252",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "12px",
-                }}>
-                    Modules
-                </div>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    {modules.map((module, index) => (
-                        <button
-                            key={module.id}
-                            onClick={() => onModuleChange(index)}
-                            style={{
-                                width: "100%",
-                                textAlign: "left",
-                                padding: "10px 12px",
-                                background: currentModule === index ? "#262626" : "transparent",
-                                border: "1px solid", // placeholder
-                                borderColor: currentModule === index ? "#404040" : "transparent",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                transition: "all 0.15s ease",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                            }}
-                            onMouseOver={(e) => {
-                                if (currentModule !== index) e.currentTarget.style.background = "#1a1a1a";
-                            }}
-                            onMouseOut={(e) => {
-                                if (currentModule !== index) e.currentTarget.style.background = "transparent";
-                            }}
-                        >
-                            <div>
-                                <div style={{
-                                    color: currentModule === index ? "#fff" : "#a3a3a3",
-                                    fontSize: "13px",
-                                    fontWeight: "500",
-                                    marginBottom: "2px",
-                                }}>
-                                    {module.name}
-                                </div>
-                                <div style={{
-                                    color: "#525252",
-                                    fontSize: "11px",
-                                }}>
-                                    {module.mappedButtons || 0} mapped
-                                </div>
-                                {module.deviceId && (
-                                    <div style={{
-                                        color: "#404040",
-                                        fontSize: "10px",
-                                        fontFamily: "monospace",
-                                        marginTop: "2px",
-                                    }}>
-                                        {module.deviceId}
-                                    </div>
-                                )}
+                    {viewMode === "2d" && (
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "4px 6px",
+                            background: "rgba(255,255,255,0.04)",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                        }}>
+                            <span style={{
+                                fontSize: "9px",
+                                fontWeight: "600",
+                                color: "var(--oa-muted)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.08em",
+                            }}>
+                                Maps
+                            </span>
+                            <div style={{ display: "flex", gap: "4px" }}>
+                                {filterOptions.map((option) => {
+                                    const isActive = mappingFilter === option.value;
+                                    return (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => onMappingFilterChange(option.value)}
+                                            style={{
+                                                padding: "4px 6px",
+                                                background: isActive ? "rgba(215, 177, 90, 0.2)" : "transparent",
+                                                color: isActive ? "var(--oa-accent)" : "var(--oa-muted)",
+                                                border: isActive
+                                                    ? "1px solid rgba(215, 177, 90, 0.5)"
+                                                    : "1px solid rgba(255,255,255,0.08)",
+                                                borderRadius: "8px",
+                                                cursor: "pointer",
+                                                fontSize: "10px",
+                                                fontWeight: "600",
+                                                letterSpacing: "0.05em",
+                                                textTransform: "uppercase",
+                                            }}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            {currentModule === index && (
-                                <div style={{
-                                    width: "6px",
-                                    height: "6px",
-                                    borderRadius: "50%",
-                                    background: "#3b82f6",
-                                }} />
-                            )}
-                        </button>
-                    ))}
+                        </div>
+                    )}
+                    <button
+                        onClick={onToggleView}
+                        style={{
+                            padding: "8px 12px",
+                            background: viewMode === "3d"
+                                ? "rgba(215, 177, 90, 0.16)"
+                                : "rgba(240, 204, 122, 0.16)",
+                            color: viewMode === "3d" ? "var(--oa-accent)" : "var(--oa-warning)",
+                            border: viewMode === "3d"
+                                ? "1px solid rgba(215, 177, 90, 0.4)"
+                                : "1px solid rgba(240, 204, 122, 0.4)",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontWeight: "600",
+                            letterSpacing: "0.05em",
+                            textTransform: "uppercase",
+                            transition: "all 0.2s ease",
+                        }}
+                    >
+                        {viewMode === "3d" ? "2D View" : "3D View"}
+                    </button>
                 </div>
-            </div>
-            
-            {/* Footer */}
-            <div style={{
-                padding: "16px 20px",
-                borderTop: "1px solid #2a2a2a",
-                fontSize: "11px",
-                color: "#404040",
-                display: "flex",
-                justifyContent: "space-between",
-            }}>
-                <span>v0.1.0-alpha</span>
-                <span>Configurator</span>
             </div>
         </div>
-        <style>{`
-            @keyframes slideInLeft {
-                from {
-                    opacity: 0;
-                    transform: translateX(-20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            }
-        `}</style>
-        </>
     );
 }
