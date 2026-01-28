@@ -1,7 +1,5 @@
 #include "display.h"
-#include "battery.h"
 #include "driver/i2c_master.h"
-#include "esp_adc/adc_oneshot.h"
 #include "esp_log.h"
 #include "pins.h"
 #include "ssd1306.h"

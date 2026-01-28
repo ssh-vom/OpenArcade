@@ -6,7 +6,6 @@
 #include "display.h"
 #include "host/ble_gatt.h"
 #include "host/ble_hs.h"
-#include "nimble/nimble_port.h"
 #include <string.h>
 
 /* ================================

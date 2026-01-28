@@ -26,7 +26,7 @@ uint8_t get_battery_value(adc_oneshot_unit_handle_t *adc_handle) {
   int adc_voltage;
   adc_oneshot_read(*adc_handle, BATTERY_ADC_CHANNEL, &adc_voltage);
 
-  float vout = ((adc_voltage * ADC_VREF) / DMAX) * VOLTAGE_DIVIDER_RATIO;
+  float vout = ((adc_voltage * ADC_VREF) / DMAX) * (int)(VOLTAGE_DIVIDER_RATIO);
 
   int battery_percent = ((vout - BATTERY_PACK_EMPTY_VOLT) /
                          (BATTERY_PACK_MAX_VOLT - BATTERY_PACK_EMPTY_VOLT)) *
@@ -35,9 +35,8 @@ uint8_t get_battery_value(adc_oneshot_unit_handle_t *adc_handle) {
   int battery_level_displayed = (battery_percent / BATTERY_DISPLAY_INCREMENTS) *
                                 BATTERY_DISPLAY_INCREMENTS;
 
-  // ESP_LOGI("BATTERY", "adc=%d vout=%.3f max=%.2f empty=%.2f bp=%d",
-  // adc_voltage,
-  //          vout, (double)BATTERY_PACK_MAX_VOLT,
-  //          (double)BATTERY_PACK_EMPTY_VOLT, battery_level_displayed);
+  ESP_LOGI("BATTERY", "adc=%d vout=%.3f max=%.2f empty=%.2f bp=%d", adc_voltage,
+           vout, (double)BATTERY_PACK_MAX_VOLT, (double)BATTERY_PACK_EMPTY_VOLT,
+           battery_level_displayed); // logging will be disabled in production
   return battery_level_displayed;
 };

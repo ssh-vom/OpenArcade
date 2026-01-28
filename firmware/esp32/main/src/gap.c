@@ -1,8 +1,8 @@
 #include "gap.h"
 #include "common.h"
 #include "display.h"
-#include "gatt_svc.h"
 #include "esp_timer.h"
+#include "gatt_svc.h"
 
 /* Low-latency controller-friendly params */
 #define CONN_ITVL_MIN 6 // 7.5 ms

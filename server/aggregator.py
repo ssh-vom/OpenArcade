@@ -29,7 +29,7 @@ MODIFIER_KEYCODES = {
 DEFAULT_CONTROLS = [control.to_dict() for control in default_descriptor().controls]
 
 
-def resolve_keycode(entry):
+def resolve_keycode(entry: any) -> int | None:
     if entry is None:
         return None
     if isinstance(entry, int):
@@ -106,7 +106,7 @@ def aggregator_process(
     """
     Manages connections, maintains device state, maps inputs, and aggregates HID reports.
     """
-    logger.info("Aggregator Process Started")
+    logger.info(msg="Aggregator Process Started")
 
     # State tracking
     connected_clients: dict[str, BleakClient] = {}
@@ -120,7 +120,7 @@ def aggregator_process(
         """
         Combines states from all devices, applies mapping, and sends HID report.
         """
-        active_keys = set()
+        active_keys: set[Any] = set()
 
         # 1. Aggregate and Map
         for addr, state in device_states.items():
@@ -229,7 +229,7 @@ def aggregator_process(
                 try:
                     address = found_queue.get_nowait()
                     if address not in connected_clients:
-                        asyncio.create_task(connect_device(address))
+                        asyncio.create_task(coro=connect_device(address))
                 except Exception:
                     break
 
@@ -240,7 +240,7 @@ def aggregator_process(
             await asyncio.sleep(0.5)
 
         # Cleanup on exit
-        logger.info("Aggregator stopping, disconnecting all...")
+        logger.info(msg="Aggregator stopping, disconnecting all...")
         for client in connected_clients.values():
             await client.disconnect()
 
@@ -248,7 +248,7 @@ def aggregator_process(
         asyncio.run(run())
     except KeyboardInterrupt:
         pass
-    except Exception as e:
-        logger.error(f"Aggregator crashed: {e}")
+    except Exception:
+        logger.error(msg="Aggregator crashed: {e}")
     finally:
-        logger.info("Aggregator Process Exiting")
+        logger.info(msg="Aggregator Process Exiting")
