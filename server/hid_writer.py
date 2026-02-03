@@ -18,20 +18,17 @@ def hid_writer_process(
 
     # Configuration
     HID_DEV_PATH = "/dev/hidg0"
-    USE_MOCK = True  # Default to mock if file doesn't exist
+    use_mock = False
+    hid_device = None
 
-    # Check if device exists
     try:
-        # Just check existence
-        with open(HID_DEV_PATH, "rb"):
-            pass
-        USE_MOCK = False
+        hid_device = open(HID_DEV_PATH, "wb", buffering=0)
         logger.info(f"Using actual HID interface: {HID_DEV_PATH}")
-    except (FileNotFoundError, PermissionError):
+    except (FileNotFoundError, PermissionError, OSError):
+        use_mock = True
         logger.warning(
             f"HID interface {HID_DEV_PATH} not found/accessible. Using MOCK mode (stdout)."
         )
-        USE_MOCK = True
 
     while not stop_event.is_set():
         try:
@@ -39,7 +36,7 @@ def hid_writer_process(
                 timeout=1.0
             )  # Blocking with timeout to check stop_event
 
-            if USE_MOCK:
+            if use_mock:
                 # Visual Mock
                 # hex_str = " ".join(f"{b:02X}" for b in report)
                 # Parse keys for better visualization
@@ -52,13 +49,18 @@ def hid_writer_process(
                 sys.stdout.write(output)
                 sys.stdout.flush()
             else:
-                with open(HID_DEV_PATH, "wb") as f:
-                    f.write(report)
+                hid_device.write(report)
 
         except queue.Empty:
             continue
         except Exception as e:
             logger.error(f"HID Write Error: {e}")
             time.sleep(1.0)
+
+    if hid_device:
+        try:
+            hid_device.close()
+        except OSError:
+            pass
 
     logger.info("HID Writer Process Exiting")

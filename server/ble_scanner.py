@@ -19,9 +19,6 @@ def scanner_process(
 
     async def run():
         scanner = BleakScanner()
-        # Keep track of recently seen to avoid spamming the queue
-        seen_devices = set()
-
         while not stop_event.is_set():
             try:
                 # Active scan for 2 seconds
@@ -34,16 +31,12 @@ def scanner_process(
                 for d in devices:
                     # Filter by Device Name (matches firmware default)
                     # Or allow all for debugging if name is unknown
-                    if d.name == "NimBLE_GATT" and d.address not in seen_devices:
+                    if d.name == "NimBLE_GATT":
                         logger.info(f"Discovered Target Device: {d.address} ({d.name})")
-                        seen_devices.add(d.address)
                         found_queue.put(d.address)
-                    elif d.address not in seen_devices:
+                    else:
                         # Debug log for other devices to help user identify their device
                         logger.debug(f"Ignored Device: {d.address} ({d.name})")
-
-                # Clear seen list to allow re-discovery (simple robustness)
-                seen_devices.clear()
 
             except Exception as e:
                 logger.error(f"Scan Error: {e}")

@@ -24,63 +24,85 @@ def write_line(fd: int, payload: dict[str, Any]) -> None:
     os.write(fd, data.encode("utf-8"))
 
 
+def _handle_ping(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+    return {"ok": True, "reply": "pong"}
+
+
+def _handle_list_devices(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+    data = store.get_all()
+    return {"ok": True, "devices": data.get("devices", {})}
+
+
+def _handle_get_device(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    if not device_id:
+        return {"ok": False, "error": "missing_device_id"}
+    device = store.get_device(device_id)
+    return {"ok": True, "device": device}
+
+
+def _handle_set_descriptor(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    descriptor = message.get("descriptor")
+    if not device_id or descriptor is None:
+        return {"ok": False, "error": "missing_fields"}
+    store.set_descriptor(device_id, descriptor)
+    store.save()
+    return {"ok": True}
+
+
+def _handle_set_mapping(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    mode = message.get("mode")
+    control_id = message.get("control_id")
+    mapping = message.get("mapping")
+    if not device_id or not mode or control_id is None or mapping is None:
+        return {"ok": False, "error": "missing_fields"}
+    store.set_mapping(device_id, mode, str(control_id), mapping)
+    store.save()
+    return {"ok": True}
+
+
+def _handle_set_active_mode(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    mode = message.get("mode")
+    if not device_id or not mode:
+        return {"ok": False, "error": "missing_fields"}
+    store.set_active_mode(device_id, mode)
+    store.save()
+    return {"ok": True}
+
+
+def _handle_set_last_seen(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    if not device_id:
+        return {"ok": False, "error": "missing_device_id"}
+    store.set_last_seen(device_id)
+    store.save()
+    return {"ok": True}
+
+
+COMMAND_HANDLERS = {
+    "ping": _handle_ping,
+    "list_devices": _handle_list_devices,
+    "get_device": _handle_get_device,
+    "set_descriptor": _handle_set_descriptor,
+    "set_mapping": _handle_set_mapping,
+    "set_active_mode": _handle_set_active_mode,
+    "set_last_seen": _handle_set_last_seen,
+}
+
+
 def handle_command(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
     cmd = message.get("cmd")
     if not cmd:
         return {"ok": False, "error": "missing_cmd"}
 
-    if cmd == "ping":
-        return {"ok": True, "reply": "pong"}
+    handler = COMMAND_HANDLERS.get(cmd)
+    if not handler:
+        return {"ok": False, "error": "unknown_cmd"}
 
-    if cmd == "list_devices":
-        data = store.get_all()
-        return {"ok": True, "devices": data.get("devices", {})}
-
-    if cmd == "get_device":
-        device_id = message.get("device_id")
-        if not device_id:
-            return {"ok": False, "error": "missing_device_id"}
-        device = store.get_device(device_id)
-        return {"ok": True, "device": device}
-
-    if cmd == "set_descriptor":
-        device_id = message.get("device_id")
-        descriptor = message.get("descriptor")
-        if not device_id or descriptor is None:
-            return {"ok": False, "error": "missing_fields"}
-        store.set_descriptor(device_id, descriptor)
-        store.save()
-        return {"ok": True}
-
-    if cmd == "set_mapping":
-        device_id = message.get("device_id")
-        mode = message.get("mode")
-        control_id = message.get("control_id")
-        mapping = message.get("mapping")
-        if not device_id or not mode or control_id is None or mapping is None:
-            return {"ok": False, "error": "missing_fields"}
-        store.set_mapping(device_id, mode, str(control_id), mapping)
-        store.save()
-        return {"ok": True}
-
-    if cmd == "set_active_mode":
-        device_id = message.get("device_id")
-        mode = message.get("mode")
-        if not device_id or not mode:
-            return {"ok": False, "error": "missing_fields"}
-        store.set_active_mode(device_id, mode)
-        store.save()
-        return {"ok": True}
-
-    if cmd == "set_last_seen":
-        device_id = message.get("device_id")
-        if not device_id:
-            return {"ok": False, "error": "missing_device_id"}
-        store.set_last_seen(device_id)
-        store.save()
-        return {"ok": True}
-
-    return {"ok": False, "error": "unknown_cmd"}
+    return handler(store, message)
 
 
 def run(device_path: str, verbose: bool = False) -> int:

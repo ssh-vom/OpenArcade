@@ -68,31 +68,17 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
   }, {});
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "rgba(6, 10, 14, 0.72)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 1000,
-      backdropFilter: "blur(2px)",
-    }}
+    <div
+    className="oa-modal-overlay"
     onClick={onCancel}
     >
-      <div style={{
-        background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
+      <div
+      className="oa-panel-surface oa-modal-card"
+      style={{
         borderRadius: "16px",
-        padding: "24px",
         width: "480px",
-        maxWidth: "90%",
         maxHeight: "90vh",
         overflowY: "auto",
-        border: "1px solid var(--oa-panel-border)",
-        boxShadow: "var(--oa-shadow-soft)",
       }}
       onClick={(e) => e.stopPropagation()}
       >

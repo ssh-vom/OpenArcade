@@ -1,18 +1,11 @@
 export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButton }) {
     return (
         <>
-        <div style={{
+        <div
+        className="oa-side-panel"
+        style={{
             width: "300px",
-            height: "100%",
-            background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
-            borderLeft: "1px solid var(--oa-panel-border)",
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 10,
-            flexShrink: 0,
             animation: "slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both",
-            backdropFilter: "blur(10px)",
-            boxShadow: "var(--oa-shadow-soft)",
         }}>
             {/* Header */}
             <div style={{

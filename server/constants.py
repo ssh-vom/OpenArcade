@@ -1,3 +1,6 @@
+import json
+import os
+
 # UUIDs (from firmware/esp32/main/src/gatt_svc.c)
 # Service: 666f7065-6e61-7263-6164-650000000001
 # Characteristic: 666f7065-6e61-7263-6164-650000000002
@@ -185,7 +188,7 @@ HID_KEY_GUI = HID_KEY_LEFT_GUI
 # 0-7: Buttons 1-8
 # 8-11: Joy L, R, U, D
 # 12: Select, 13: Start, 14: Pair
-DEFAULT_MAPPING = {
+_DEFAULT_MAPPING_FALLBACK = {
     0: HID_KEY_Z,  # Button 1
     1: HID_KEY_C,  # Button 2
     2: HID_KEY_SPACE,  # Button 3
@@ -201,5 +204,46 @@ DEFAULT_MAPPING = {
     12: HID_KEY_SPACE,  # Select
     13: HID_KEY_ENTER,  # Start
 }
+
+
+def _load_default_mapping() -> dict[int, int]:
+    shared_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "shared", "input_schema.json")
+    )
+    try:
+        with open(shared_path, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return dict(_DEFAULT_MAPPING_FALLBACK)
+
+    raw_mapping = data.get("default_mapping") or {}
+    resolved: dict[int, int] = {}
+    for bit_index, keycode in raw_mapping.items():
+        try:
+            index = int(bit_index)
+        except (TypeError, ValueError):
+            continue
+
+        resolved_keycode = None
+        if isinstance(keycode, int):
+            resolved_keycode = keycode
+        elif isinstance(keycode, str):
+            resolved_keycode = globals().get(keycode)
+        elif isinstance(keycode, dict):
+            resolved_keycode = globals().get(keycode.get("keycode"))
+
+        if isinstance(resolved_keycode, int):
+            resolved[index] = resolved_keycode
+
+    if not resolved:
+        return dict(_DEFAULT_MAPPING_FALLBACK)
+
+    for bit_index, keycode in _DEFAULT_MAPPING_FALLBACK.items():
+        resolved.setdefault(bit_index, keycode)
+
+    return resolved
+
+
+DEFAULT_MAPPING = _load_default_mapping()
 
 SCANNER_DELAY = 10

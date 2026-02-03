@@ -116,7 +116,7 @@ def aggregator_process(
     config_mtime = None
     mapping_cache = build_mapping_cache(config_store.load())
 
-    async def update_hid_report():
+    def update_hid_report():
         """
         Combines states from all devices, applies mapping, and sends HID report.
         """
@@ -167,19 +167,7 @@ def aggregator_process(
                 # HID usually tolerates repeated reports, but we can optimize.
                 if device_states.get(address) != state:
                     device_states[address] = state
-                    # Schedule HID update
-                    # Since we are in a callback, we should be careful about async context.
-                    # But update_hid_report is pure logic + queue.put (thread-safe).
-                    # We can call it directly.
-                    # Note: Queue.put is blocking if full, but unlimited size by default.
-
-                    # We can't await here easily if update_hid_report was async.
-                    # But it doesn't need to be async.
-                    # Let's make update_hid_report synchronous (remove async).
-                    asyncio.create_task(do_update())
-
-        async def do_update():
-            await update_hid_report()
+                    update_hid_report()
 
         return handler
 
@@ -196,7 +184,7 @@ def aggregator_process(
             config_store.set_connected(c.address, False)
             config_store.save()
             # Update HID to clear stuck keys
-            asyncio.create_task(update_hid_report())
+            update_hid_report()
 
         client = BleakClient(address, disconnected_callback=on_disconnect, timeout=10.0)
 

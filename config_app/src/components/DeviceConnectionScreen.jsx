@@ -25,15 +25,14 @@ export default function DeviceConnectionScreen({ onConnect }) {
             justifyContent: "center",
             animation: "fadeIn 0.5s ease-in",
         }}>
-            <div style={{
-                background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
+            <div
+            className="oa-panel-surface"
+            style={{
                 borderRadius: "18px",
                 padding: "52px",
                 maxWidth: "500px",
                 width: "90%",
                 textAlign: "center",
-                border: "1px solid var(--oa-panel-border)",
-                boxShadow: "var(--oa-shadow-soft)",
                 animation: "slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both",
                 backdropFilter: "blur(12px)",
             }}>
