@@ -110,6 +110,7 @@ def aggregator_process(
 
     # State tracking
     connected_clients: dict[str, BleakClient] = {}
+    pending_connections: set[str] = set()
     device_states: dict[str, int] = {}  # Address -> 32-bit State
 
     config_store = ConfigStore()
@@ -172,23 +173,25 @@ def aggregator_process(
         return handler
 
     async def connect_device(address):
-        if address in connected_clients:
-            return
-
-        logger.info(f"Connecting to {address}...")
-
-        def on_disconnect(c):
-            logger.warning(f"Disconnected: {c.address}")
-            connected_clients.pop(c.address, None)
-            device_states.pop(c.address, None)
-            config_store.set_connected(c.address, False)
-            config_store.save()
-            # Update HID to clear stuck keys
-            update_hid_report()
-
-        client = BleakClient(address, disconnected_callback=on_disconnect, timeout=10.0)
-
         try:
+            if address in connected_clients:
+                return
+
+            logger.info(f"Connecting to {address}...")
+
+            def on_disconnect(c):
+                logger.warning(f"Disconnected: {c.address}")
+                connected_clients.pop(c.address, None)
+                device_states.pop(c.address, None)
+                config_store.set_connected(c.address, False)
+                config_store.save()
+                # Update HID to clear stuck keys
+                update_hid_report()
+
+            client = BleakClient(
+                address, disconnected_callback=on_disconnect, timeout=10.0
+            )
+
             await client.connect()
             connected_clients[address] = client
             logger.info(f"Connected: {address}")
@@ -205,6 +208,8 @@ def aggregator_process(
             logger.error(f"Failed to connect to {address}: {e}")
             # Ensure cleanup
             connected_clients.pop(address, None)
+        finally:
+            pending_connections.discard(address)
 
     async def run():
         nonlocal mapping_cache, config_mtime
@@ -216,7 +221,11 @@ def aggregator_process(
             while not found_queue.empty():
                 try:
                     address = found_queue.get_nowait()
-                    if address not in connected_clients:
+                    if (
+                        address not in connected_clients
+                        and address not in pending_connections
+                    ):
+                        pending_connections.add(address)
                         asyncio.create_task(coro=connect_device(address))
                 except Exception:
                     break
