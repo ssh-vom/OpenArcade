@@ -1,18 +1,19 @@
 import asyncio
 import logging
-import multiprocessing
 import os
 import struct
+import time
 from typing import Any
 
-from bleak import BleakClient
+from bleak import BleakClient, BleakScanner
 
 import constants as const
 from config_store import ConfigStore
-from constants import CHAR_UUID, DEFAULT_MAPPING
+from constants import CHAR_UUID, DEFAULT_MAPPING, SCANNER_DELAY
 from default_descriptor import default_descriptor
 
 logger = logging.getLogger("OpenArcade")
+TARGET_DEVICE_NAME = "NimBLE_GATT"
 
 KEYCODES = {
     name: value for name, value in vars(const).items() if name.startswith("HID_KEY_")
@@ -100,19 +101,21 @@ def refresh_mapping_cache(config_store, previous_mtime, default_controls=None):
 
 
 def aggregator_process(
-    found_queue,
     hid_queue,
     stop_event,
     config_path: str | None = None,
 ):
     """
-    Manages connections, maintains device state, maps inputs, and aggregates HID reports.
+    Scans for target BLE devices, manages connections, and aggregates HID reports.
     """
     logger.info(msg="Aggregator Process Started")
 
     # State tracking
     connected_clients: dict[str, BleakClient] = {}
     connecting_addresses: set[str] = set()
+    discovered_devices: dict[str, Any] = {}
+    pending_connects: set[str] = set()
+    retry_after: dict[str, float] = {}
     device_states: dict[str, int] = {}  # Address -> 32-bit State
 
     config_store = ConfigStore(path=config_path)
@@ -174,62 +177,107 @@ def aggregator_process(
 
         return handler
 
-    async def connect_device(address):
+    def detection_callback(device, advertisement_data):
+        name = device.name or advertisement_data.local_name
+        if name != TARGET_DEVICE_NAME:
+            return
+
+        address = device.address
+        discovered_devices[address] = device
+
+        if address in connected_clients or address in connecting_addresses:
+            return
+
+        if time.monotonic() < retry_after.get(address, 0.0):
+            return
+
+        if address not in pending_connects:
+            pending_connects.add(address)
+            logger.info(f"Discovered Target Device: {address} ({name})")
+
+    async def connect_device(address, scanner, connect_lock):
         if address in connected_clients:
             connecting_addresses.discard(address)
             return
 
-        logger.info(f"Connecting to {address}...")
-
-        def on_disconnect(c):
-            logger.warning(f"Disconnected: {c.address}")
-            connected_clients.pop(c.address, None)
-            device_states.pop(c.address, None)
-            config_store.set_connected(c.address, False)
-            config_store.save()
-            # Update HID to clear stuck keys
-            update_hid_report()
-
-        client = BleakClient(address, disconnected_callback=on_disconnect, timeout=10.0)
-
-        try:
-            await client.connect()
-            connected_clients[address] = client
-            logger.info(f"Connected: {address}")
-
-            config_store.set_connected(address, True)
-            config_store.save()
-
-            await client.start_notify(CHAR_UUID, make_notification_handler(address))
-
-            # Init state
-            device_states[address] = 0
-
-        except Exception as e:
-            logger.error(f"Failed to connect to {address}: {e}")
-            # Ensure cleanup
-            connected_clients.pop(address, None)
-        finally:
+        device = discovered_devices.get(address)
+        if device is None:
+            logger.warning(
+                f"Skipping connect for {address}: device is no longer cached"
+            )
             connecting_addresses.discard(address)
+            return
+
+        async with connect_lock:
+            logger.info(f"Connecting to {address}...")
+
+            if scanner is not None:
+                await scanner.stop()
+
+            def on_disconnect(c):
+                logger.warning(f"Disconnected: {c.address}")
+                connected_clients.pop(c.address, None)
+                device_states.pop(c.address, None)
+                config_store.set_connected(c.address, False)
+                config_store.save()
+                # Update HID to clear stuck keys
+                update_hid_report()
+
+            client = BleakClient(
+                device, disconnected_callback=on_disconnect, timeout=10.0
+            )
+
+            try:
+                await client.connect()
+                connected_clients[address] = client
+                retry_after.pop(address, None)
+                logger.info(f"Connected: {address}")
+
+                config_store.set_connected(address, True)
+                config_store.save()
+
+                await client.start_notify(CHAR_UUID, make_notification_handler(address))
+
+                # Init state
+                device_states[address] = 0
+
+            except Exception as e:
+                retry_after[address] = time.monotonic() + SCANNER_DELAY
+                logger.error(
+                    f"Failed to connect to {address}: {e}. Retrying after {SCANNER_DELAY}s"
+                )
+                connected_clients.pop(address, None)
+                device_states.pop(address, None)
+                if client.is_connected:
+                    await client.disconnect()
+            finally:
+                connecting_addresses.discard(address)
+                if scanner is not None and not stop_event.is_set():
+                    await scanner.start()
 
     async def run():
         nonlocal mapping_cache, config_mtime
+        connect_lock = asyncio.Lock()
+        scanner = BleakScanner(detection_callback=detection_callback)
+
         refresh = refresh_mapping_cache(config_store, config_mtime)
         if refresh:
             _, mapping_cache, config_mtime = refresh
+
+        await scanner.start()
+
         while not stop_event.is_set():
-            # Process new devices
-            while not found_queue.empty():
-                try:
-                    address = found_queue.get_nowait()
-                    if (
-                        address not in connected_clients
-                        and address not in connecting_addresses
-                    ):
-                        connecting_addresses.add(address)
-                        asyncio.create_task(coro=connect_device(address))
-                except Exception:
-                    break
+            # Process discovered devices
+            for address in list(pending_connects):
+                if address in connected_clients or address in connecting_addresses:
+                    pending_connects.discard(address)
+                    continue
+                if time.monotonic() < retry_after.get(address, 0.0):
+                    continue
+
+                pending_connects.discard(address)
+                connecting_addresses.add(address)
+                asyncio.create_task(coro=connect_device(address, scanner, connect_lock))
 
             refresh = refresh_mapping_cache(config_store, config_mtime)
             if refresh:
@@ -239,6 +287,7 @@ def aggregator_process(
 
         # Cleanup on exit
         logger.info(msg="Aggregator stopping, disconnecting all...")
+        await scanner.stop()
         for client in connected_clients.values():
             await client.disconnect()
 

@@ -4,7 +4,6 @@ import multiprocessing
 import time
 
 from aggregator import aggregator_process
-from ble_scanner import scanner_process
 from hid_writer import hid_writer_process
 
 
@@ -26,22 +25,16 @@ def main() -> int:
 
     logger.info("Initializing OpenArcade Subscriber...")
 
-    # Communication Queues
-    found_queue = multiprocessing.Queue()
+    # Communication Queue
     hid_queue = multiprocessing.Queue()
 
     # Control Event
     stop_event = multiprocessing.Event()
 
     # Create Processes
-    p_scanner = multiprocessing.Process(
-        target=scanner_process,
-        args=(found_queue, stop_event),
-        name="Scanner",
-    )
     p_aggregator = multiprocessing.Process(
         target=aggregator_process,
-        args=(found_queue, hid_queue, stop_event, args.config),
+        args=(hid_queue, stop_event, args.config),
         name="Aggregator",
     )
     p_writer = multiprocessing.Process(
@@ -51,7 +44,6 @@ def main() -> int:
     )
 
     processes = [
-        p_scanner,
         p_aggregator,
         p_writer,
     ]
