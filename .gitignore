@@ -5,6 +5,7 @@
 *.blg
 *.fls
 *.env
+!packaging/rpi/openarcade.env.example
 *.fdb_latexmk
 sdkconfig.*
 **.aux
@@ -15,11 +16,11 @@ sdkconfig.*
 **.fls
 **.fdb_latexmk
 **.env
+!packaging/rpi/openarcade.env.example
 **/build/
 **/__pycache__/
 *.cache
 node_modules/
 node_modules
 server/config.json
-
 

@@ -9,6 +9,8 @@ VENV_DIR="$INSTALL_ROOT/venv"
 STATE_DIR="/var/lib/openarcade"
 ENV_DIR="/etc/openarcade"
 ENV_FILE="$ENV_DIR/openarcade.env"
+ENV_TEMPLATE_FILE="$SCRIPT_DIR/openarcade.env.example"
+ENV_OVERRIDE_FILE="$SCRIPT_DIR/openarcade.env"
 MODULES_FILE="/etc/modules-load.d/openarcade-gadget.conf"
 SYSTEMD_DIR="/etc/systemd/system"
 BOOT_CONFIG=""
@@ -100,8 +102,20 @@ setup_state_dir() {
 }
 
 install_env_file() {
+    local source_env_file
+
     mkdir -p "$ENV_DIR"
-    install -m 0644 "$SCRIPT_DIR/openarcade.env" "$ENV_FILE"
+
+    if [[ -f "$ENV_OVERRIDE_FILE" ]]; then
+        source_env_file="$ENV_OVERRIDE_FILE"
+    elif [[ -f "$ENV_TEMPLATE_FILE" ]]; then
+        source_env_file="$ENV_TEMPLATE_FILE"
+    else
+        echo "Missing env source file. Expected $ENV_OVERRIDE_FILE or $ENV_TEMPLATE_FILE."
+        exit 1
+    fi
+
+    install -m 0644 "$source_env_file" "$ENV_FILE"
 }
 
 install_systemd_units() {
