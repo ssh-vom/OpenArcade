@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import os
 import struct
+from typing import Any
 
 from bleak import BleakClient
 
@@ -29,7 +30,7 @@ MODIFIER_KEYCODES = {
 DEFAULT_CONTROLS = [control.to_dict() for control in default_descriptor().controls]
 
 
-def resolve_keycode(entry: any) -> int | None:
+def resolve_keycode(entry: Any) -> int | None:
     if entry is None:
         return None
     if isinstance(entry, int):
@@ -58,7 +59,7 @@ def build_mapping(device_cfg, default_controls=None):
     mapping = {}
     for control in controls:
         bit_index = control.get("bit_index")
-        if bit_index is None:
+        if not isinstance(bit_index, int):
             continue
         control_id = control.get("id")
         mapping_entry = None
@@ -99,9 +100,9 @@ def refresh_mapping_cache(config_store, previous_mtime, default_controls=None):
 
 
 def aggregator_process(
-    found_queue: multiprocessing.Queue,
-    hid_queue: multiprocessing.Queue,
-    stop_event: multiprocessing.Event,
+    found_queue,
+    hid_queue,
+    stop_event,
     config_path: str | None = None,
 ):
     """
@@ -111,6 +112,7 @@ def aggregator_process(
 
     # State tracking
     connected_clients: dict[str, BleakClient] = {}
+    connecting_addresses: set[str] = set()
     device_states: dict[str, int] = {}  # Address -> 32-bit State
 
     config_store = ConfigStore(path=config_path)
@@ -174,6 +176,7 @@ def aggregator_process(
 
     async def connect_device(address):
         if address in connected_clients:
+            connecting_addresses.discard(address)
             return
 
         logger.info(f"Connecting to {address}...")
@@ -206,6 +209,8 @@ def aggregator_process(
             logger.error(f"Failed to connect to {address}: {e}")
             # Ensure cleanup
             connected_clients.pop(address, None)
+        finally:
+            connecting_addresses.discard(address)
 
     async def run():
         nonlocal mapping_cache, config_mtime
@@ -217,7 +222,11 @@ def aggregator_process(
             while not found_queue.empty():
                 try:
                     address = found_queue.get_nowait()
-                    if address not in connected_clients:
+                    if (
+                        address not in connected_clients
+                        and address not in connecting_addresses
+                    ):
+                        connecting_addresses.add(address)
                         asyncio.create_task(coro=connect_device(address))
                 except Exception:
                     break
