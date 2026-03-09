@@ -1,5 +1,5 @@
 import { useGLTF, Html } from "@react-three/drei";
-import { useRef, memo, useEffect, useState, useCallback } from "react";
+import { useRef, memo, useEffect, useState, useCallback, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ANALOG_INPUTS, GAMEPAD_INPUTS, HID_INPUT_TYPES, KEYBOARD_INPUTS, getInputLabel } from "../services/HIDManager.js";
@@ -78,6 +78,7 @@ const ChildModule = memo(function ChildModule({
     mappingFilter = "all"
 }) {
     const gltf = useGLTF(path);
+    const moduleScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
     const groupRef = useRef();
     const glowRef = useRef();
     const frameCountRef = useRef(0);
@@ -226,17 +227,18 @@ const ChildModule = memo(function ChildModule({
     }, [isEditable, onModuleClick]);
 
     useEffect(() => {
-        if (gltf && gltf.scene) {
+        if (moduleScene) {
             buttonMeshes.current.clear();
             buttonNameByMesh.current.clear();
+            buttonMaterialState.current.clear();
             const labelPositions = {};
 
-            gltf.scene.updateWorldMatrix(true, true);
+            moduleScene.updateWorldMatrix(true, true);
             if (groupRef.current) {
                 groupRef.current.updateWorldMatrix(true, true);
             }
 
-            gltf.scene.traverse((rootChild) => {
+            moduleScene.traverse((rootChild) => {
                 if (rootChild.name.startsWith('button_')) {
                     const buttonGroupName = rootChild.name;
                     // Helper to recursively find and register all meshes within this button group
@@ -274,7 +276,7 @@ const ChildModule = memo(function ChildModule({
             setButtonLabelPositions(labelPositions);
             console.log('Total button meshes found:', buttonMeshes.current.size);
         }
-    }, [gltf]);
+    }, [moduleScene]);
 
     useEffect(() => {
         const highlightColor = new THREE.Color("#d7b15a");
@@ -354,8 +356,8 @@ const ChildModule = memo(function ChildModule({
             onClick={handleModuleClick}
         >
             {/* GLB Scene */}
-            {gltf.scene && (
-                <primitive object={gltf.scene} />
+            {moduleScene && (
+                <primitive object={moduleScene} />
             )}
 
             {/* Mapping badges for 2D mode */}
