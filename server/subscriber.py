@@ -1,3 +1,4 @@
+import argparse
 import logging
 import multiprocessing
 import time
@@ -15,7 +16,14 @@ logging.basicConfig(
 logger = logging.getLogger("OpenArcade")
 
 
-def main():
+def main() -> int:
+    parser = argparse.ArgumentParser(description="OpenArcade BLE/HID subscriber")
+    parser.add_argument(
+        "--config",
+        help="Path to the persistent config store JSON file",
+    )
+    args = parser.parse_args()
+
     logger.info("Initializing OpenArcade Subscriber...")
 
     # Communication Queues
@@ -33,7 +41,7 @@ def main():
     )
     p_aggregator = multiprocessing.Process(
         target=aggregator_process,
-        args=(found_queue, hid_queue, stop_event),
+        args=(found_queue, hid_queue, stop_event, args.config),
         name="Aggregator",
     )
     p_writer = multiprocessing.Process(
@@ -68,7 +76,8 @@ def main():
             p.terminate()
 
     logger.info("System Shutdown Complete.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

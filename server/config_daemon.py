@@ -105,8 +105,12 @@ def handle_command(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any
     return handler(store, message)
 
 
-def run(device_path: str, verbose: bool = False) -> int:
-    store = ConfigStore()
+def run(
+    device_path: str,
+    verbose: bool = False,
+    config_path: str | None = None,
+) -> int:
+    store = ConfigStore(path=config_path)
     store.load()
 
     try:
@@ -152,10 +156,14 @@ def main() -> int:
         "--device", default="/dev/ttyGS0", help="Serial gadget device path"
     )
     parser.add_argument(
+        "--config",
+        help="Path to the persistent config store JSON file",
+    )
+    parser.add_argument(
         "--verbose", action="store_true", help="Enable request logging"
     )
     args = parser.parse_args()
-    return run(args.device, args.verbose)
+    return run(args.device, args.verbose, args.config)
 
 
 if __name__ == "__main__":

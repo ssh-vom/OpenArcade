@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenArcade BLE to HID runtime
+Requires=openarcade-gadget.service
+After=openarcade-gadget.service bluetooth.target
+Wants=bluetooth.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openarcade/openarcade.env
+WorkingDirectory=/opt/openarcade/app/server
+ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/subscriber.py
+Restart=on-failure
+RestartSec=2
+KillMode=mixed
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

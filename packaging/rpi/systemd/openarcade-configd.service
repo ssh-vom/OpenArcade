@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenArcade USB serial config daemon
+Requires=openarcade-gadget.service
+After=openarcade-gadget.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openarcade/openarcade.env
+WorkingDirectory=/opt/openarcade/app/server
+ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/config_daemon.py --device /dev/ttyGS0
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

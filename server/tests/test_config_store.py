@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from config_store import ConfigStore
+from config_store import CONFIG_PATH_ENV_VAR, ConfigStore
 from default_descriptor import default_descriptor
 
 
@@ -70,6 +70,23 @@ class ConfigStoreTestCase(unittest.TestCase):
                 device["modes"]["keyboard"]["mapping"]["2"],
                 {"keycode": "HID_KEY_C"},
             )
+
+    def test_default_path_comes_from_environment(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "state", "config.json")
+            original = os.environ.get(CONFIG_PATH_ENV_VAR)
+            os.environ[CONFIG_PATH_ENV_VAR] = path
+            try:
+                store = ConfigStore()
+                self.assertEqual(store.path, path)
+                store.load()
+                store.save()
+                self.assertTrue(os.path.exists(path))
+            finally:
+                if original is None:
+                    os.environ.pop(CONFIG_PATH_ENV_VAR, None)
+                else:
+                    os.environ[CONFIG_PATH_ENV_VAR] = original
 
 
 if __name__ == "__main__":
