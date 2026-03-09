@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenArcade USB gadget setup
+After=local-fs.target systemd-modules-load.service sys-kernel-config.mount
+Wants=sys-kernel-config.mount
+Before=openarcade-subscriber.service openarcade-configd.service
+ConditionPathExists=/sys/kernel/config
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/openarcade/app/firmware/rpi/hidscript.sh
+
+[Install]
+WantedBy=multi-user.target

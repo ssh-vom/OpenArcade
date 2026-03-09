@@ -62,6 +62,16 @@ uv run subscriber.py
 
 The Pi will scan for child modules, subscribe to their notifications, and output the aggregated controller state.
 
+### Install as boot services on Raspberry Pi Zero 2 W
+
+```bash
+sudo ./packaging/rpi/install-rpi.sh
+```
+
+This installs OpenArcade under `/opt/openarcade`, stores persistent config in
+`/var/lib/openarcade/config.json`, and enables three `systemd` services for the
+USB gadget setup, the BLE/HID runtime, and the serial config daemon.
+
 ### Design your layout
 
 Open the 3D configurator to visualize module arrangements and plan your controller setup.

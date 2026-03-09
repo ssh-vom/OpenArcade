@@ -6,14 +6,17 @@ from datetime import datetime, timezone
 from typing import Any
 
 
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+CONFIG_PATH_ENV_VAR = "OPENARCADE_CONFIG_PATH"
+LEGACY_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+
+
+def resolve_default_config_path() -> str:
+    return os.environ.get(CONFIG_PATH_ENV_VAR, LEGACY_CONFIG_PATH)
 
 
 class ConfigStore:
-    def __init__(
-        self, path: str = DEFAULT_CONFIG_PATH, schema_version: int = 1
-    ) -> None:
-        self.path = path
+    def __init__(self, path: str | None = None, schema_version: int = 1) -> None:
+        self.path = path or resolve_default_config_path()
         self.schema_version = schema_version
         self._lock = threading.Lock()
         self._data: dict[str, Any] = self._default_state()
@@ -48,6 +51,9 @@ class ConfigStore:
         with self._lock:
             data = deepcopy(self._data)
             tmp_path = f"{self.path}.tmp"
+            directory = os.path.dirname(self.path)
+            if directory:
+                os.makedirs(directory, exist_ok=True)
             with open(tmp_path, "w", encoding="utf-8") as handle:
                 json.dump(data, handle, indent=2, sort_keys=True)
                 handle.write("\n")

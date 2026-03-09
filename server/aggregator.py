@@ -102,6 +102,7 @@ def aggregator_process(
     found_queue: multiprocessing.Queue,
     hid_queue: multiprocessing.Queue,
     stop_event: multiprocessing.Event,
+    config_path: str | None = None,
 ):
     """
     Manages connections, maintains device state, maps inputs, and aggregates HID reports.
@@ -112,7 +113,7 @@ def aggregator_process(
     connected_clients: dict[str, BleakClient] = {}
     device_states: dict[str, int] = {}  # Address -> 32-bit State
 
-    config_store = ConfigStore()
+    config_store = ConfigStore(path=config_path)
     config_mtime = None
     mapping_cache = build_mapping_cache(config_store.load())
 
