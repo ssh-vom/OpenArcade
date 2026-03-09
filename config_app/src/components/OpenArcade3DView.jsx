@@ -103,8 +103,8 @@ function Particles() {
 const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [selectedButton, setSelectedButton] = useState(null);
     const defaultModules = useMemo(() => ([
-        { id: 1, name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
-        { id: 2, name: "Module B", deviceId: "OA-002", path: "/OpenArcadeAssyJoystick_v1.glb", mappings: {}, position: [0, 0, 0] },
+        { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
+        { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/OpenArcadeAssyJoystick_v1.glb", mappings: {}, position: [0, 0, 0] },
     ]), []);
     const [modules, setModules] = useState(defaultModules);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
@@ -116,6 +116,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         const timer = setTimeout(() => setLoaded(true), 50);
         return () => clearTimeout(timer);
     }, []);
+
+    const currentModuleDeviceIdRef = useRef(defaultModules[0]?.deviceId || null);
 
     // Preload textures to eliminate WebGL warnings
     useEffect(() => {
@@ -130,9 +132,14 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         });
     }, []);
 
-    const currentModule = modules[currentModuleIndex];
-    const currentMappings = currentModule.mappings;
-    const cameraControl = useCameraController({ currentModuleIndex, modules, enabled: viewMode === '3d' });
+    const safeCurrentModuleIndex = currentModuleIndex < modules.length ? currentModuleIndex : 0;
+    const currentModule = modules[safeCurrentModuleIndex] || defaultModules[0];
+    const currentMappings = currentModule?.mappings || {};
+    const cameraControl = useCameraController({ currentModuleIndex: safeCurrentModuleIndex, modules, enabled: viewMode === '3d' });
+
+    useEffect(() => {
+        currentModuleDeviceIdRef.current = currentModule?.deviceId || null;
+    }, [currentModule]);
 
     const defaultLayout = DEFAULT_LAYOUT;
 
@@ -158,12 +165,15 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         const positions = [[-1.5, 0, 0], [0, 0, 0], [1.5, 0, 0], [3, 0, 0]];
         const realDevices = deviceEntries.filter(([deviceId]) => deviceId.includes(":"));
         const entriesToRender = realDevices.length > 0 ? realDevices : deviceEntries;
+        const selectedDeviceId = currentModuleDeviceIdRef.current;
 
         const nextModules = entriesToRender.map(([deviceId, deviceConfig], index) => {
             const uiLayout = deviceConfig?.ui?.layout;
             const hasLayout = uiLayout && Object.keys(uiLayout).length > 0;
             const layout = hasLayout ? uiLayout : defaultLayout;
-            const model = deviceConfig?.ui?.model;
+            const model = typeof deviceConfig?.ui?.model === "string"
+                ? deviceConfig.ui.model.toLowerCase()
+                : null;
             const mode = deviceConfig?.active_mode || "keyboard";
             const mappingConfig = deviceConfig?.modes?.[mode]?.mapping || {};
 
@@ -190,7 +200,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             });
 
             return {
-                id: index + 1,
+                id: deviceId,
                 name: deviceConfig?.name || deviceId,
                 deviceId,
                 path: model === "joystick" ? "/OpenArcadeAssyJoystick_v1.glb" : "/OpenArcadeAssy_v2.glb",
@@ -203,12 +213,14 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
         if (nextModules.length > 0) {
             setModules(nextModules);
-            setCurrentModuleIndex(0);
+            const nextIndex = nextModules.findIndex((module) => module.deviceId === selectedDeviceId);
+            setCurrentModuleIndex(nextIndex >= 0 ? nextIndex : 0);
             return;
         }
 
         setModules(defaultModules);
-        setCurrentModuleIndex(0);
+        const fallbackIndex = defaultModules.findIndex((module) => module.deviceId === selectedDeviceId);
+        setCurrentModuleIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
     }, [defaultLayout, getInputForKeycode]);
 
     useEffect(() => {
@@ -257,7 +269,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
     const saveMapping = (buttonName, config) => {
         setModules(prev => prev.map((mod, idx) => {
-            if (idx === currentModuleIndex) {
+            if (idx === safeCurrentModuleIndex) {
                 const newMappings = { ...mod.mappings };
                 if (config && (config.type || config.input || config.action)) {
                     // New HID configuration
@@ -306,7 +318,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
     const clearAllMappings = () => {
         setModules(prev => prev.map((mod, idx) => {
-            if (idx === currentModuleIndex) {
+            if (idx === safeCurrentModuleIndex) {
                 return { ...mod, mappings: {}, mappedButtons: 0 };
             }
             return mod;
@@ -362,7 +374,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 <ControllerHUD
                     controllerName="OpenArcade Controller v1.0"
                     moduleCount={modules.length}
-                    currentModule={currentModuleIndex}
+                    currentModule={safeCurrentModuleIndex}
                     modules={modules.map(m => ({ ...m, mappedButtons: Object.keys(m.mappings).length }))}
                     onModuleChange={handleModuleChange}
                     isConnected={modules.some((module) => module.connected !== false)}
@@ -487,13 +499,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                         path={module.path}
                                         onButtonClick={handleButtonClick}
                                         onModuleClick={() => handleModuleClick(index)}
-                                        isEditable={index === currentModuleIndex}
+                                        isEditable={index === safeCurrentModuleIndex}
                                         position={module.position}
                                         viewMode={viewMode}
-                                        isActive={index === currentModuleIndex}
+                                        isActive={index === safeCurrentModuleIndex}
                                         mappings={module.mappings}
                                         mappingFilter={mappingFilter}
-                                        key={module.id}
+                                        key={module.deviceId || module.id}
                                     />
                                 ))}
                             </Bounds>
