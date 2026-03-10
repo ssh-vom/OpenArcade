@@ -1,3 +1,19 @@
+
+```text
+> booting OPENARCADE...
+> loading controllers...
+> syncing modules...
+> ready.
+
+                 ██████╗ ██████╗ ███████╗███╗   ██╗ █████╗ ██████╗  ██████╗ █████╗ ██████╗ ███████╗
+                ██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔════╝
+                ██║   ██║██████╔╝█████╗  ██╔██╗ ██║███████║██████╔╝██║     ███████║██║  ██║█████╗
+                ██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██╔══██║██╔══██╗██║     ██╔══██║██║  ██║██╔══╝
+                ╚██████╔╝██║     ███████╗██║ ╚████║██║  ██║██║  ██║╚██████╗██║  ██║██████╔╝███████╗
+                 ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝
+ ```
+
+
 # OpenArcade
 
 A modular game controller designed for accessibility. Build your own layout from separate modules or snap them together—play from your lap, a table, or wherever works for you.
