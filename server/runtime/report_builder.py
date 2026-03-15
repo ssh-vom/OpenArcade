@@ -1,0 +1,118 @@
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any
+
+import constants as const
+from constants import DEFAULT_MAPPING
+from default_descriptor import default_descriptor
+
+
+KEYCODES = {
+    name: value for name, value in vars(const).items() if name.startswith("HID_KEY_")
+}
+
+MODIFIER_KEYCODES = {
+    const.HID_KEY_LEFT_CONTROL: 0x01,
+    const.HID_KEY_LEFT_SHIFT: 0x02,
+    const.HID_KEY_LEFT_ALT: 0x04,
+    const.HID_KEY_LEFT_GUI: 0x08,
+    const.HID_KEY_RIGHT_CONTROL: 0x10,
+    const.HID_KEY_RIGHT_SHIFT: 0x20,
+    const.HID_KEY_RIGHT_ALT: 0x40,
+    const.HID_KEY_RIGHT_GUI: 0x80,
+}
+
+DEFAULT_CONTROLS = [control.to_dict() for control in default_descriptor().controls]
+
+
+def resolve_keycode(entry: Any) -> int | None:
+    if entry is None:
+        return None
+    if isinstance(entry, int):
+        return entry
+    if isinstance(entry, Mapping):
+        entry = entry.get("keycode")
+    if isinstance(entry, str):
+        if entry in KEYCODES:
+            return KEYCODES[entry]
+        if entry.startswith("0x"):
+            try:
+                return int(entry, 16)
+            except ValueError:
+                return None
+        if entry.isdigit():
+            return int(entry)
+    return None
+
+
+def build_mapping(
+    device_config: Mapping[str, Any],
+    default_controls: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[int, int]:
+    active_mode = device_config.get("active_mode") or "keyboard"
+    descriptor = device_config.get("descriptor") or {}
+    controls = descriptor.get("controls") or (default_controls or DEFAULT_CONTROLS)
+    mapping_config = (
+        device_config.get("modes", {}).get(active_mode, {}).get("mapping", {})
+    )
+
+    mapping: dict[int, int] = {}
+    for control in controls:
+        bit_index = control.get("bit_index")
+        if not isinstance(bit_index, int):
+            continue
+
+        control_id = control.get("id")
+        mapping_entry = None
+        if control_id is not None:
+            mapping_entry = mapping_config.get(
+                str(control_id), mapping_config.get(control_id)
+            )
+
+        keycode = resolve_keycode(mapping_entry)
+        if keycode is None:
+            keycode = DEFAULT_MAPPING.get(bit_index)
+        if keycode is not None:
+            mapping[bit_index] = keycode
+
+    for bit_index, keycode in DEFAULT_MAPPING.items():
+        mapping.setdefault(bit_index, keycode)
+
+    return mapping
+
+
+def build_mapping_cache(
+    config_snapshot: Mapping[str, Any],
+    default_controls: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, dict[int, int]]:
+    controls = default_controls or DEFAULT_CONTROLS
+    devices = config_snapshot.get("devices", {})
+    if not isinstance(devices, Mapping):
+        return {}
+
+    return {
+        device_id: build_mapping(device_config, controls)
+        for device_id, device_config in devices.items()
+        if isinstance(device_id, str) and isinstance(device_config, Mapping)
+    }
+
+
+def build_keyboard_report(active_keys: Iterable[int]) -> bytes:
+    report = bytearray(8)
+    modifiers = 0
+    non_modifier_keys: list[int] = []
+
+    for key_code in set(active_keys):
+        modifier_bit = MODIFIER_KEYCODES.get(key_code)
+        if modifier_bit is not None:
+            modifiers |= modifier_bit
+        else:
+            non_modifier_keys.append(key_code)
+
+    report[0] = modifiers
+
+    for index, key_code in enumerate(sorted(non_modifier_keys)[:6]):
+        report[2 + index] = key_code
+
+    return bytes(report)

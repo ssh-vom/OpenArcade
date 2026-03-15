@@ -1,22 +1,25 @@
+from __future__ import annotations
+
 import argparse
 import json
 import os
 import sys
 from typing import Any
 
-from config_store import ConfigStore
+from device_config_store import DeviceConfigStore
+from runtime_ipc import get_connected_devices, notify_runtime_config_updated
 
 
 def read_line(fd: int) -> str | None:
-    buf = bytearray()
+    buffer = bytearray()
     while True:
         chunk = os.read(fd, 1)
         if not chunk:
             return None
         if chunk == b"\n":
             break
-        buf.extend(chunk)
-    return buf.decode("utf-8", errors="ignore").strip()
+        buffer.extend(chunk)
+    return buffer.decode("utf-8", errors="ignore").strip()
 
 
 def write_line(fd: int, payload: dict[str, Any]) -> None:
@@ -24,24 +27,39 @@ def write_line(fd: int, payload: dict[str, Any]) -> None:
     os.write(fd, data.encode("utf-8"))
 
 
-def _handle_ping(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+def _handle_ping(_store: DeviceConfigStore, _message: dict[str, Any]) -> dict[str, Any]:
     return {"ok": True, "reply": "pong"}
 
 
-def _handle_list_devices(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+def _handle_list_devices(
+    store: DeviceConfigStore, _message: dict[str, Any]
+) -> dict[str, Any]:
     data = store.get_all()
-    return {"ok": True, "devices": data.get("devices", {})}
+    live_connected_devices = get_connected_devices()
+    devices = data.get("devices", {})
+    if isinstance(devices, dict):
+        for device_id, device in devices.items():
+            if isinstance(device, dict):
+                device["connected"] = device_id in live_connected_devices
+    return {"ok": True, "devices": devices}
 
 
-def _handle_get_device(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+def _handle_get_device(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
     device_id = message.get("device_id")
     if not device_id:
         return {"ok": False, "error": "missing_device_id"}
+
     device = store.get_device(device_id)
+    if isinstance(device, dict):
+        device["connected"] = device_id in get_connected_devices()
     return {"ok": True, "device": device}
 
 
-def _handle_set_descriptor(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+def _handle_set_descriptor(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
     device_id = message.get("device_id")
     descriptor = message.get("descriptor")
     if not device_id or descriptor is None:
@@ -51,7 +69,9 @@ def _handle_set_descriptor(store: ConfigStore, message: dict[str, Any]) -> dict[
     return {"ok": True}
 
 
-def _handle_set_mapping(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+def _handle_set_mapping(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
     device_id = message.get("device_id")
     mode = message.get("mode")
     control_id = message.get("control_id")
@@ -63,7 +83,9 @@ def _handle_set_mapping(store: ConfigStore, message: dict[str, Any]) -> dict[str
     return {"ok": True}
 
 
-def _handle_set_active_mode(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+def _handle_set_active_mode(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
     device_id = message.get("device_id")
     mode = message.get("mode")
     if not device_id or not mode:
@@ -73,7 +95,9 @@ def _handle_set_active_mode(store: ConfigStore, message: dict[str, Any]) -> dict
     return {"ok": True}
 
 
-def _handle_set_last_seen(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
+def _handle_set_last_seen(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
     device_id = message.get("device_id")
     if not device_id:
         return {"ok": False, "error": "missing_device_id"}
@@ -92,17 +116,30 @@ COMMAND_HANDLERS = {
     "set_last_seen": _handle_set_last_seen,
 }
 
+RUNTIME_UPDATE_COMMANDS = {
+    "set_descriptor",
+    "set_mapping",
+    "set_active_mode",
+}
 
-def handle_command(store: ConfigStore, message: dict[str, Any]) -> dict[str, Any]:
-    cmd = message.get("cmd")
-    if not cmd:
-        return {"ok": False, "error": "missing_cmd"}
 
-    handler = COMMAND_HANDLERS.get(cmd)
-    if not handler:
-        return {"ok": False, "error": "unknown_cmd"}
+def handle_command(
+    store: DeviceConfigStore,
+    message: dict[str, Any],
+) -> tuple[dict[str, Any], bool]:
+    command = message.get("cmd")
+    if not command:
+        return {"ok": False, "error": "missing_cmd"}, False
 
-    return handler(store, message)
+    handler = COMMAND_HANDLERS.get(command)
+    if handler is None:
+        return {"ok": False, "error": "unknown_cmd"}, False
+
+    response = handler(store, message)
+    should_notify_runtime = (
+        command in RUNTIME_UPDATE_COMMANDS and response.get("ok") is True
+    )
+    return response, should_notify_runtime
 
 
 def run(
@@ -110,7 +147,7 @@ def run(
     verbose: bool = False,
     config_path: str | None = None,
 ) -> int:
-    store = ConfigStore(path=config_path)
+    store = DeviceConfigStore(path=config_path)
     store.load()
 
     try:
@@ -128,6 +165,7 @@ def run(
                 break
             if not line:
                 continue
+
             try:
                 message = json.loads(line)
             except json.JSONDecodeError:
@@ -135,13 +173,22 @@ def run(
                     print("Invalid JSON received")
                 write_line(fd, {"ok": False, "error": "invalid_json"})
                 continue
+
             store.load()
             if verbose:
                 print(f"Received: {message}")
-            response = handle_command(store, message)
+
+            response, should_notify_runtime = handle_command(store, message)
+
             if verbose:
                 print(f"Responding: {response}")
+
             write_line(fd, response)
+
+            if should_notify_runtime:
+                runtime_notified = notify_runtime_config_updated()
+                if verbose and not runtime_notified:
+                    print("Runtime update notification failed")
     except KeyboardInterrupt:
         return 0
     finally:
@@ -151,7 +198,9 @@ def run(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="OpenArcade config daemon (WebSerial)")
+    parser = argparse.ArgumentParser(
+        description="OpenArcade USB serial configuration service"
+    )
     parser.add_argument(
         "--device", default="/dev/ttyGS0", help="Serial gadget device path"
     )
@@ -159,9 +208,7 @@ def main() -> int:
         "--config",
         help="Path to the persistent config store JSON file",
     )
-    parser.add_argument(
-        "--verbose", action="store_true", help="Enable request logging"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable request logging")
     args = parser.parse_args()
     return run(args.device, args.verbose, args.config)
 

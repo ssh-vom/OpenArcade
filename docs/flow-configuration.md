@@ -6,12 +6,12 @@ flowchart LR
     UI[React Config App]
     WebSerial[WebSerial API]
     Serial[/dev/ttyGS0]
-    Daemon[config_daemon.py]
-    Store[ConfigStore]
+    Daemon[serial_config_service.py]
+    Store[device_config_store.py]
     Config[config.json]
-    Aggregator[aggregator.py\nMapping Cache]
+    Runtime[runtime/control_server.py\nconfig update + live status]
 
     User --> UI --> WebSerial --> Serial --> Daemon --> Store --> Config
-    Store --> Aggregator
+    Daemon --> Runtime
     Daemon -->|response| WebSerial
 ```

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import threading
@@ -6,15 +8,15 @@ from datetime import datetime, timezone
 from typing import Any
 
 
-CONFIG_PATH_ENV_VAR = "OPENARCADE_CONFIG_PATH"
-LEGACY_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+OPENARCADE_CONFIG_PATH_ENV_VAR = "OPENARCADE_CONFIG_PATH"
+LEGACY_DEVICE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 
 
 def resolve_default_config_path() -> str:
-    return os.environ.get(CONFIG_PATH_ENV_VAR, LEGACY_CONFIG_PATH)
+    return os.environ.get(OPENARCADE_CONFIG_PATH_ENV_VAR, LEGACY_DEVICE_CONFIG_PATH)
 
 
-class ConfigStore:
+class DeviceConfigStore:
     def __init__(self, path: str | None = None, schema_version: int = 1) -> None:
         self.path = path or resolve_default_config_path()
         self.schema_version = schema_version
@@ -73,21 +75,13 @@ class ConfigStore:
     ) -> dict[str, Any]:
         with self._lock:
             device = self._get_or_create_device_locked(device_id)
-
             if updates:
                 device.update(updates)
-
             return deepcopy(device)
 
     def set_last_seen(self, device_id: str) -> dict[str, Any]:
         timestamp = datetime.now(timezone.utc).isoformat()
         return self.upsert_device(device_id, {"last_seen": timestamp})
-
-    def set_connected(self, device_id: str, connected: bool) -> dict[str, Any]:
-        updates: dict[str, Any] = {"connected": bool(connected)}
-        if connected:
-            updates["last_seen"] = datetime.now(timezone.utc).isoformat()
-        return self.upsert_device(device_id, updates)
 
     def set_descriptor(
         self, device_id: str, descriptor: dict[str, Any]

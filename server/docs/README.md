@@ -13,13 +13,14 @@ Each child board functions as a server, publishing the state of it's inputs
 The central node is our Raspberry Pi Zero 2 W, acting as a BLE GATT client, it 
 subscribes to the servers and receives data through notifications
 
-Our minimal working prototype of the pi code is held in `subscriber.py`
+The current Pi runtime entry point is `runtime_main.py`
 
 It currently:
 ```
 1. Scans for BLE Servers
 2. Subscribes to their notifications 
-3. Prints out the notifications as they arrive
+3. Aggregates controller state into HID reports
+4. Sends the latest report to a dedicated HID output worker
 ```
 
 This code runs asynchronously using `asyncio` and the prototype makes use of the `bleak` library
@@ -28,5 +29,5 @@ The code can be run using `uv` as follows:
 
 
 ```
-uv run subscriber.py
+uv run runtime_main.py
 ```

@@ -3,8 +3,8 @@
 OpenArcade is deployed on the Pi as three native `systemd` services:
 
 - `openarcade-gadget.service`: one-shot USB gadget/bootstrap service
-- `openarcade-subscriber.service`: BLE scanner, aggregator, and HID writer
-- `openarcade-configd.service`: USB serial config daemon on `/dev/ttyGS0`
+- `openarcade-subscriber.service`: async BLE runtime plus HID output worker
+- `openarcade-configd.service`: USB serial config service on `/dev/ttyGS0`
 
 Install from a Raspberry Pi OS Bookworm shell on the Pi:
 

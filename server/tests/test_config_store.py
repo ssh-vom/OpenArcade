@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from config_store import CONFIG_PATH_ENV_VAR, ConfigStore
+from device_config_store import OPENARCADE_CONFIG_PATH_ENV_VAR, DeviceConfigStore
 from default_descriptor import default_descriptor
 
 
@@ -11,7 +11,7 @@ class ConfigStoreTestCase(unittest.TestCase):
     def test_load_defaults(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "config.json")
-            store = ConfigStore(path=path)
+            store = DeviceConfigStore(path=path)
             data = store.load()
 
             self.assertEqual(data["schema_version"], 1)
@@ -20,7 +20,7 @@ class ConfigStoreTestCase(unittest.TestCase):
     def test_upsert_save_roundtrip(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "config.json")
-            store = ConfigStore(path=path)
+            store = DeviceConfigStore(path=path)
             store.load()
 
             device_id = "AA:BB:CC:DD:EE:FF"
@@ -46,7 +46,7 @@ class ConfigStoreTestCase(unittest.TestCase):
                 {"keycode": "HID_KEY_Z"},
             )
 
-            reloaded = ConfigStore(path=path)
+            reloaded = DeviceConfigStore(path=path)
             data = reloaded.load()
             self.assertIn(device_id, data["devices"])
             self.assertEqual(
@@ -57,7 +57,7 @@ class ConfigStoreTestCase(unittest.TestCase):
     def test_set_mapping_creates_device(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "config.json")
-            store = ConfigStore(path=path)
+            store = DeviceConfigStore(path=path)
             store.load()
 
             device_id = "11:22:33:44:55:66"
@@ -65,6 +65,7 @@ class ConfigStoreTestCase(unittest.TestCase):
             device = store.get_device(device_id)
 
             self.assertIsNotNone(device)
+            assert device is not None
             self.assertEqual(device["active_mode"], "keyboard")
             self.assertEqual(
                 device["modes"]["keyboard"]["mapping"]["2"],
@@ -74,19 +75,19 @@ class ConfigStoreTestCase(unittest.TestCase):
     def test_default_path_comes_from_environment(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "state", "config.json")
-            original = os.environ.get(CONFIG_PATH_ENV_VAR)
-            os.environ[CONFIG_PATH_ENV_VAR] = path
+            original = os.environ.get(OPENARCADE_CONFIG_PATH_ENV_VAR)
+            os.environ[OPENARCADE_CONFIG_PATH_ENV_VAR] = path
             try:
-                store = ConfigStore()
+                store = DeviceConfigStore()
                 self.assertEqual(store.path, path)
                 store.load()
                 store.save()
                 self.assertTrue(os.path.exists(path))
             finally:
                 if original is None:
-                    os.environ.pop(CONFIG_PATH_ENV_VAR, None)
+                    os.environ.pop(OPENARCADE_CONFIG_PATH_ENV_VAR, None)
                 else:
-                    os.environ[CONFIG_PATH_ENV_VAR] = original
+                    os.environ[OPENARCADE_CONFIG_PATH_ENV_VAR] = original
 
 
 if __name__ == "__main__":

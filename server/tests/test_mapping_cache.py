@@ -1,40 +1,54 @@
 import os
 import tempfile
-import time
 import unittest
 
 import constants as const
-from aggregator import refresh_mapping_cache
-from config_store import ConfigStore
+from device_config_store import DeviceConfigStore
+from runtime.report_builder import build_mapping_cache
+from runtime.state_reducer import StateReducer
 
 
 class MappingCacheTestCase(unittest.TestCase):
-    def test_refresh_mapping_cache_updates_on_change(self):
+    def test_build_mapping_cache_uses_latest_config(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "config.json")
-            store = ConfigStore(path=path)
+            store = DeviceConfigStore(path=path)
             store.load()
 
             device_id = "AA:BB:CC:DD:EE:FF"
             store.set_mapping(device_id, "keyboard", "1", {"keycode": "HID_KEY_A"})
             store.save()
 
-            refresh = refresh_mapping_cache(store, None)
-            self.assertIsNotNone(refresh)
-            _, cache, mtime = refresh
+            cache = build_mapping_cache(store.load())
             self.assertEqual(cache[device_id][0], const.HID_KEY_A)
 
-            time.sleep(1.05)
             store.set_mapping(device_id, "keyboard", "1", {"keycode": "HID_KEY_B"})
             store.save()
 
-            refresh = refresh_mapping_cache(store, mtime)
-            self.assertIsNotNone(refresh)
-            _, cache, mtime = refresh
+            cache = build_mapping_cache(store.load())
             self.assertEqual(cache[device_id][0], const.HID_KEY_B)
 
-            refresh = refresh_mapping_cache(store, mtime)
-            self.assertIsNone(refresh)
+    def test_state_reducer_rebuilds_report_when_mapping_changes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "config.json")
+            store = DeviceConfigStore(path=path)
+            store.load()
+
+            device_id = "AA:BB:CC:DD:EE:FF"
+            store.set_mapping(device_id, "keyboard", "1", {"keycode": "HID_KEY_A"})
+            store.save()
+
+            reducer = StateReducer(build_mapping_cache(store.load()))
+            report = reducer.update_device_state(device_id, 1 << 0)
+            self.assertIsNotNone(report)
+            assert report is not None
+            self.assertEqual(report[2], const.HID_KEY_A)
+
+            store.set_mapping(device_id, "keyboard", "1", {"keycode": "HID_KEY_B"})
+            store.save()
+
+            report = reducer.set_mapping_cache(build_mapping_cache(store.load()))
+            self.assertEqual(report[2], const.HID_KEY_B)
 
 
 if __name__ == "__main__":
