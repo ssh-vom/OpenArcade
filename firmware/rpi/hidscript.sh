@@ -57,8 +57,8 @@ echo 0x0200 > bcdUSB        # USB 2.0
 
 mkdir -p strings/0x409
 echo "fedcba9876544210" > strings/0x409/serialnumber
-echo "random" > strings/0x409/manufacturer
-echo "bhanotusb" > strings/0x409/product
+echo "Arcade Industries" > strings/0x409/manufacturer
+echo "OpenArcade" > strings/0x409/product
 
 mkdir -p configs/c.1/strings/0x409
 echo "Config 1: HID" > configs/c.1/strings/0x409/configuration

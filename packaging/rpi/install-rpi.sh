@@ -42,20 +42,44 @@ find_boot_config() {
     exit 1
 }
 
+boot_config_has_openarcade_overlay() {
+    local lines=()
+    local count
+
+    mapfile -t lines < "$BOOT_CONFIG"
+
+    while [[ "${#lines[@]}" -gt 0 ]]; do
+        count=${#lines[@]}
+        if [[ -n "${lines[count - 1]}" ]]; then
+            break
+        fi
+        unset "lines[count - 1]"
+    done
+
+    count=${#lines[@]}
+    if [[ "$count" -lt 2 ]]; then
+        return 1
+    fi
+
+    [[ "${lines[count - 2]}" == "[all]" && "${lines[count - 1]}" == "dtoverlay=dwc2,dr_mode=peripheral" ]]
+}
+
 ensure_boot_overlay() {
-    if grep -Eq '^[[:space:]]*dtoverlay=dwc2([[:space:]]|,|$)' "$BOOT_CONFIG"; then
+    if boot_config_has_openarcade_overlay; then
         return
     fi
 
-    echo "dtoverlay=dwc2" >> "$BOOT_CONFIG"
+    printf '\n[all]\ndtoverlay=dwc2,dr_mode=peripheral\n' >> "$BOOT_CONFIG"
     REBOOT_REQUIRED=1
 }
 
 ensure_kernel_modules() {
     mkdir -p "$(dirname "$MODULES_FILE")"
     cat > "$MODULES_FILE" <<'EOF'
+dwc2
 libcomposite
 EOF
+    modprobe dwc2 || true
     modprobe libcomposite || true
 }
 
