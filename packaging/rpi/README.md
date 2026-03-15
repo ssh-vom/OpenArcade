@@ -19,6 +19,6 @@ The installer:
 - creates a venv in `/opt/openarcade/venv`
 - stores persistent config in `/var/lib/openarcade/config.json`
 - installs the `systemd` unit files into `/etc/systemd/system`
-- enables the `dwc2` overlay and loads `libcomposite`
+- enables the `dwc2` overlay and loads `dwc2` + `libcomposite` at boot
 
 If the installer adds the `dwc2` overlay for the first time, reboot once after install.

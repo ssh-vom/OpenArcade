@@ -54,8 +54,10 @@ ensure_boot_overlay() {
 ensure_kernel_modules() {
     mkdir -p "$(dirname "$MODULES_FILE")"
     cat > "$MODULES_FILE" <<'EOF'
+dwc2
 libcomposite
 EOF
+    modprobe dwc2 || true
     modprobe libcomposite || true
 }
 
