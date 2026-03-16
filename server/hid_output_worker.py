@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import multiprocessing
 import queue
 import sys
 import time
@@ -48,7 +47,6 @@ def hid_output_worker_process(
                 sys.stdout.write(output)
                 sys.stdout.flush()
             else:
-                assert hid_device is not None
                 hid_device.write(report)
         except Exception as exc:
             logger.error("HID output worker write error: %s", exc)
