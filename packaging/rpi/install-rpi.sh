@@ -52,12 +52,12 @@ ensure_boot_overlay() {
     REBOOT_REQUIRED=1
 }
 
-ensure_spi_enabled() {
-    if grep -Eq '^[[:space:]]*dtparam=spi=on([[:space:]]|$)' "$BOOT_CONFIG"; then
+ensure_i2c_enabled() {
+    if grep -Eq '^[[:space:]]*dtparam=i2c_arm=on([[:space:]]|$)' "$BOOT_CONFIG"; then
         return
     fi
 
-    echo "dtparam=spi=on" >> "$BOOT_CONFIG"
+    echo "dtparam=i2c_arm=on" >> "$BOOT_CONFIG"
     REBOOT_REQUIRED=1
 }
 
@@ -181,7 +181,7 @@ EOF
 
     if [[ "$REBOOT_REQUIRED" -eq 1 ]]; then
         echo
-        echo "Reboot the Pi to activate the dwc2 overlay and SPI interface, then reconnect the USB data port."
+        echo "Reboot the Pi to activate the dwc2 overlay and I2C interface, then reconnect the USB data port."
     fi
 }
 
@@ -189,7 +189,7 @@ main() {
     require_root
     find_boot_config
     ensure_boot_overlay
-    ensure_spi_enabled
+    ensure_i2c_enabled
     ensure_kernel_modules
     install_os_packages
     copy_repo_tree
