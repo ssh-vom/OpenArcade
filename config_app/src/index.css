@@ -1,28 +1,50 @@
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  --color-accent: #0071E3;
+  --color-accent-hover: #0077ED;
+  --color-accent-soft: oklch(0.55 0.15 255 / 0.08);
+
+  --animate-fade-in: fade-in 0.5s ease-in-out;
+  --animate-slide-up: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  --animate-slide-in-right: slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 :root {
-  font-family: "Space Grotesk", "Sora", "IBM Plex Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  --oa-bg: #090909;
-  --oa-bg-glow: radial-gradient(900px circle at 15% -10%, rgba(215, 177, 90, 0.18), transparent 60%);
-  --oa-bg-warm: radial-gradient(780px circle at 85% -5%, rgba(240, 204, 122, 0.12), transparent 55%);
-  --oa-panel: #111010;
-  --oa-panel-alt: #171414;
-  --oa-panel-border: #2b2416;
-  --oa-text: #f1ede3;
-  --oa-muted: #9a907e;
-  --oa-accent: #d7b15a;
-  --oa-accent-strong: #f0c46c;
-  --oa-accent-soft: rgba(215, 177, 90, 0.16);
-  --oa-danger: #c45844;
-  --oa-warning: #f1cc7a;
-  --oa-shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.55);
 }
 
 *,
@@ -36,56 +58,55 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow: hidden;
-  color: var(--oa-text);
-  background: var(--oa-bg-glow), var(--oa-bg-warm), var(--oa-bg);
+  color: #1d1d1f;
+  background: #ffffff;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Custom scrollbar for panels */
+.panel-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.panel-scroll::-webkit-scrollbar-thumb {
+  background: #d1d1d6;
+  border-radius: 2px;
+}
+.panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: #aeaeb2;
 }
 
-button {
-  font-family: inherit;
+/* Range input styling for Apple look */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: #e5e5ea;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #d1d1d6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-button:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 2px solid rgba(215, 177, 90, 0.45);
-  outline-offset: 2px;
+/* Select dropdown styling */
+select option {
+  background: white;
+  color: #1d1d1f;
 }
-
-.oa-panel-surface {
-  background: linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%);
-  border: 1px solid var(--oa-panel-border);
-  box-shadow: var(--oa-shadow-soft);
-}
-
-.oa-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(6, 10, 14, 0.72);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-.oa-modal-card {
-  padding: 24px;
-  max-width: 90%;
-}
-
-.oa-side-panel {
-  height: 100%;
-  background: linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%);
-  border-left: 1px solid var(--oa-panel-border);
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-  flex-shrink: 0;
-  backdrop-filter: blur(10px);
-  box-shadow: var(--oa-shadow-soft);
+select optgroup {
+  font-weight: 600;
+  color: #86868b;
 }

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { 
-  HID_INPUT_TYPES, 
-  getInputOptions, 
-  getInputLabel 
+import {
+  HID_INPUT_TYPES,
+  getInputOptions,
+  getInputLabel
 } from "../services/HIDManager.js";
 
 // Enhanced HID Configuration Modal
@@ -18,24 +18,33 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
   });
 
   const inputOptions = getInputOptions(inputType);
-  const isAnalog = inputType === HID_INPUT_TYPES.ANALOG || 
-                  (inputType === HID_INPUT_TYPES.GAMEPAD && inputOptions.find(opt => opt.value === selectedInput)?.isAnalog);
+  const isAnalog = inputType === HID_INPUT_TYPES.ANALOG ||
+    (inputType === HID_INPUT_TYPES.GAMEPAD && inputOptions.find(opt => opt.value === selectedInput)?.isAnalog);
 
-  const getTypeTone = (type) => {
+  const getTypeStyles = (type, isActive) => {
+    if (!isActive) return 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100';
     switch (type) {
       case HID_INPUT_TYPES.GAMEPAD:
-        return { color: "#d7b15a", border: "rgba(215, 177, 90, 0.3)" };
+        return 'bg-purple-50 text-purple-700 border-purple-200';
       case HID_INPUT_TYPES.KEYBOARD:
-        return { color: "#f0d48a", border: "rgba(240, 212, 138, 0.3)" };
+        return 'bg-blue-50 text-[#0071E3] border-blue-200';
       case HID_INPUT_TYPES.ANALOG:
-        return { color: "#c08a4a", border: "rgba(192, 138, 74, 0.3)" };
+        return 'bg-orange-50 text-orange-600 border-orange-200';
       default:
-        return { color: "var(--oa-muted)", border: "rgba(154, 144, 126, 0.3)" };
+        return 'bg-gray-50 text-gray-500 border-gray-200';
     }
   };
 
-  const activeTone = getTypeTone(inputType);
-  const activeTypeColor = activeTone.color;
+  const getAccentColor = () => {
+    switch (inputType) {
+      case HID_INPUT_TYPES.GAMEPAD: return '#5856D6';
+      case HID_INPUT_TYPES.KEYBOARD: return '#0071E3';
+      case HID_INPUT_TYPES.ANALOG: return '#FF9500';
+      default: return '#86868b';
+    }
+  };
+
+  const accentColor = getAccentColor();
 
   const handleSave = () => {
     const resolvedAction = action || getInputLabel(inputType, selectedInput);
@@ -69,131 +78,54 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
 
   return (
     <div
-    className="oa-modal-overlay"
-    onClick={onCancel}
+      className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onCancel}
     >
       <div
-      className="oa-panel-surface oa-modal-card"
-      style={{
-        borderRadius: "16px",
-        width: "480px",
-        maxHeight: "90vh",
-        overflowY: "auto",
-      }}
-      onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] p-6 w-[480px] max-w-[90%] max-h-[90vh] overflow-y-auto border border-gray-100 panel-scroll"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{
-          fontSize: "11px",
-          fontWeight: "600",
-          color: "var(--oa-muted)",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          marginBottom: "8px",
-        }}>
+        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
           Configure Input
         </div>
-        
-        <h2 style={{
-          margin: "0 0 20px 0",
-          fontSize: "18px",
-          fontWeight: "600",
-          color: "var(--oa-text)",
-        }}>
+
+        <h2 className="m-0 mb-5 text-lg font-semibold text-gray-900">
           {button.name}
         </h2>
 
         {/* Input Type Selection */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "13px",
-            color: "var(--oa-muted)",
-          }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-sm text-gray-500">
             Input Type
           </label>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={() => handleInputTypeChange(HID_INPUT_TYPES.GAMEPAD)}
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: inputType === HID_INPUT_TYPES.GAMEPAD ? "rgba(215, 177, 90, 0.2)" : "rgba(255,255,255,0.03)",
-                color: inputType === HID_INPUT_TYPES.GAMEPAD ? "#22180a" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.GAMEPAD ? "1px solid rgba(215, 177, 90, 0.5)" : "1px solid var(--oa-panel-border)",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "600",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              Gamepad
-            </button>
-            <button
-              onClick={() => handleInputTypeChange(HID_INPUT_TYPES.KEYBOARD)}
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: inputType === HID_INPUT_TYPES.KEYBOARD ? "rgba(240, 212, 138, 0.2)" : "rgba(255,255,255,0.03)",
-                color: inputType === HID_INPUT_TYPES.KEYBOARD ? "#0b0d10" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.KEYBOARD ? "1px solid rgba(240, 212, 138, 0.5)" : "1px solid var(--oa-panel-border)",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "600",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              Keyboard
-            </button>
-            <button
-              onClick={() => handleInputTypeChange(HID_INPUT_TYPES.ANALOG)}
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: inputType === HID_INPUT_TYPES.ANALOG ? "rgba(192, 138, 74, 0.2)" : "rgba(255,255,255,0.03)",
-                color: inputType === HID_INPUT_TYPES.ANALOG ? "#251c09" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.ANALOG ? "1px solid rgba(192, 138, 74, 0.5)" : "1px solid var(--oa-panel-border)",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "600",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              Analog
-            </button>
+          <div className="flex gap-2">
+            {[
+              { type: HID_INPUT_TYPES.GAMEPAD, label: 'Gamepad' },
+              { type: HID_INPUT_TYPES.KEYBOARD, label: 'Keyboard' },
+              { type: HID_INPUT_TYPES.ANALOG, label: 'Analog' },
+            ].map(({ type, label }) => (
+              <button
+                key={type}
+                onClick={() => handleInputTypeChange(type)}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold uppercase tracking-wider border cursor-pointer transition-all duration-150 ${getTypeStyles(type, inputType === type)}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Input Selection */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "13px",
-            color: "var(--oa-muted)",
-          }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-sm text-gray-500">
             Select {inputType === HID_INPUT_TYPES.GAMEPAD ? "Button" : inputType === HID_INPUT_TYPES.KEYBOARD ? "Key" : "Axis"}
           </label>
           <select
             value={selectedInput}
             onChange={(e) => setSelectedInput(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              background: "rgba(255,255,255,0.03)",
-              border: `1px solid ${activeTone.border}`,
-              borderRadius: "8px",
-              fontSize: "14px",
-              color: "var(--oa-text)",
-              outline: "none",
-            }}
+            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-colors cursor-pointer"
+            style={{ borderColor: selectedInput ? accentColor + '40' : undefined }}
           >
             <option value="">Select an input...</option>
             {Object.entries(groupedOptions).map(([category, options]) => (
@@ -210,29 +142,13 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
 
         {/* Analog Configuration */}
         {isAnalog && (
-          <div style={{ 
-            marginBottom: "20px", 
-            padding: "16px", 
-            background: "rgba(255,255,255,0.03)", 
-            borderRadius: "10px", 
-            border: `1px solid ${activeTone.border}` 
-          }}>
-            <label style={{
-              display: "block",
-              marginBottom: "12px",
-              fontSize: "13px",
-              color: "var(--oa-muted)",
-            }}>
+          <div className="mb-5 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+            <label className="block mb-3 text-sm text-gray-500 font-medium">
               Analog Settings
             </label>
-            
-            <div style={{ marginBottom: "12px" }}>
-              <label style={{
-                display: "block",
-                marginBottom: "4px",
-                fontSize: "12px",
-                color: "var(--oa-muted)",
-              }}>
+
+            <div className="mb-3">
+              <label className="block mb-1.5 text-xs text-gray-500">
                 Threshold: {analogConfig.threshold.toFixed(2)}
               </label>
               <input
@@ -241,18 +157,14 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                 max="0.5"
                 step="0.05"
                 value={analogConfig.threshold}
-                onChange={(e) => setAnalogConfig({...analogConfig, threshold: parseFloat(e.target.value)})}
-                style={{ width: "100%", accentColor: activeTypeColor }}
+                onChange={(e) => setAnalogConfig({ ...analogConfig, threshold: parseFloat(e.target.value) })}
+                className="w-full"
+                style={{ accentColor }}
               />
             </div>
 
             <div>
-              <label style={{
-                display: "block",
-                marginBottom: "4px",
-                fontSize: "12px",
-                color: "var(--oa-muted)",
-              }}>
+              <label className="block mb-1.5 text-xs text-gray-500">
                 Sensitivity: {analogConfig.sensitivity.toFixed(1)}
               </label>
               <input
@@ -261,21 +173,17 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                 max="2.0"
                 step="0.1"
                 value={analogConfig.sensitivity}
-                onChange={(e) => setAnalogConfig({...analogConfig, sensitivity: parseFloat(e.target.value)})}
-                style={{ width: "100%", accentColor: activeTypeColor }}
+                onChange={(e) => setAnalogConfig({ ...analogConfig, sensitivity: parseFloat(e.target.value) })}
+                className="w-full"
+                style={{ accentColor }}
               />
             </div>
           </div>
         )}
 
         {/* Action Assignment */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "13px",
-            color: "var(--oa-muted)",
-          }}>
+        <div className="mb-5">
+          <label className="block mb-2 text-sm text-gray-500">
             Action Name
           </label>
           <input
@@ -284,81 +192,35 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             onChange={(e) => setAction(e.target.value)}
             placeholder="e.g., Jump, Fire, Move Left"
             autoFocus
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              fontSize: "14px",
-              color: "var(--oa-text)",
-              outline: "none",
-              transition: "border-color 0.15s ease",
-            }}
-            onFocus={(e) => e.target.style.borderColor = "var(--oa-accent)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--oa-panel-border)"}
-            onKeyDown={(e) => { if(e.key === 'Enter') handleSave() }}
+            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-colors focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/10"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }}
           />
         </div>
 
         {/* Current Mapping Display */}
         {button.action && (
-          <div style={{
-            padding: "12px",
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: "10px",
-            marginBottom: "20px",
-            border: "1px solid rgba(255,255,255,0.06)"
-          }}>
-            <div style={{
-              fontSize: "11px",
-              color: "var(--oa-muted)",
-              marginBottom: "4px",
-            }}>
+          <div className="p-3.5 bg-gray-50 rounded-2xl mb-5 border border-gray-100">
+            <div className="text-[11px] text-gray-400 mb-1 font-medium">
               Current Mapping
             </div>
-            <div style={{
-              fontSize: "13px",
-              color: "var(--oa-muted)",
-            }}>
+            <div className="text-sm text-gray-600">
               {button.type}: {button.label || button.input} → {button.action}
             </div>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div style={{
-          display: "flex",
-          gap: "10px",
-          justifyContent: "flex-end",
-        }}>
+        <div className="flex gap-2.5 justify-end">
           <button
             onClick={onCancel}
-            style={{
-              padding: "8px 16px",
-              background: "transparent",
-              color: "var(--oa-muted)",
-              border: "none",
-              fontSize: "13px",
-              cursor: "pointer",
-            }}
-            onMouseOver={(e) => e.target.style.color = "var(--oa-text)"}
-            onMouseOut={(e) => e.target.style.color = "var(--oa-muted)"}
+            className="px-4 py-2 bg-transparent text-gray-500 border-none text-sm cursor-pointer hover:text-gray-900 transition-colors"
           >
             Cancel
           </button>
           {button.action && (
             <button
               onClick={() => onClear(button.name)}
-              style={{
-                padding: "8px 12px",
-                background: "rgba(230, 118, 108, 0.12)",
-                color: "var(--oa-danger)",
-                border: "1px solid rgba(230, 118, 108, 0.35)",
-                borderRadius: "8px",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
+              className="px-3.5 py-2 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm cursor-pointer hover:bg-red-100 transition-colors"
             >
               Clear
             </button>
@@ -366,22 +228,11 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
           <button
             onClick={handleSave}
             disabled={!selectedInput}
-            style={{
-              padding: "8px 20px",
-              background: selectedInput ? "var(--oa-accent)" : "rgba(255,255,255,0.08)",
-              color: selectedInput ? "#0b0d10" : "var(--oa-muted)",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "13px",
-              fontWeight: "500",
-              cursor: selectedInput ? "pointer" : "not-allowed",
-            }}
-            onMouseOver={(e) => {
-              if (selectedInput) e.target.style.background = "var(--oa-accent-strong)";
-            }}
-            onMouseOut={(e) => {
-              if (selectedInput) e.target.style.background = "var(--oa-accent)";
-            }}
+            className={`px-5 py-2 border-none rounded-xl text-sm font-medium transition-colors
+              ${selectedInput
+                ? 'bg-[#0071E3] hover:bg-[#0077ED] text-white cursor-pointer'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              }`}
           >
             Save
           </button>

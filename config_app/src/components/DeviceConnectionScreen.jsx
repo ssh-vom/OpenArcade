@@ -16,130 +16,46 @@ export default function DeviceConnectionScreen({ onConnect }) {
     }, []);
 
     return (
-        <div style={{
-            width: "100vw",
-            height: "100vh",
-            background: "radial-gradient(900px circle at 15% 0%, rgba(215, 177, 90, 0.16), transparent 60%), radial-gradient(700px circle at 85% 10%, rgba(240, 204, 122, 0.1), transparent 55%), var(--oa-bg)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            animation: "fadeIn 0.5s ease-in",
-        }}>
-            <div
-            className="oa-panel-surface"
-            style={{
-                borderRadius: "18px",
-                padding: "52px",
-                maxWidth: "500px",
-                width: "90%",
-                textAlign: "center",
-                animation: "slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both",
-                backdropFilter: "blur(12px)",
-            }}>
+        <div className="w-screen h-screen bg-white flex items-center justify-center animate-fade-in">
+            <div className="bg-white rounded-3xl shadow-[0_2px_40px_rgba(0,0,0,0.08)] border border-gray-100 p-14 max-w-[480px] w-[90%] text-center animate-slide-up">
                 {/* Logo */}
-                <div style={{
-                    width: "64px",
-                    height: "64px",
-                    background: "linear-gradient(135deg, rgba(215, 177, 90, 0.2), rgba(240, 204, 122, 0.2))",
-                    borderRadius: "14px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: "24px",
-                    boxShadow: "0 12px 28px rgba(215, 177, 90, 0.22)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                }}>
+                <div className="w-16 h-16 bg-gray-50 rounded-2xl inline-flex items-center justify-center mb-6 border border-gray-100">
                     <img
                         src={oaLogo}
                         alt="OpenArcade"
-                        style={{
-                            width: "34px",
-                            height: "34px",
-                            filter: "drop-shadow(0 6px 16px rgba(0,0,0,0.35))",
-                        }}
+                        className="w-9 h-9"
                     />
                 </div>
 
                 {/* Title */}
-                <h1 style={{
-                    margin: "0 0 12px 0",
-                    fontSize: "24px",
-                    fontWeight: "600",
-                    color: "var(--oa-text)",
-                }}>
+                <h1 className="m-0 mb-3 text-[26px] font-semibold text-gray-900 tracking-tight">
                     OpenArcade Configurator
                 </h1>
 
                 {/* Subtitle */}
-                <p style={{
-                    margin: "0 0 32px 0",
-                    fontSize: "14px",
-                    color: "var(--oa-muted)",
-                    lineHeight: "1.6",
-                }}>
+                <p className="m-0 mb-8 text-sm text-gray-500 leading-relaxed">
                     Connect your OpenArcade controller to configure button mappings and module profiles.
                 </p>
 
                 {/* Device Status */}
-                <div style={{
-                    background: "rgba(255,255,255,0.02)",
-                    borderRadius: "10px",
-                    padding: "20px",
-                    marginBottom: "24px",
-                    border: "1px solid var(--oa-panel-border)",
-                }}>
+                <div className="bg-gray-50 rounded-2xl p-5 mb-6 border border-gray-100">
                     {scanning ? (
-                        <div style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "12px",
-                            color: "var(--oa-muted)",
-                            fontSize: "14px",
-                        }}>
-                            <div style={{
-                                width: "16px",
-                                height: "16px",
-                                border: "2px solid var(--oa-accent)",
-                                borderTopColor: "transparent",
-                                borderRadius: "50%",
-                                animation: "spin 1s linear infinite",
-                            }} />
+                        <div className="flex items-center justify-center gap-3 text-gray-500 text-sm">
+                            <div className="w-4 h-4 border-2 border-[#0071E3] border-t-transparent rounded-full animate-spin" />
                             Scanning for devices...
                         </div>
                     ) : deviceFound ? (
-                        <div style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            color: "var(--oa-accent)",
-                            fontSize: "14px",
-                            animation: "fadeIn 0.3s ease-in",
-                        }}>
-                            <div style={{
-                                width: "16px",
-                                height: "16px",
-                                background: "var(--oa-accent)",
-                                borderRadius: "50%",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "10px",
-                                color: "#0b0d10",
-                                fontWeight: "bold",
-                            }}>
+                        <div className="flex items-center gap-3 text-sm animate-fade-in">
+                            <div className="w-5 h-5 bg-[#34C759] rounded-full flex items-center justify-center text-[10px] text-white font-bold shrink-0">
                                 ✓
                             </div>
-                            <div style={{ textAlign: "left" }}>
-                                <div style={{ fontWeight: "500" }}>Controller Found</div>
-                                <div style={{ color: "var(--oa-muted)", fontSize: "12px" }}>OpenArcade Controller v1.0</div>
+                            <div className="text-left">
+                                <div className="font-medium text-gray-900">Controller Found</div>
+                                <div className="text-gray-500 text-xs mt-0.5">OpenArcade Controller v1.0</div>
                             </div>
                         </div>
                     ) : (
-                        <div style={{
-                            color: "var(--oa-danger)",
-                            fontSize: "14px",
-                        }}>
+                        <div className="text-red-500 text-sm">
                             No device found
                         </div>
                     )}
@@ -156,76 +72,26 @@ export default function DeviceConnectionScreen({ onConnect }) {
                         }
                     }}
                     disabled={!deviceFound}
-                    style={{
-                        width: "100%",
-                        padding: "14px 24px",
-                        background: deviceFound
-                            ? "var(--oa-accent)"
-                            : "rgba(255,255,255,0.04)",
-                        color: deviceFound
-                            ? "#0b0d10"
-                            : "var(--oa-muted)",
-                        border: deviceFound
-                            ? "1px solid rgba(215, 177, 90, 0.4)"
-                            : "1px solid var(--oa-panel-border)",
-                        borderRadius: "12px",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        letterSpacing: "0.02em",
-                        textTransform: "uppercase",
-                        cursor: deviceFound ? "pointer" : "not-allowed",
-                        transition: "all 0.2s ease",
-                    }}
-                    onMouseOver={(e) => {
-                        if (deviceFound) e.target.style.background = "var(--oa-accent-strong)";
-                    }}
-                    onMouseOut={(e) => {
-                        if (deviceFound) e.target.style.background = "var(--oa-accent)";
-                    }}
+                    className={`w-full py-3.5 px-6 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 cursor-pointer
+                        ${deviceFound
+                            ? 'bg-[#0071E3] hover:bg-[#0077ED] text-white shadow-[0_2px_8px_rgba(0,113,227,0.3)]'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                        }`}
                 >
                     {deviceFound ? "Connect to Device" : "Waiting for Device..."}
                 </button>
 
                 {error && (
-                    <div style={{
-                        marginTop: "12px",
-                        color: "var(--oa-danger)",
-                        fontSize: "12px",
-                    }}>
+                    <div className="mt-3 text-red-500 text-xs">
                         {error}
                     </div>
                 )}
 
                 {/* Help Text */}
-                <p style={{
-                    margin: "16px 0 0 0",
-                    fontSize: "12px",
-                    color: "var(--oa-muted)",
-                }}>
+                <p className="mt-5 mb-0 text-xs text-gray-400">
                     Make sure your controller is powered on and connected via USB
                 </p>
             </div>
-
-            <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes slideUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-            `}</style>
         </div>
     );
 }

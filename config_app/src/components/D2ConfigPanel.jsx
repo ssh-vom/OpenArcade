@@ -20,16 +20,21 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
         }
     };
 
-    const getTypeTone = (type) => {
+    const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD:
-                return { color: "#d7b15a", border: "rgba(215, 177, 90, 0.3)" };
-            case HID_INPUT_TYPES.KEYBOARD:
-                return { color: "#f0d48a", border: "rgba(240, 212, 138, 0.3)" };
-            case HID_INPUT_TYPES.ANALOG:
-                return { color: "#c08a4a", border: "rgba(192, 138, 74, 0.3)" };
-            default:
-                return { color: "var(--oa-muted)", border: "rgba(154, 144, 126, 0.3)" };
+            case HID_INPUT_TYPES.GAMEPAD: return '#5856D6';
+            case HID_INPUT_TYPES.KEYBOARD: return '#007AFF';
+            case HID_INPUT_TYPES.ANALOG: return '#FF9500';
+            default: return '#8E8E93';
+        }
+    };
+
+    const getTypeBgClass = (type) => {
+        switch (type) {
+            case HID_INPUT_TYPES.GAMEPAD: return 'bg-purple-50 border-purple-200 text-purple-600';
+            case HID_INPUT_TYPES.KEYBOARD: return 'bg-blue-50 border-blue-200 text-blue-600';
+            case HID_INPUT_TYPES.ANALOG: return 'bg-orange-50 border-orange-200 text-orange-600';
+            default: return 'bg-gray-50 border-gray-200 text-gray-500';
         }
     };
 
@@ -43,89 +48,40 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
     };
 
     return (
-        <>
-        <div style={{
-            width: "300px",
-            height: "100%",
-            background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
-            borderLeft: "1px solid var(--oa-panel-border)",
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 10,
-            flexShrink: 0,
-            animation: "slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both",
-            backdropFilter: "blur(10px)",
-            boxShadow: "var(--oa-shadow-soft)",
-        }}>
+        <div className="w-[320px] h-full bg-white border-l border-gray-200 flex flex-col shrink-0 animate-slide-in-right">
             {/* Header */}
-            <div style={{
-                padding: "20px",
-                borderBottom: "1px solid var(--oa-panel-border)",
-                background: "transparent",
-            }}>
-                <div style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "var(--oa-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "8px",
-                }}>
+            <div className="p-5 border-b border-gray-100">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">
                     HID Configuration
                 </div>
-                <h3 style={{
-                    margin: 0,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "var(--oa-text)",
-                }}>
+                <h3 className="m-0 text-base font-semibold text-gray-900">
                     {moduleName}
                 </h3>
             </div>
 
             {/* Device Status */}
-            <div style={{
-                padding: "16px 20px",
-                borderBottom: "1px solid var(--oa-panel-border)",
-                background: "rgba(255,255,255,0.02)",
-            }}>
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "12px",
-                }}>
-                    <div style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: isConnected ? "var(--oa-accent)" : "var(--oa-muted)",
-                        animation: isConnected ? "pulse 2s infinite" : "none",
-                    }} />
-                    <span style={{ color: "var(--oa-muted)" }}>
+            <div className="px-5 py-3.5 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-2 text-xs">
+                    <div
+                        className={`w-2 h-2 rounded-full shrink-0 ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`}
+                        style={isConnected ? { animation: 'pulse-dot 2s infinite' } : undefined}
+                    />
+                    <span className="text-gray-500">
                         {isConnected ? "Device Connected" : "Device Offline"}
                     </span>
                 </div>
             </div>
 
             {/* Mappings List */}
-            <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
+            <div className="flex-1 p-5 overflow-y-auto panel-scroll">
                 {Object.keys(mappings).length === 0 ? (
-                    <div style={{
-                        padding: "40px 0",
-                        textAlign: "center",
-                        color: "var(--oa-muted)",
-                        fontSize: "13px",
-                        border: "1px dashed var(--oa-panel-border)",
-                        borderRadius: "8px",
-                        background: "rgba(255,255,255,0.02)"
-                    }}>
-                        <div style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "12px" }}>
+                    <div className="py-10 text-center text-gray-400 text-sm border border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+                        <div className="text-[10px] tracking-widest uppercase mb-3 font-semibold text-gray-300">
                             Awaiting Mapping
                         </div>
                         No buttons configured.
                         <br />
-                        <span style={{ fontSize: "11px", color: "var(--oa-muted)", display: "block", marginTop: "8px" }}>
+                        <span className="text-xs text-gray-400 block mt-2 leading-relaxed">
                             Click a button in the 2D view
                             <br />to configure HID input.
                         </span>
@@ -134,106 +90,44 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                     <div>
                         {/* Type Groups */}
                         {Object.entries(groupedMappings).map(([type, typeMappings]) => {
-                            const tone = getTypeTone(type);
+                            const typeColor = getTypeColor(type);
                             return (
-                                <div key={type} style={{ marginBottom: "24px" }}>
-                                    <div style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "8px",
-                                        marginBottom: "12px",
-                                        fontSize: "12px",
-                                        color: tone.color,
-                                        fontWeight: "600",
-                                    }}>
-                                        <span style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "26px",
-                                            height: "22px",
-                                            borderRadius: "6px",
-                                            background: "rgba(255,255,255,0.04)",
-                                            border: `1px solid ${tone.border}`,
-                                            fontSize: "10px",
-                                            letterSpacing: "0.08em",
-                                        }}>
+                                <div key={type} className="mb-6">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <span
+                                            className={`inline-flex items-center justify-center w-7 h-5.5 rounded-md border text-[10px] font-semibold tracking-wider ${getTypeBgClass(type)}`}
+                                        >
                                             {getTypeIcon(type)}
                                         </span>
-                                        <span>{getTypeLabel(type)}</span>
-                                        <span style={{
-                                            color: "var(--oa-muted)",
-                                            background: "rgba(255,255,255,0.03)",
-                                            padding: "2px 6px",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--oa-panel-border)",
-                                            marginLeft: "auto"
-                                        }}>
+                                        <span className="text-xs font-semibold" style={{ color: typeColor }}>
+                                            {getTypeLabel(type)}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full font-medium ml-auto">
                                             {typeMappings.length}
                                         </span>
                                     </div>
 
-                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                    <div className="flex flex-col gap-1.5">
                                         {typeMappings.map(({ buttonName, config }) => (
                                             <button
                                                 key={buttonName}
                                                 onClick={() => onSelectButton(buttonName, null)}
-                                                style={{
-                                                    width: "100%",
-                                                    textAlign: "left",
-                                                    padding: "10px",
-                                                    background: "rgba(255,255,255,0.03)",
-                                                    border: `1px solid ${tone.border}`,
-                                                    borderRadius: "8px",
-                                                    cursor: "pointer",
-                                                    transition: "all 0.15s ease",
-                                                }}
-                                                onMouseOver={(e) => {
-                                                    e.currentTarget.style.borderColor = tone.color;
-                                                    e.currentTarget.style.background = "rgba(255,255,255,0.07)";
-                                                }}
-                                                onMouseOut={(e) => {
-                                                    e.currentTarget.style.borderColor = tone.border;
-                                                    e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                                                }}
+                                                className="w-full text-left p-3 bg-gray-50 border border-gray-100 rounded-xl cursor-pointer transition-all duration-150 hover:border-gray-300 hover:bg-white hover:shadow-sm"
                                             >
-                                                <div style={{
-                                                    fontSize: "10px",
-                                                    color: "var(--oa-muted)",
-                                                    marginBottom: "3px",
-                                                    fontFamily: "monospace",
-                                                }}>
+                                                <div className="text-[10px] text-gray-400 mb-1 font-mono">
                                                     {buttonName}
                                                 </div>
-                                                <div style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "space-between",
-                                                }}>
-                                                    <div style={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: "6px",
-                                                        fontSize: "12px",
-                                                        color: "var(--oa-text)",
-                                                    }}>
-                                                        <span style={{
-                                                            fontSize: "9px",
-                                                            opacity: 0.8,
-                                                            letterSpacing: "0.08em",
-                                                            color: tone.color,
-                                                        }}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5 text-xs text-gray-900">
+                                                        <span
+                                                            className="text-[9px] font-semibold tracking-wider"
+                                                            style={{ color: typeColor }}
+                                                        >
                                                             {getTypeIcon(config.type)}
                                                         </span>
-                                                        <span>{config.label || config.input}</span>
+                                                        <span className="font-medium">{config.label || config.input}</span>
                                                     </div>
-                                                    <div style={{
-                                                        fontSize: "10px",
-                                                        color: "var(--oa-muted)",
-                                                        background: "rgba(255,255,255,0.04)",
-                                                        padding: "2px 6px",
-                                                        borderRadius: "3px",
-                                                    }}>
+                                                    <div className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
                                                         {typeof config.action === "string"
                                                             ? config.action
                                                             : config.action?.label || config.action?.input || "Mapped"}
@@ -248,73 +142,26 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                     </div>
                 )}
             </div>
-            
+
             {/* Action Bar */}
-            <div style={{
-                padding: "16px 20px",
-                borderTop: "1px solid var(--oa-panel-border)",
-                background: "transparent",
-            }}>
-                <div style={{ display: "flex", gap: "8px" }}>
+            <div className="p-4 border-t border-gray-100">
+                <div className="flex gap-2">
                     {Object.keys(mappings).length > 0 && (
-                        <button 
+                        <button
                             onClick={onClearAll}
-                            style={{
-                                flex: 1,
-                                padding: "8px",
-                                background: "rgba(230, 118, 108, 0.12)",
-                                border: "1px solid rgba(230, 118, 108, 0.35)",
-                                borderRadius: "8px",
-                                color: "var(--oa-danger)",
-                                fontSize: "12px",
-                                fontWeight: "500",
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                            }}
-                            onMouseOver={(e) => e.target.style.background = "rgba(230, 118, 108, 0.2)"}
-                            onMouseOut={(e) => e.target.style.background = "rgba(230, 118, 108, 0.12)"}
+                            className="flex-1 py-2 bg-red-50 border border-red-200 rounded-xl text-red-500 text-xs font-medium cursor-pointer transition-colors hover:bg-red-100"
                         >
                             Clear All
                         </button>
                     )}
-                    <button 
+                    <button
                         onClick={() => onSaveToDevice && onSaveToDevice(moduleId)}
-                        style={{
-                            flex: 2,
-                            padding: "8px",
-                            background: "rgba(215, 177, 90, 0.16)",
-                            border: "1px solid rgba(215, 177, 90, 0.4)",
-                            borderRadius: "8px",
-                            color: "var(--oa-accent)",
-                            fontSize: "12px",
-                            fontWeight: "500",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                        }}
-                        onMouseOver={(e) => e.target.style.background = "rgba(215, 177, 90, 0.24)"}
-                        onMouseOut={(e) => e.target.style.background = "rgba(215, 177, 90, 0.16)"}
+                        className="flex-[2] py-2 bg-[#0071E3] hover:bg-[#0077ED] border-none rounded-xl text-white text-xs font-medium cursor-pointer transition-colors"
                     >
                         Save to Device
                     </button>
                 </div>
             </div>
         </div>
-        <style>{`
-            @keyframes slideInRight {
-                from {
-                    opacity: 0;
-                    transform: translateX(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            }
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
-            }
-        `}</style>
-        </>
     );
 }

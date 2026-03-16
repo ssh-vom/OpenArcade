@@ -8,6 +8,8 @@ import ButtonMappingModal from "./ButtonMappingModal.jsx";
 import ButtonMappingsPanel from "./ButtonMappingsPanel.jsx";
 import HIDButtonMappingModal from "./HIDButtonMappingModal.jsx";
 import D2ConfigPanel from "./D2ConfigPanel.jsx";
+import ProfilesPanel from "./ProfilesPanel.jsx";
+import LiveInputPanel from "./LiveInputPanel.jsx";
 import MockConfigClient from "../services/MockConfigClient.js";
 import ControllerHUD from "./ControllerHUD.jsx";
 import * as THREE from "three";
@@ -48,7 +50,7 @@ function CameraSetter({ viewMode, currentModulePosition }) {
     return null;
 }
 
-// Minimal Particle System Component
+// Minimal Particle System Component — subtle neutral particles for light theme
 function Particles() {
     const particlesRef = useRef();
     const count = 25;
@@ -90,9 +92,9 @@ function Particles() {
             </bufferGeometry>
             <pointsMaterial
                 size={0.05}
-                color="#b68d47"
+                color="#c7c7cc"
                 transparent
-                opacity={0.6}
+                opacity={0.4}
                 sizeAttenuation
                 blending={THREE.AdditiveBlending}
             />
@@ -100,8 +102,45 @@ function Particles() {
     );
 }
 
+// Sidebar nav icon components
+function MappingsIcon({ active }) {
+    return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+            stroke={active ? "#0071E3" : "#86868b"} strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+    );
+}
+
+function ProfilesIcon({ active }) {
+    return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+            stroke={active ? "#0071E3" : "#86868b"} strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+        </svg>
+    );
+}
+
+function LiveInputIcon({ active }) {
+    return (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+            stroke={active ? "#0071E3" : "#86868b"} strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+    );
+}
+
 const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [selectedButton, setSelectedButton] = useState(null);
+    const [activeSection, setActiveSection] = useState("mappings");
     const defaultModules = useMemo(() => ([
         { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
         { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/RevFinalJoystickModule_2026-03-15.glb", mappings: {}, position: [0, 0, 0] },
@@ -318,6 +357,43 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         setSelectedButton(null);
     };
 
+    const navigatePrev = useCallback(() => {
+        setCurrentModuleIndex(prev => {
+            const next = prev > 0 ? prev - 1 : prev;
+            if (next !== prev) setSelectedButton(null);
+            return next;
+        });
+    }, []);
+
+    const navigateNext = useCallback(() => {
+        setCurrentModuleIndex(prev => {
+            const next = prev < modules.length - 1 ? prev + 1 : prev;
+            if (next !== prev) setSelectedButton(null);
+            return next;
+        });
+    }, [modules.length]);
+
+    // Arrow key navigation in 2D view
+    useEffect(() => {
+        if (viewMode !== '2d' || activeSection !== 'mappings') return;
+
+        const handleKeyDown = (e) => {
+            // Don't navigate when a modal is open
+            if (selectedButton) return;
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                navigatePrev();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                navigateNext();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [viewMode, activeSection, selectedButton, navigatePrev, navigateNext]);
+
     const clearAllMappings = () => {
         setModules(prev => prev.map((mod, idx) => {
             if (idx === safeCurrentModuleIndex) {
@@ -360,221 +436,293 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         }
     };
 
+    const navItems = [
+        { id: "mappings", label: "Mappings", Icon: MappingsIcon },
+        { id: "profiles", label: "Profiles", Icon: ProfilesIcon },
+        { id: "live", label: "Live Input", Icon: LiveInputIcon },
+    ];
+
+    const showMappingsView = activeSection === "mappings";
+
     return (
-        <>
-            <div style={{
-                width: "100vw",
-                height: "100vh",
-                display: "flex",
-                flexDirection: "column",
-                overflow: "hidden",
-                background: "radial-gradient(900px circle at 18% 8%, rgba(215, 177, 90, 0.14), transparent 60%), radial-gradient(700px circle at 88% 6%, rgba(240, 204, 122, 0.1), transparent 55%), var(--oa-bg)",
-                opacity: loaded ? 1 : 0,
-                transition: "opacity 0.5s ease-in-out"
-            }}>
+        <div
+            className={`w-screen h-screen flex flex-col overflow-hidden bg-[#f5f5f7] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+        >
+            {/* Top Header */}
+            <ControllerHUD
+                controllerName="OpenArcade Controller v1.0"
+                moduleCount={modules.length}
+                currentModule={safeCurrentModuleIndex}
+                modules={modules.map(m => ({ ...m, mappedButtons: Object.keys(m.mappings).length }))}
+                onModuleChange={handleModuleChange}
+                isConnected={modules.some((module) => module.connected !== false)}
+                viewMode={viewMode}
+                mappingFilter={mappingFilter}
+                onMappingFilterChange={setMappingFilter}
+                onToggleView={toggleViewMode}
+            />
 
-                <ControllerHUD
-                    controllerName="OpenArcade Controller v1.0"
-                    moduleCount={modules.length}
-                    currentModule={safeCurrentModuleIndex}
-                    modules={modules.map(m => ({ ...m, mappedButtons: Object.keys(m.mappings).length }))}
-                    onModuleChange={handleModuleChange}
-                    isConnected={modules.some((module) => module.connected !== false)}
-                    viewMode={viewMode}
-                    mappingFilter={mappingFilter}
-                    onMappingFilterChange={setMappingFilter}
-                    onToggleView={toggleViewMode}
-                />
-
-                <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-                    {/* Main Canvas Area */}
-                    <div style={{ flex: 1, position: "relative", animation: "fadeIn 0.8s ease-out 0.2s both" }}>
-                        <Canvas
-                            key={viewMode}
-                            orthographic={viewMode === '2d'}
-                            camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
-                            style={{
-                                background: "radial-gradient(1200px circle at 24% 0%, rgba(215, 177, 90, 0.08), transparent 55%), radial-gradient(900px circle at 78% 15%, rgba(240, 204, 122, 0.08), transparent 60%), #0a0a0b",
-                                width: "100%",
-                                height: "100%",
-                                cursor: viewMode === '2d' ? 'pointer' : 'grab'
-                            }}
-                            shadows
-                            gl={{
-                                antialias: true,
-                                shadowMap: {
-                                    enabled: true,
-                                    type: THREE.PCFSoftShadowMap
-                                }
-                            }}
+            <div className="flex flex-1 min-h-0">
+                {/* Left Sidebar Navigation */}
+                <div className="w-[68px] bg-white border-r border-gray-200/60 flex flex-col items-center pt-4 gap-1 shrink-0">
+                    {navItems.map(({ id, label, Icon }) => (
+                        <button
+                            key={id}
+                            onClick={() => setActiveSection(id)}
+                            className={`group relative w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ${
+                                activeSection === id
+                                    ? "bg-[#0071E3]/10"
+                                    : "hover:bg-gray-100"
+                            }`}
+                            title={label}
                         >
-                            {/* Fog for depth perception */}
-                        // <fog attach="fog" args={["#0a0a0a", 8, 25]} />
-
-
-                            {/* --- Enhanced Lighting System --- */}
-
-                            {/* Ambient base light for overall illumination */}
-                            <ambientLight intensity={0.85} color="#2c323a" />
-
-                            {/* Key Light - warm directional with shadows */}
-                            <directionalLight
-                                position={[5, 12, 8]}
-                                intensity={1.2}
-                                color="#f7f8fb"
-                                castShadow
-                                shadow-mapSize={[2048, 2048]}
-                                shadow-camera-far={50}
-                                shadow-camera-left={-15}
-                                shadow-camera-right={15}
-                                shadow-camera-top={15}
-                                shadow-camera-bottom={-15}
-                                shadow-bias={0.0001}
-                                shadow-radius={3}
-                            />
-
-                            {/* Fill Light - cool soft light */}
-                            <directionalLight
-                                position={[-8, 6, 4]}
-                                intensity={0.5}
-                                color="#b8c9dd"
-                            />
-
-                            {/* Rim Light - back light for edge definition */}
-                            <directionalLight
-                                position={[0, 3, -10]}
-                                intensity={0.6}
-                                color="#8aa2bf"
-                            />
-
-                            {/* Accent Light 1 - warm highlight */}
-                            <pointLight
-                                position={[3, 4, 3]}
-                                intensity={0.4}
-                                color="#e6edf5"
-                                distance={15}
-                                decay={2}
-                            />
-
-                            {/* Accent Light 2 - cool highlight */}
-                            <pointLight
-                                position={[-4, 3, -2]}
-                                intensity={0.3}
-                                color="#9bb0c6"
-                                distance={12}
-                                decay={2}
-                            />
-
-                            {/* --- Procedural Ground Plane --- */}
-                            <mesh
-                                rotation={[-Math.PI / 2, 0, 0]}
-                                position={[0, -0.5, 0]}
-                                receiveShadow
-                            >
-                                <planeGeometry args={[50, 50]} />
-                                <shadowMaterial opacity={0.4} />
-                            </mesh>
-
-                            {/* --- Tech Grid --- */}
-                            <gridHelper
-                                args={[40, 40, "#f0c46c", "#5f4a28"]}
-                                position={[0, -0.15, 0]}
-                            />
-                            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]}>
-                                <planeGeometry args={[40, 40, 40, 40]} />
-                                <meshBasicMaterial
-                                    color="#5f4a28"
-                                    wireframe
-                                    transparent
-                                    opacity={0.35}
-                                />
-                            </mesh>
-
-                            {/* --- Minimal Particle System --- */}
-                            <Particles />
-
-                            <Bounds clip observe={false} margin={1}>
-                                {/* <FPSMonitor /> */}
-                                <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
-                                {modules.map((module, index) => (
-                                    <MemoizedChildModule
-                                        path={module.path}
-                                        onButtonClick={handleButtonClick}
-                                        onModuleClick={() => handleModuleClick(index)}
-                                        isEditable={index === safeCurrentModuleIndex}
-                                        position={module.position}
-                                        viewMode={viewMode}
-                                        isActive={index === safeCurrentModuleIndex}
-                                        mappings={module.mappings}
-                                        mappingFilter={mappingFilter}
-                                        key={module.deviceId || module.id}
-                                    />
-                                ))}
-                            </Bounds>
-                            {viewMode === '3d' && (
-                                <CameraController
-                                    targetRef={cameraControl.targetRef}
-                                    cameraPositionRef={cameraControl.cameraPositionRef}
-                                    animationStart={cameraControl.animationStart}
-                                />
+                            <Icon active={activeSection === id} />
+                            {/* Active indicator dot */}
+                            {activeSection === id && (
+                                <div className="absolute -left-[2px] top-1/2 -translate-y-1/2 w-1 h-5 bg-[#0071E3] rounded-r-full" />
                             )}
-                        </Canvas>
-                    </div>
-
-                    {/* Right Sidebar (Inspector) */}
-                    <div style={{ display: 'flex', flexDirection: 'column', width: '300px', height: '100%' }}>
-                        <div style={{ flex: 1, overflow: 'auto' }}>
-                            {viewMode === '3d' ? (
-                                <ButtonMappingsPanel
-                                    mappings={currentMappings}
-                                    moduleName={currentModule.name}
-                                    onSelectButton={handleButtonClick}
-                                />
-                            ) : (
-                                <D2ConfigPanel
-                                    mappings={currentMappings}
-                                    moduleName={currentModule.name}
-                                    onSelectButton={handleButtonClick}
-                                    onClearAll={clearAllMappings}
-                                    moduleId={currentModule.id}
-                                    onSaveToDevice={saveToDevice}
-                                    isConnected={currentModule.connected !== false}
-                                />
-                            )}
-                        </div>
-                    </div>
+                        </button>
+                    ))}
                 </div>
 
-                {/* Modal Layer */}
-                {selectedButton && (
-                    viewMode === '3d' ? (
-                        <ButtonMappingModal
-                            button={selectedButton}
-                            onSave={saveMapping}
-                            onCancel={() => setSelectedButton(null)}
-                            onClear={clearMapping}
-                        />
-                    ) : (
-                        <HIDButtonMappingModal
-                            button={selectedButton}
-                            onSave={saveMapping}
-                            onCancel={() => setSelectedButton(null)}
-                            onClear={clearMapping}
-                        />
-                    )
+                {/* Main Content Area */}
+                {showMappingsView ? (
+                    <>
+                        {/* Canvas Area */}
+                        <div className="flex-1 relative animate-fade-in">
+                            <Canvas
+                                key={viewMode}
+                                orthographic={viewMode === '2d'}
+                                camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
+                                style={{
+                                    background: "linear-gradient(180deg, #f5f5f7 0%, #ebebed 100%)",
+                                    width: "100%",
+                                    height: "100%",
+                                    cursor: viewMode === '2d' ? 'pointer' : 'grab'
+                                }}
+                                shadows
+                                gl={{
+                                    antialias: true,
+                                    shadowMap: {
+                                        enabled: true,
+                                        type: THREE.PCFSoftShadowMap
+                                    }
+                                }}
+                            >
+                                {/* --- Enhanced Lighting System --- */}
+
+                                {/* Ambient base light — neutral warm for light bg */}
+                                <ambientLight intensity={1.0} color="#f0f0f2" />
+
+                                {/* Key Light - bright directional with shadows */}
+                                <directionalLight
+                                    position={[5, 12, 8]}
+                                    intensity={1.2}
+                                    color="#f7f8fb"
+                                    castShadow
+                                    shadow-mapSize={[2048, 2048]}
+                                    shadow-camera-far={50}
+                                    shadow-camera-left={-15}
+                                    shadow-camera-right={15}
+                                    shadow-camera-top={15}
+                                    shadow-camera-bottom={-15}
+                                    shadow-bias={0.0001}
+                                    shadow-radius={3}
+                                />
+
+                                {/* Fill Light - cool soft light */}
+                                <directionalLight
+                                    position={[-8, 6, 4]}
+                                    intensity={0.5}
+                                    color="#dce4ee"
+                                />
+
+                                {/* Rim Light - back light for edge definition */}
+                                <directionalLight
+                                    position={[0, 3, -10]}
+                                    intensity={0.5}
+                                    color="#c8d4e0"
+                                />
+
+                                {/* Accent Light 1 */}
+                                <pointLight
+                                    position={[3, 4, 3]}
+                                    intensity={0.35}
+                                    color="#f0f0f5"
+                                    distance={15}
+                                    decay={2}
+                                />
+
+                                {/* Accent Light 2 */}
+                                <pointLight
+                                    position={[-4, 3, -2]}
+                                    intensity={0.25}
+                                    color="#d8e0ea"
+                                    distance={12}
+                                    decay={2}
+                                />
+
+                                {/* --- Ground Plane --- */}
+                                <mesh
+                                    rotation={[-Math.PI / 2, 0, 0]}
+                                    position={[0, -0.5, 0]}
+                                    receiveShadow
+                                >
+                                    <planeGeometry args={[50, 50]} />
+                                    <shadowMaterial opacity={0.12} />
+                                </mesh>
+
+                                {/* --- Subtle Grid --- */}
+                                <gridHelper
+                                    args={[40, 40, "#d2d2d7", "#e5e5ea"]}
+                                    position={[0, -0.15, 0]}
+                                />
+                                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]}>
+                                    <planeGeometry args={[40, 40, 40, 40]} />
+                                    <meshBasicMaterial
+                                        color="#d2d2d7"
+                                        wireframe
+                                        transparent
+                                        opacity={0.15}
+                                    />
+                                </mesh>
+
+                                {/* --- Minimal Particle System --- */}
+                                <Particles />
+
+                                <Bounds clip observe={false} margin={1}>
+                                    <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
+                                    {modules.map((module, index) => (
+                                        <MemoizedChildModule
+                                            path={module.path}
+                                            onButtonClick={handleButtonClick}
+                                            onModuleClick={() => handleModuleClick(index)}
+                                            isEditable={index === safeCurrentModuleIndex}
+                                            position={module.position}
+                                            viewMode={viewMode}
+                                            isActive={index === safeCurrentModuleIndex}
+                                            mappings={module.mappings}
+                                            mappingFilter={mappingFilter}
+                                            key={module.deviceId || module.id}
+                                        />
+                                    ))}
+                                </Bounds>
+                                {viewMode === '3d' && (
+                                    <CameraController
+                                        targetRef={cameraControl.targetRef}
+                                        cameraPositionRef={cameraControl.cameraPositionRef}
+                                        animationStart={cameraControl.animationStart}
+                                    />
+                                )}
+                            </Canvas>
+
+                            {/* Module navigation overlay — 2D view only */}
+                            {viewMode === '2d' && modules.length > 1 && (
+                                <>
+                                    {/* Left arrow */}
+                                    <button
+                                        onClick={navigatePrev}
+                                        disabled={safeCurrentModuleIndex === 0}
+                                        className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${
+                                            safeCurrentModuleIndex === 0
+                                                ? "opacity-30 cursor-default"
+                                                : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
+                                        }`}
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="15 18 9 12 15 6" />
+                                        </svg>
+                                    </button>
+
+                                    {/* Right arrow */}
+                                    <button
+                                        onClick={navigateNext}
+                                        disabled={safeCurrentModuleIndex === modules.length - 1}
+                                        className={`absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${
+                                            safeCurrentModuleIndex === modules.length - 1
+                                                ? "opacity-30 cursor-default"
+                                                : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
+                                        }`}
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="9 18 15 12 9 6" />
+                                        </svg>
+                                    </button>
+
+                                    {/* Module indicator dots */}
+                                    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200/60 shadow-sm">
+                                        {modules.map((mod, i) => (
+                                            <button
+                                                key={mod.deviceId || mod.id}
+                                                onClick={() => handleModuleChange(i)}
+                                                className={`flex items-center gap-2 transition-all duration-200 ${
+                                                    i === safeCurrentModuleIndex ? "opacity-100" : "opacity-40 hover:opacity-70"
+                                                }`}
+                                            >
+                                                <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                                                    i === safeCurrentModuleIndex ? "bg-[#0071E3] scale-125" : "bg-gray-400"
+                                                }`} />
+                                                <span className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
+                                                    i === safeCurrentModuleIndex ? "text-[#1d1d1f]" : "text-gray-400"
+                                                }`}>
+                                                    {mod.name}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Right Sidebar (Inspector) */}
+                        <div className="flex flex-col w-[300px] h-full shrink-0">
+                            <div className="flex-1 overflow-auto">
+                                {viewMode === '3d' ? (
+                                    <ButtonMappingsPanel
+                                        mappings={currentMappings}
+                                        moduleName={currentModule.name}
+                                        onSelectButton={handleButtonClick}
+                                    />
+                                ) : (
+                                    <D2ConfigPanel
+                                        mappings={currentMappings}
+                                        moduleName={currentModule.name}
+                                        onSelectButton={handleButtonClick}
+                                        onClearAll={clearAllMappings}
+                                        moduleId={currentModule.id}
+                                        onSaveToDevice={saveToDevice}
+                                        isConnected={currentModule.connected !== false}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </>
+                ) : activeSection === "profiles" ? (
+                    <ProfilesPanel />
+                ) : (
+                    <LiveInputPanel />
                 )}
             </div>
-            <style>{`
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                }
-                to {
-                    opacity: 1;
-                }
-            }
-        `}</style>
-        </>
+
+            {/* Modal Layer */}
+            {selectedButton && (
+                viewMode === '3d' ? (
+                    <ButtonMappingModal
+                        button={selectedButton}
+                        onSave={saveMapping}
+                        onCancel={() => setSelectedButton(null)}
+                        onClear={clearMapping}
+                    />
+                ) : (
+                    <HIDButtonMappingModal
+                        button={selectedButton}
+                        onSave={saveMapping}
+                        onCancel={() => setSelectedButton(null)}
+                        onClear={clearMapping}
+                    />
+                )
+            )}
+        </div>
     );
 });
 

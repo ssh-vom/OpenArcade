@@ -9,47 +9,23 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
 
     return (
         <div
-        className="oa-modal-overlay"
-        onClick={onCancel} // Click outside to close
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={onCancel}
         >
             <div
-            className="oa-panel-surface oa-modal-card"
-            style={{
-                borderRadius: "14px",
-                width: "360px",
-            }}
-            onClick={(e) => e.stopPropagation()} // Prevent click through
+                className="bg-white rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] p-6 w-[380px] max-w-[90%] border border-gray-100"
+                onClick={(e) => e.stopPropagation()}
             >
-                <div style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "var(--oa-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "8px",
-                }}>
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
                     Configure Input
                 </div>
-                
-                <h2 style={{
-                    margin: "0 0 20px 0",
-                    fontSize: "18px",
-                    fontWeight: "600",
-                    color: "var(--oa-text)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                }}>
+
+                <h2 className="m-0 mb-5 text-lg font-semibold text-gray-900 flex items-center gap-2">
                     {button.name}
                 </h2>
 
-                <div style={{ marginBottom: "20px" }}>
-                    <label style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontSize: "13px",
-                        color: "var(--oa-muted)",
-                    }}>
+                <div className="mb-5">
+                    <label className="block mb-2 text-sm text-gray-500">
                         Assign Action
                     </label>
                     <input
@@ -58,74 +34,29 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                         onChange={(e) => setAction(e.target.value)}
                         placeholder="e.g., Jump"
                         autoFocus
-                        style={{
-                            width: "100%",
-                            padding: "10px 12px",
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.08)",
-                            borderRadius: "10px",
-                            fontSize: "14px",
-                            color: "var(--oa-text)",
-                            outline: "none",
-                            transition: "border-color 0.15s ease",
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = "var(--oa-accent)"}
-                        onBlur={(e) => e.target.style.borderColor = "var(--oa-panel-border)"}
-                        // Allow enter key to save
+                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none transition-colors focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/10"
                         onKeyDown={(e) => { if(e.key === 'Enter') handleSave() }}
                     />
                 </div>
 
-                <div style={{
-                    display: "flex",
-                    gap: "10px",
-                    justifyContent: "flex-end",
-                }}>
-                     <button
+                <div className="flex gap-2.5 justify-end">
+                    <button
                         onClick={onCancel}
-                        style={{
-                            padding: "8px 16px",
-                            background: "transparent",
-                            color: "var(--oa-muted)",
-                            border: "none",
-                            fontSize: "13px",
-                            cursor: "pointer",
-                        }}
-                        onMouseOver={(e) => e.target.style.color = "var(--oa-text)"}
-                        onMouseOut={(e) => e.target.style.color = "var(--oa-muted)"}
+                        className="px-4 py-2 bg-transparent text-gray-500 border-none text-sm cursor-pointer hover:text-gray-900 transition-colors"
                     >
                         Cancel
                     </button>
                     {button.action && (
                         <button
                             onClick={() => onClear(button.name)}
-                            style={{
-                                padding: "8px 12px",
-                                background: "rgba(230, 118, 108, 0.12)",
-                                color: "var(--oa-danger)",
-                                border: "1px solid rgba(230, 118, 108, 0.35)",
-                                borderRadius: "8px",
-                                fontSize: "13px",
-                                cursor: "pointer",
-                            }}
+                            className="px-3.5 py-2 bg-red-50 text-red-500 border border-red-200 rounded-xl text-sm cursor-pointer hover:bg-red-100 transition-colors"
                         >
                             Clear
                         </button>
                     )}
                     <button
                         onClick={handleSave}
-                        style={{
-                            padding: "8px 20px",
-                            background: "var(--oa-accent)",
-                            color: "#0b0d10",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            cursor: "pointer",
-                        }}
-                        onMouseOver={(e) => e.target.style.background = "var(--oa-accent-strong)"}
-                        onMouseOut={(e) => e.target.style.background = "var(--oa-accent)"}
+                        className="px-5 py-2 bg-[#0071E3] hover:bg-[#0077ED] text-white border-none rounded-xl text-sm font-medium cursor-pointer transition-colors"
                     >
                         Save
                     </button>

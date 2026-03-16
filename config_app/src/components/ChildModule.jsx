@@ -138,7 +138,7 @@ const ChildModule = memo(function ChildModule({
                 // Joystick hitboxes: reveal on hover via opacity
                 if (enabled) {
                     material.opacity = 0.7;
-                    material.color.set("#ffd966");
+                    material.color.set("#0071E3");
                 } else {
                     material.opacity = 0;
                 }
@@ -251,7 +251,7 @@ const ChildModule = memo(function ChildModule({
                 opacity: 0,
                 depthWrite: false,
                 side: THREE.DoubleSide,
-                color: new THREE.Color("#d7b15a"),
+                color: new THREE.Color("#0071E3"),
             });
             // Store in material state so applyHighlight can reference it
             buttonMaterialState.current.set(hitboxMat.uuid, {
@@ -376,7 +376,7 @@ const ChildModule = memo(function ChildModule({
     }, [moduleScene]);
 
     useEffect(() => {
-        const highlightColor = new THREE.Color("#d7b15a");
+        const highlightColor = new THREE.Color("#0071E3");
 
         buttonMeshes.current.forEach((mesh) => {
             const groupName = mesh.userData.buttonGroup;
@@ -433,19 +433,19 @@ const ChildModule = memo(function ChildModule({
 
     const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#d7b15a';
-            case HID_INPUT_TYPES.KEYBOARD: return '#e8dcc6';
-            case HID_INPUT_TYPES.ANALOG: return '#c08a4a';
-            default: return '#6b6357';
+            case HID_INPUT_TYPES.GAMEPAD: return '#5856D6';
+            case HID_INPUT_TYPES.KEYBOARD: return '#007AFF';
+            case HID_INPUT_TYPES.ANALOG: return '#FF9500';
+            default: return '#8E8E93';
         }
     };
 
-    const getTypeBg = (type) => {
+    const getTypeBorderColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(215, 177, 90, 0.12)';
-            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(232, 220, 198, 0.08)';
-            case HID_INPUT_TYPES.ANALOG: return 'rgba(192, 138, 74, 0.12)';
-            default: return 'rgba(107, 99, 87, 0.08)';
+            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(88, 86, 214, 0.4)';
+            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(0, 122, 255, 0.4)';
+            case HID_INPUT_TYPES.ANALOG: return 'rgba(255, 149, 0, 0.4)';
+            default: return 'rgba(142, 142, 147, 0.3)';
         }
     };
 
@@ -476,7 +476,7 @@ const ChildModule = memo(function ChildModule({
                 const label = normalizedMapping.label;
                 if (!label) return null;
                 const typeColor = getTypeColor(normalizedMapping.type);
-                const typeBg = getTypeBg(normalizedMapping.type);
+                const borderColor = getTypeBorderColor(normalizedMapping.type);
                 const isHovered = hoveredButton === buttonName;
 
                 return (
@@ -487,35 +487,37 @@ const ChildModule = memo(function ChildModule({
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
                         <div style={{
-                            background: `linear-gradient(135deg, rgba(14, 14, 16, 0.88), rgba(22, 20, 18, 0.85))`,
-                            color: '#f1ede3',
-                            padding: '4px 9px',
-                            borderRadius: '5px',
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(8px)',
+                            color: '#1d1d1f',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
                             fontSize: '10px',
-                            fontFamily: "'Space Grotesk', sans-serif",
+                            fontFamily: "'Inter', -apple-system, sans-serif",
                             fontWeight: '500',
-                            letterSpacing: '0.02em',
+                            letterSpacing: '0.01em',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '5px',
+                            gap: '6px',
                             boxShadow: isHovered
-                                ? `0 0 12px rgba(215, 177, 90, 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)`
-                                : '0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
-                            borderBottom: `2px solid ${typeColor}`,
+                                ? `0 0 0 2px ${borderColor}, 0 4px 12px rgba(0, 0, 0, 0.12)`
+                                : '0 1px 4px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.05)',
+                            borderLeft: `3px solid ${typeColor}`,
                             transform: isHovered ? 'translateY(-2px) scale(1.05)' : 'none',
                             transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                         }}>
                             <span style={{
                                 fontSize: '11px',
                                 lineHeight: '1',
-                                opacity: 0.7,
+                                opacity: 0.6,
                             }}>
                                 {getTypeIcon(normalizedMapping.type)}
                             </span>
                             <span style={{
-                                borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
-                                paddingLeft: '5px',
+                                borderLeft: '1px solid rgba(0, 0, 0, 0.06)',
+                                paddingLeft: '6px',
+                                fontWeight: '500',
                             }}>
                                 {label}
                             </span>
@@ -544,31 +546,32 @@ const ChildModule = memo(function ChildModule({
                         }}>
                             {showHoveredMapping && !mappings[hoveredButton] && (
                                 <div style={{
-                                    background: 'rgba(14, 14, 16, 0.92)',
-                                    color: '#f1ede3',
+                                    background: 'rgba(255, 255, 255, 0.95)',
+                                    backdropFilter: 'blur(8px)',
+                                    color: '#1d1d1f',
                                     padding: '4px 10px',
-                                    borderRadius: '5px',
+                                    borderRadius: '6px',
                                     fontSize: '10px',
-                                    fontFamily: "'Space Grotesk', sans-serif",
+                                    fontFamily: "'Inter', -apple-system, sans-serif",
                                     fontWeight: '500',
                                     whiteSpace: 'nowrap',
-                                    borderLeft: `2px solid ${getTypeColor(hoveredMapping?.type)}`,
-                                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5)',
+                                    borderLeft: `3px solid ${getTypeColor(hoveredMapping?.type)}`,
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                                 }}>
                                     {hoveredMapping?.label}
                                 </div>
                             )}
                             <div style={{
-                                background: 'rgba(8, 8, 10, 0.85)',
-                                color: '#f1ede3',
+                                background: 'rgba(0, 0, 0, 0.7)',
+                                color: '#ffffff',
                                 fontSize: '8px',
-                                fontFamily: "'Space Grotesk', sans-serif",
+                                fontFamily: "'Inter', -apple-system, sans-serif",
                                 fontWeight: '600',
-                                letterSpacing: '0.1em',
+                                letterSpacing: '0.08em',
                                 textTransform: 'uppercase',
-                                padding: '2px 7px',
-                                borderRadius: '3px',
-                                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)',
                             }}>
                                 {mappings[hoveredButton] ? 'click to edit' : 'click to map'}
                             </div>
@@ -597,7 +600,7 @@ function IndicatorRing({ buttonName, gltf }) {
         <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.04, 0.055, 32]} />
             <meshBasicMaterial
-                color="#d7b15a"
+                color="#0071E3"
                 transparent
                 opacity={0.9}
                 side={THREE.DoubleSide}
