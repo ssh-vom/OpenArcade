@@ -10,7 +10,15 @@
     "button_7": "7",
     "button_8": "8",
     "button_start": "14",
-    "button_bt": "15"
+    "button_bt": "15",
+    "js_u": "16",
+    "js_d": "17",
+    "js_l": "18",
+    "js_r": "19",
+    "small_1": "20",
+    "small_2": "21",
+    "small_3": "22",
+    "small_4": "23"
   },
   "default_mapping": {
     "0": "HID_KEY_Z",

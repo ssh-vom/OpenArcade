@@ -122,6 +122,8 @@ const ChildModule = memo(function ChildModule({
     }
 
     function applyHighlight(mesh, enabled, color) {
+        const isJoystickHitbox = mesh.userData.isJoystickHitbox;
+
         const updateMaterial = (material) => {
             if (!material) {
                 return;
@@ -132,7 +134,15 @@ const ChildModule = memo(function ChildModule({
                 return;
             }
 
-            if (material.emissive) {
+            if (isJoystickHitbox) {
+                // Joystick hitboxes: reveal on hover via opacity
+                if (enabled) {
+                    material.opacity = 0.7;
+                    material.color.set("#ffd966");
+                } else {
+                    material.opacity = 0;
+                }
+            } else if (material.emissive) {
                 if (enabled) {
                     material.emissive.copy(color);
                     material.emissiveIntensity = 0.45;
@@ -173,7 +183,7 @@ const ChildModule = memo(function ChildModule({
             if (!buttonName) {
                 let node = intersectedMesh;
                 while (node) {
-                    if (node.name && node.name.startsWith("button_")) {
+                    if (node.name && (node.name.startsWith("button_") || node.name.startsWith("small_") || node.name.startsWith("js_"))) {
                         buttonName = node.name;
                         break;
                     }
@@ -226,6 +236,50 @@ const ChildModule = memo(function ChildModule({
         }
     }, [isEditable, onModuleClick]);
 
+    // Detect joystick module from GLB path
+    const isJoystickModule = path.toLowerCase().includes('joystick');
+
+    function prepareJoystickHitboxMaterial(mesh) {
+        // Make mesh visible but fully transparent for raycasting
+        mesh.visible = true;
+        mesh.userData.isJoystickHitbox = true;
+
+        const makeHitbox = (material) => {
+            if (!material) return material;
+            const hitboxMat = new THREE.MeshBasicMaterial({
+                transparent: true,
+                opacity: 0,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                color: new THREE.Color("#d7b15a"),
+            });
+            // Store in material state so applyHighlight can reference it
+            buttonMaterialState.current.set(hitboxMat.uuid, {
+                uuid: hitboxMat.uuid,
+                emissive: null,
+                emissiveIntensity: 0,
+                opacity: 0,
+            });
+            return hitboxMat;
+        };
+
+        if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map(makeHitbox);
+        } else {
+            mesh.material = makeHitbox(mesh.material);
+        }
+    }
+
+    function ensureAncestorsVisible(node) {
+        let current = node.parent;
+        while (current) {
+            if (!current.visible) {
+                current.visible = true;
+            }
+            current = current.parent;
+        }
+    }
+
     useEffect(() => {
         if (moduleScene) {
             buttonMeshes.current.clear();
@@ -239,7 +293,8 @@ const ChildModule = memo(function ChildModule({
             }
 
             moduleScene.traverse((rootChild) => {
-                if (rootChild.name.startsWith('button_')) {
+                // --- Standard button detection (button_* and small_*) ---
+                if (rootChild.name.startsWith('button_') || rootChild.name.startsWith('small_')) {
                     const buttonGroupName = rootChild.name;
                     // Helper to recursively find and register all meshes within this button group
                     const findMeshes = (node) => {
@@ -271,6 +326,48 @@ const ChildModule = memo(function ChildModule({
 
                     center.y += 0.035;
                     labelPositions[buttonGroupName] = [center.x, center.y, center.z];
+                }
+
+                // --- Joystick direction hitbox detection ---
+                if (isJoystickModule && rootChild.name.startsWith('js_')) {
+                    const directionName = rootChild.name; // e.g., js_u, js_d, js_l, js_r
+                    ensureAncestorsVisible(rootChild);
+
+                    const findJoystickMeshes = (node) => {
+                        if (node.isMesh) {
+                            node.userData.buttonGroup = directionName;
+                            prepareJoystickHitboxMaterial(node);
+                            buttonMeshes.current.add(node);
+                            buttonNameByMesh.current.set(node.uuid, directionName);
+                            console.log(`Found joystick hitbox mesh: ${node.name} under ${directionName}`);
+                        }
+                        if (node.children) {
+                            node.children.forEach(findJoystickMeshes);
+                        }
+                    };
+
+                    findJoystickMeshes(rootChild);
+
+                    // Compute label position from bounding box center
+                    // Temporarily make visible to compute bounds
+                    const prevVisible = rootChild.visible;
+                    rootChild.visible = true;
+                    const box = new THREE.Box3().setFromObject(rootChild);
+                    rootChild.visible = prevVisible;
+
+                    const center = new THREE.Vector3();
+                    if (!box.isEmpty()) {
+                        box.getCenter(center);
+                    } else {
+                        rootChild.getWorldPosition(center);
+                    }
+
+                    if (groupRef.current) {
+                        groupRef.current.worldToLocal(center);
+                    }
+
+                    center.y += 0.06;
+                    labelPositions[directionName] = [center.x, center.y, center.z];
                 }
             });
             setButtonLabelPositions(labelPositions);
@@ -327,19 +424,28 @@ const ChildModule = memo(function ChildModule({
 
     const getTypeIcon = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'GP';
-            case HID_INPUT_TYPES.KEYBOARD: return 'KB';
-            case HID_INPUT_TYPES.ANALOG: return 'AX';
-            default: return 'NA';
+            case HID_INPUT_TYPES.GAMEPAD: return '\u{1F3AE}';
+            case HID_INPUT_TYPES.KEYBOARD: return '\u{2328}';
+            case HID_INPUT_TYPES.ANALOG: return '\u{1F579}';
+            default: return '';
         }
     };
 
     const getTypeColor = (type) => {
         switch (type) {
             case HID_INPUT_TYPES.GAMEPAD: return '#d7b15a';
-            case HID_INPUT_TYPES.KEYBOARD: return '#f0d48a';
+            case HID_INPUT_TYPES.KEYBOARD: return '#e8dcc6';
             case HID_INPUT_TYPES.ANALOG: return '#c08a4a';
-            default: return '#9a907e';
+            default: return '#6b6357';
+        }
+    };
+
+    const getTypeBg = (type) => {
+        switch (type) {
+            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(215, 177, 90, 0.12)';
+            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(232, 220, 198, 0.08)';
+            case HID_INPUT_TYPES.ANALOG: return 'rgba(192, 138, 74, 0.12)';
+            default: return 'rgba(107, 99, 87, 0.08)';
         }
     };
 
@@ -370,6 +476,8 @@ const ChildModule = memo(function ChildModule({
                 const label = normalizedMapping.label;
                 if (!label) return null;
                 const typeColor = getTypeColor(normalizedMapping.type);
+                const typeBg = getTypeBg(normalizedMapping.type);
+                const isHovered = hoveredButton === buttonName;
 
                 return (
                     <Html
@@ -379,87 +487,95 @@ const ChildModule = memo(function ChildModule({
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
                         <div style={{
-                            background: 'rgba(0, 0, 0, 0.72)',
-                            color: '#ffffff',
-                            padding: '2px 6px',
-                            borderRadius: '999px',
-                            fontSize: '9px',
-                            fontWeight: '600',
+                            background: `linear-gradient(135deg, rgba(14, 14, 16, 0.88), rgba(22, 20, 18, 0.85))`,
+                            color: '#f1ede3',
+                            padding: '4px 9px',
+                            borderRadius: '5px',
+                            fontSize: '10px',
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            fontWeight: '500',
+                            letterSpacing: '0.02em',
                             whiteSpace: 'nowrap',
-                            border: `1px solid ${typeColor}`,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '4px',
-                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.35)',
-                            backdropFilter: 'blur(6px)'
+                            gap: '5px',
+                            boxShadow: isHovered
+                                ? `0 0 12px rgba(215, 177, 90, 0.3), 0 4px 12px rgba(0, 0, 0, 0.5)`
+                                : '0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+                            borderBottom: `2px solid ${typeColor}`,
+                            transform: isHovered ? 'translateY(-2px) scale(1.05)' : 'none',
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                         }}>
                             <span style={{
-                                fontSize: '8px',
-                                letterSpacing: '0.08em',
-                                color: typeColor,
+                                fontSize: '11px',
+                                lineHeight: '1',
+                                opacity: 0.7,
                             }}>
                                 {getTypeIcon(normalizedMapping.type)}
                             </span>
-                            <span>{label}</span>
+                            <span style={{
+                                borderLeft: '1px solid rgba(255, 255, 255, 0.08)',
+                                paddingLeft: '5px',
+                            }}>
+                                {label}
+                            </span>
                         </div>
                     </Html>
                 );
             })}
 
-            {/* Hover overlays for 2D mode */}
-            {viewMode === '2d' && hoveredButton && showHoveredMapping && (
-                <Html
-                    position={[0, 0.15, 0]}
-                    center
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                    <div style={{
-                        background: 'rgba(0, 0, 0, 0.85)',
-                        color: '#ffffff',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: '500',
-                        whiteSpace: 'nowrap',
-                        border: `1px solid ${getTypeColor(hoveredMapping.type)}`,
-                        backdropFilter: 'blur(4px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                    }}>
-                        <span style={{
-                            fontSize: "9px",
-                            letterSpacing: "0.08em",
-                            color: getTypeColor(hoveredMapping.type),
-                        }}>
-                            {getTypeIcon(hoveredMapping.type)}
-                        </span>
-                        <span>{hoveredMapping.label}</span>
-                    </div>
-                </Html>
-            )}
+            {/* Hover tooltip for 2D mode - positioned at hovered button */}
+            {viewMode === '2d' && hoveredButton && (() => {
+                const hoverPos = buttonLabelPositions[hoveredButton];
+                if (!hoverPos) return null;
+                const offsetPos = [hoverPos[0], hoverPos[1] + 0.025, hoverPos[2]];
 
-            {/* Cursor hint when hovered */}
-            {viewMode === '2d' && hoveredButton && (
-                <Html
-                    position={[0, 0.2, 0]}
-                    center
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                    <div style={{
-                        background: '#d7b15a',
-                        color: '#ffffff',
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                        fontSize: '10px',
-                        fontWeight: '600',
-                        whiteSpace: 'nowrap',
-                        boxShadow: '0 2px 8px rgba(215, 177, 90, 0.35)'
-                    }}>
-                        Click to Configure
-                    </div>
-                </Html>
-            )}
+                return (
+                    <Html
+                        position={offsetPos}
+                        center
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '3px',
+                        }}>
+                            {showHoveredMapping && !mappings[hoveredButton] && (
+                                <div style={{
+                                    background: 'rgba(14, 14, 16, 0.92)',
+                                    color: '#f1ede3',
+                                    padding: '4px 10px',
+                                    borderRadius: '5px',
+                                    fontSize: '10px',
+                                    fontFamily: "'Space Grotesk', sans-serif",
+                                    fontWeight: '500',
+                                    whiteSpace: 'nowrap',
+                                    borderLeft: `2px solid ${getTypeColor(hoveredMapping?.type)}`,
+                                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5)',
+                                }}>
+                                    {hoveredMapping?.label}
+                                </div>
+                            )}
+                            <div style={{
+                                background: 'rgba(8, 8, 10, 0.85)',
+                                color: '#f1ede3',
+                                fontSize: '8px',
+                                fontFamily: "'Space Grotesk', sans-serif",
+                                fontWeight: '600',
+                                letterSpacing: '0.1em',
+                                textTransform: 'uppercase',
+                                padding: '2px 7px',
+                                borderRadius: '3px',
+                                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4)',
+                            }}>
+                                {mappings[hoveredButton] ? 'click to edit' : 'click to map'}
+                            </div>
+                        </div>
+                    </Html>
+                );
+            })()}
         </group>
     );
 });

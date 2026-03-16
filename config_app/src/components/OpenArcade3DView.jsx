@@ -21,7 +21,7 @@ import {
 
 // Preload GLBs with texture generation
 useGLTF.preload("/OpenArcadeAssy_v2.glb");
-useGLTF.preload("/OpenArcadeAssyJoystick_v1.glb");
+useGLTF.preload("/RevFinalJoystickModule_2026-03-15.glb");
 
 
 // Camera Setter Component
@@ -104,7 +104,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [selectedButton, setSelectedButton] = useState(null);
     const defaultModules = useMemo(() => ([
         { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
-        { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/OpenArcadeAssyJoystick_v1.glb", mappings: {}, position: [0, 0, 0] },
+        { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/RevFinalJoystickModule_2026-03-15.glb", mappings: {}, position: [0, 0, 0] },
     ]), []);
     const [modules, setModules] = useState(defaultModules);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
@@ -199,11 +199,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 };
             });
 
+            const isJoystickModel = model && (model === "joystick" || model.includes("joy"));
+
             return {
                 id: deviceId,
                 name: deviceConfig?.name || deviceId,
                 deviceId,
-                path: model === "joystick" ? "/OpenArcadeAssyJoystick_v1.glb" : "/OpenArcadeAssy_v2.glb",
+                path: isJoystickModel ? "/RevFinalJoystickModule_2026-03-15.glb" : "/OpenArcadeAssy_v2.glb",
                 mappings,
                 position: positions[index % positions.length],
                 deviceLayout: layout,
