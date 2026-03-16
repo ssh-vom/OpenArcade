@@ -9,6 +9,7 @@ import signal
 import subprocess
 import threading
 from dataclasses import dataclass
+from typing import Any
 
 from runtime_ipc import get_connected_devices
 
@@ -24,6 +25,7 @@ TEMPERATURE_OUTPUT_PATTERN = re.compile(r"temp=([0-9]+(?:\.[0-9]+)?)'C")
 
 @dataclass(frozen=True)
 class DisplayConfig:
+    gpio_chip: str
     spi_port: int
     spi_device: int
     dc_pin: int
@@ -61,9 +63,19 @@ def _read_env_float(name: str, default: float) -> float:
         raise ValueError(f"{name} must be a number") from exc
 
 
+def _read_env_str(name: str, default: str) -> str:
+    raw_value = os.environ.get(name)
+    if raw_value in (None, ""):
+        return default
+    return raw_value
+
+
 def parse_args() -> DisplayConfig:
     parser = argparse.ArgumentParser(description="OpenArcade parent display service")
     try:
+        default_gpio_chip = _read_env_str(
+            "OPENARCADE_DISPLAY_GPIO_CHIP", "/dev/gpiochip0"
+        )
         default_spi_port = _read_env_int("OPENARCADE_DISPLAY_SPI_PORT", 0)
         default_spi_device = _read_env_int("OPENARCADE_DISPLAY_SPI_DEVICE", 0)
         default_dc_pin = _read_env_int("OPENARCADE_DISPLAY_DC_PIN", 24)
@@ -76,6 +88,7 @@ def parse_args() -> DisplayConfig:
     except ValueError as exc:
         parser.error(str(exc))
 
+    parser.add_argument("--gpio-chip", default=default_gpio_chip)
     parser.add_argument("--spi-port", type=int, default=default_spi_port)
     parser.add_argument("--spi-device", type=int, default=default_spi_device)
     parser.add_argument("--dc-pin", type=int, default=default_dc_pin)
@@ -93,6 +106,7 @@ def parse_args() -> DisplayConfig:
         parser.error("--rotate must be one of: 0, 1, 2, 3")
 
     return DisplayConfig(
+        gpio_chip=args.gpio_chip,
         spi_port=args.spi_port,
         spi_device=args.spi_device,
         dc_pin=args.dc_pin,
@@ -103,14 +117,99 @@ def parse_args() -> DisplayConfig:
     )
 
 
+class PeripheryGPIOAdapter:
+    LOW = 0
+    HIGH = 1
+    OUT = 1
+
+    def __init__(self, periphery_module, chip_path: str) -> None:
+        self._gpio_class = periphery_module.GPIO
+        self._chip_path = chip_path
+        self._pins: dict[int, Any] = {}
+
+    def setup(self, pin: int, _direction: int, initial: int | None = None) -> None:
+        gpio = self._pins.get(pin)
+        if gpio is None:
+            direction = "high" if initial else "low"
+            gpio = self._gpio_class(self._chip_path, pin, direction)
+            self._pins[pin] = gpio
+            return
+
+        if initial is not None:
+            gpio.write(bool(initial))
+
+    def output(self, pin: int, value: int) -> None:
+        self._pins[pin].write(bool(value))
+
+    def cleanup(self, pins: list[int] | int | None = None) -> None:
+        if pins is None:
+            pins_to_close = list(self._pins)
+        elif isinstance(pins, int):
+            pins_to_close = [pins]
+        else:
+            pins_to_close = list(pins)
+
+        for pin in pins_to_close:
+            gpio = self._pins.pop(pin, None)
+            if gpio is not None:
+                gpio.close()
+
+
+class PeripherySPIAdapter:
+    def __init__(self, periphery_module) -> None:
+        self._spi_class = periphery_module.SPI
+        self._spi = None
+        self._mode = 0
+        self._max_speed_hz = 8_000_000
+
+    def open(self, port: int, device: int) -> None:
+        devpath = f"/dev/spidev{port}.{device}"
+        self._spi = self._spi_class(devpath, self._mode, self._max_speed_hz)
+
+    def writebytes(self, data: list[int]) -> None:
+        if self._spi is None:
+            raise RuntimeError("SPI device is not open")
+        self._spi.transfer(data)
+
+    def close(self) -> None:
+        if self._spi is not None:
+            self._spi.close()
+            self._spi = None
+
+    @property
+    def mode(self) -> int:
+        return self._mode
+
+    @mode.setter
+    def mode(self, value: int) -> None:
+        self._mode = value
+        if self._spi is not None:
+            self._spi.mode = value
+
+    @property
+    def max_speed_hz(self) -> int:
+        return self._max_speed_hz
+
+    @max_speed_hz.setter
+    def max_speed_hz(self, value: int) -> None:
+        self._max_speed_hz = value
+        if self._spi is not None:
+            self._spi.max_speed = value
+
+
 class StatusDisplay:
     def __init__(self, config: DisplayConfig) -> None:
         image_font_module = importlib.import_module("PIL.ImageFont")
+        periphery_module = importlib.import_module("periphery")
         serial_module = importlib.import_module("luma.core.interface.serial")
         render_module = importlib.import_module("luma.core.render")
         device_module = importlib.import_module("luma.oled.device")
 
+        self._gpio = PeripheryGPIOAdapter(periphery_module, config.gpio_chip)
+        self._spi = PeripherySPIAdapter(periphery_module)
         self._serial = serial_module.spi(
+            spi=self._spi,
+            gpio=self._gpio,
             port=config.spi_port,
             device=config.spi_device,
             gpio_DC=config.dc_pin,
@@ -155,6 +254,7 @@ class StatusDisplay:
     def close(self) -> None:
         self._device.clear()
         self._serial.cleanup()
+        self._gpio.cleanup()
 
     def _centered_x(self, draw, text: str) -> int:
         left, _top, right, _bottom = draw.textbbox((0, 0), text, font=self._font)
@@ -173,7 +273,8 @@ def run_service(config: DisplayConfig) -> None:
     signal.signal(signal.SIGTERM, _handle_signal)
 
     logger.info(
-        "Starting display service on SPI %s.%s (DC=%s, RST=%s)",
+        "Starting display service on %s and SPI %s.%s (DC=%s, RST=%s)",
+        config.gpio_chip,
         config.spi_port,
         config.spi_device,
         config.dc_pin,
