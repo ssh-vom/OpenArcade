@@ -142,7 +142,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [selectedButton, setSelectedButton] = useState(null);
     const [activeSection, setActiveSection] = useState("mappings");
     const defaultModules = useMemo(() => ([
-        { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
+        { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/RevFinalButtonModule_2026-03-15.glb", mappings: {}, position: [-1.5, 0, 0] },
         { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/RevFinalJoystickModule_2026-03-15.glb", mappings: {}, position: [0, 0, 0] },
     ]), []);
     const [modules, setModules] = useState(defaultModules);
@@ -469,11 +469,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                         <button
                             key={id}
                             onClick={() => setActiveSection(id)}
-                            className={`group relative w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                                activeSection === id
-                                    ? "bg-[#0071E3]/10"
-                                    : "hover:bg-gray-100"
-                            }`}
+                            className={`group relative w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ${activeSection === id
+                                ? "bg-[#0071E3]/10"
+                                : "hover:bg-gray-100"
+                                }`}
                             title={label}
                         >
                             <Icon active={activeSection === id} />
@@ -623,11 +622,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     <button
                                         onClick={navigatePrev}
                                         disabled={safeCurrentModuleIndex === 0}
-                                        className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${
-                                            safeCurrentModuleIndex === 0
-                                                ? "opacity-30 cursor-default"
-                                                : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
-                                        }`}
+                                        className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${safeCurrentModuleIndex === 0
+                                            ? "opacity-30 cursor-default"
+                                            : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
+                                            }`}
                                     >
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="15 18 9 12 15 6" />
@@ -638,11 +636,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     <button
                                         onClick={navigateNext}
                                         disabled={safeCurrentModuleIndex === modules.length - 1}
-                                        className={`absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${
-                                            safeCurrentModuleIndex === modules.length - 1
-                                                ? "opacity-30 cursor-default"
-                                                : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
-                                        }`}
+                                        className={`absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${safeCurrentModuleIndex === modules.length - 1
+                                            ? "opacity-30 cursor-default"
+                                            : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
+                                            }`}
                                     >
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="9 18 15 12 9 6" />
@@ -655,16 +652,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                             <button
                                                 key={mod.deviceId || mod.id}
                                                 onClick={() => handleModuleChange(i)}
-                                                className={`flex items-center gap-2 transition-all duration-200 ${
-                                                    i === safeCurrentModuleIndex ? "opacity-100" : "opacity-40 hover:opacity-70"
-                                                }`}
+                                                className={`flex items-center gap-2 transition-all duration-200 ${i === safeCurrentModuleIndex ? "opacity-100" : "opacity-40 hover:opacity-70"
+                                                    }`}
                                             >
-                                                <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                                    i === safeCurrentModuleIndex ? "bg-[#0071E3] scale-125" : "bg-gray-400"
-                                                }`} />
-                                                <span className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
-                                                    i === safeCurrentModuleIndex ? "text-[#1d1d1f]" : "text-gray-400"
-                                                }`}>
+                                                <div className={`w-2 h-2 rounded-full transition-all duration-200 ${i === safeCurrentModuleIndex ? "bg-[#0071E3] scale-125" : "bg-gray-400"
+                                                    }`} />
+                                                <span className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${i === safeCurrentModuleIndex ? "text-[#1d1d1f]" : "text-gray-400"
+                                                    }`}>
                                                     {mod.name}
                                                 </span>
                                             </button>
