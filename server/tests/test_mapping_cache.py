@@ -4,7 +4,7 @@ import unittest
 
 import constants as const
 from device_config_store import DeviceConfigStore
-from runtime.report_builder import build_mapping_cache
+from runtime.report_builder import build_mapping_cache, get_pressed_control_ids
 from runtime.state_reducer import StateReducer
 
 
@@ -49,6 +49,18 @@ class MappingCacheTestCase(unittest.TestCase):
 
             report = reducer.set_mapping_cache(build_mapping_cache(store.load()))
             self.assertEqual(report[2], const.HID_KEY_B)
+
+    def test_pressed_control_ids_follow_default_descriptor(self):
+        device_config = {
+            "descriptor": None,
+        }
+
+        pressed = get_pressed_control_ids(
+            device_config,
+            (1 << 0) | (1 << 8) | (1 << 10) | (1 << 13) | (1 << 14),
+        )
+
+        self.assertEqual(pressed, ["1", "18", "16", "14", "15"])
 
 
 if __name__ == "__main__":

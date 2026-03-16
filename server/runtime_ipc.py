@@ -11,6 +11,7 @@ DEFAULT_RUNTIME_SOCKET_PATH = "/tmp/openarcade-runtime.sock"
 
 MESSAGE_TYPE_CONFIG_UPDATED = "config_updated"
 MESSAGE_TYPE_GET_CONNECTED_DEVICES = "get_connected_devices"
+MESSAGE_TYPE_GET_DEVICE_STATES = "get_device_states"
 
 
 def resolve_runtime_socket_path() -> str:
@@ -66,6 +67,34 @@ def get_connected_devices(socket_path: str | None = None) -> set[str]:
         return set()
 
     return {device_id for device_id in devices if isinstance(device_id, str)}
+
+
+def get_device_states(
+    device_id: str | None = None,
+    socket_path: str | None = None,
+) -> dict[str, dict[str, Any]]:
+    message: dict[str, Any] = {"type": MESSAGE_TYPE_GET_DEVICE_STATES}
+    if device_id:
+        message["device_id"] = device_id
+
+    response = send_runtime_message(
+        message,
+        socket_path=socket_path,
+    )
+    if not response or response.get("ok") is not True:
+        return {}
+
+    device_states = response.get("device_states")
+    if not isinstance(device_states, dict):
+        return {}
+
+    normalized: dict[str, dict[str, Any]] = {}
+    for current_device_id, state in device_states.items():
+        if not isinstance(current_device_id, str) or not isinstance(state, Mapping):
+            continue
+        normalized[current_device_id] = dict(state)
+
+    return normalized
 
 
 def _read_line(client: socket.socket) -> bytes | None:

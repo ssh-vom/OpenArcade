@@ -7,7 +7,12 @@ import sys
 from typing import Any
 
 from device_config_store import DeviceConfigStore
-from runtime_ipc import get_connected_devices, notify_runtime_config_updated
+from runtime.report_builder import build_control_maps, get_pressed_control_ids
+from runtime_ipc import (
+    get_connected_devices,
+    get_device_states,
+    notify_runtime_config_updated,
+)
 
 
 def read_line(fd: int) -> str | None:
@@ -95,6 +100,55 @@ def _handle_set_active_mode(
     return {"ok": True}
 
 
+def _handle_set_ui_binding(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    ui_button = message.get("ui_button")
+    control_id = message.get("control_id")
+    strategy = message.get("strategy") or "swap"
+    if not device_id or not ui_button or control_id is None:
+        return {"ok": False, "error": "missing_fields"}
+
+    device = store.set_ui_binding(device_id, ui_button, str(control_id), strategy)
+    store.save()
+    return {"ok": True, "device": device}
+
+
+def _handle_get_live_state(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    if not device_id:
+        return {"ok": False, "error": "missing_device_id"}
+
+    device = store.get_device(device_id) or {"device_id": device_id}
+    live_state = get_device_states(device_id).get(device_id, {})
+    raw_state = live_state.get("state")
+    if not isinstance(raw_state, int):
+        raw_state = 0
+
+    controls_by_bit_index, _controls_by_id = build_control_maps(device)
+    pressed_bits = [
+        bit_index
+        for bit_index in sorted(controls_by_bit_index)
+        if ((raw_state >> bit_index) & 1) == 1
+    ]
+
+    return {
+        "ok": True,
+        "live_state": {
+            "device_id": device_id,
+            "connected": device_id in get_connected_devices(),
+            "raw_state": raw_state,
+            "pressed_bits": pressed_bits,
+            "pressed_control_ids": get_pressed_control_ids(device, raw_state),
+            "seq": live_state.get("seq"),
+            "updated_at": live_state.get("updated_at"),
+        },
+    }
+
+
 def _handle_set_last_seen(
     store: DeviceConfigStore, message: dict[str, Any]
 ) -> dict[str, Any]:
@@ -110,9 +164,11 @@ COMMAND_HANDLERS = {
     "ping": _handle_ping,
     "list_devices": _handle_list_devices,
     "get_device": _handle_get_device,
+    "get_live_state": _handle_get_live_state,
     "set_descriptor": _handle_set_descriptor,
     "set_mapping": _handle_set_mapping,
     "set_active_mode": _handle_set_active_mode,
+    "set_ui_binding": _handle_set_ui_binding,
     "set_last_seen": _handle_set_last_seen,
 }
 

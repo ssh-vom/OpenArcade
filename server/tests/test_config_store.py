@@ -72,6 +72,33 @@ class ConfigStoreTestCase(unittest.TestCase):
                 {"keycode": "HID_KEY_C"},
             )
 
+    def test_set_ui_binding_swaps_existing_owner(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "config.json")
+            store = DeviceConfigStore(path=path)
+            store.load()
+
+            device_id = "11:22:33:44:55:66"
+            store.upsert_device(
+                device_id,
+                {
+                    "ui": {
+                        "layout": {
+                            "button_1": "1",
+                            "button_2": "2",
+                        }
+                    }
+                },
+            )
+
+            store.set_ui_binding(device_id, "button_1", "2")
+            device = store.get_device(device_id)
+
+            self.assertIsNotNone(device)
+            assert device is not None
+            self.assertEqual(device["ui"]["layout"]["button_1"], "2")
+            self.assertEqual(device["ui"]["layout"]["button_2"], "1")
+
     def test_default_path_comes_from_environment(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = os.path.join(tmpdir, "state", "config.json")

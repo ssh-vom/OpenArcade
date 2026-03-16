@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import queue
+import time
 from multiprocessing.queues import Queue
 from typing import Any
 
@@ -47,6 +48,8 @@ class RuntimeApplication:
         self._state_reducer = StateReducer(build_mapping_cache(initial_config))
         self._report_publisher = LatestReportPublisher(report_queue)
         self._shutdown_event = asyncio.Event()
+        self._live_states: dict[str, dict[str, Any]] = {}
+        self._state_sequence = 0
         self._discovered_devices: asyncio.Queue[Any] = asyncio.Queue()
         self._discovery = DiscoveryService(self._discovered_devices)
         self._sessions = SessionSupervisor(
@@ -58,6 +61,7 @@ class RuntimeApplication:
         self._control_server = RuntimeControlServer(
             on_config_updated=self._reload_config,
             get_connected_devices=self._get_connected_devices,
+            get_device_states=self._get_device_states,
         )
 
     async def run(self, shutdown_signal: asyncio.Event) -> None:
@@ -90,12 +94,24 @@ class RuntimeApplication:
         self._report_publisher.publish(report)
 
     def _handle_state_update(self, device_id: str, state: int) -> None:
+        self._state_sequence += 1
+        self._live_states[device_id] = {
+            "state": state,
+            "seq": self._state_sequence,
+            "updated_at": time.time(),
+        }
         report = self._state_reducer.update_device_state(device_id, state)
         self._report_publisher.publish(report)
 
     def _handle_session_stopped(self, device_id: str) -> None:
+        self._live_states.pop(device_id, None)
         report = self._state_reducer.remove_device_state(device_id)
         self._report_publisher.publish(report)
 
     def _get_connected_devices(self) -> set[str]:
         return self._sessions.connected_addresses
+
+    def _get_device_states(self) -> dict[str, dict[str, Any]]:
+        return {
+            device_id: dict(state) for device_id, state in self._live_states.items()
+        }

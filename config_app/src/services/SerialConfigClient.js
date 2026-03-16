@@ -92,6 +92,14 @@ export default class SerialConfigClient {
         return response.device;
     }
 
+    async getLiveState(deviceId) {
+        const response = await this.sendCommand({ cmd: "get_live_state", device_id: deviceId });
+        if (!response.ok) {
+            throw new Error(response.error || "get_live_state_failed");
+        }
+        return response.live_state || null;
+    }
+
     async setMapping(deviceId, mode, controlId, mapping) {
         const response = await this.sendCommand({
             cmd: "set_mapping",
@@ -104,6 +112,20 @@ export default class SerialConfigClient {
             throw new Error(response.error || `set_mapping_failed:${JSON.stringify(response)}`);
         }
         return response;
+    }
+
+    async setUiBinding(deviceId, buttonName, controlId, strategy = "swap") {
+        const response = await this.sendCommand({
+            cmd: "set_ui_binding",
+            device_id: deviceId,
+            ui_button: buttonName,
+            control_id: String(controlId),
+            strategy,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || `set_ui_binding_failed:${JSON.stringify(response)}`);
+        }
+        return response.device || null;
     }
 
     async setActiveMode(deviceId, mode) {
@@ -156,7 +178,7 @@ export default class SerialConfigClient {
         let message = null;
         try {
             message = JSON.parse(line);
-        } catch (error) {
+        } catch {
             this._resolvePending({ ok: false, error: "invalid_json" });
             return;
         }

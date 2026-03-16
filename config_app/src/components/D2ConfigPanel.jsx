@@ -1,6 +1,21 @@
 import { HID_INPUT_TYPES } from "../services/HIDManager.js";
 
-export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, onClearAll, moduleId, onSaveToDevice, isConnected = true }) {
+export default function D2ConfigPanel({
+    mappings,
+    moduleName,
+    onSelectButton,
+    onClearAll,
+    moduleId,
+    onSaveToDevice,
+    isConnected = true,
+    isMappingMode = false,
+    armedButton = null,
+    pressedButtons = [],
+    onToggleMappingMode,
+    mappingStatus = null,
+}) {
+    const pressedButtonSet = new Set(pressedButtons);
+
     // Group mappings by input type
     const groupedMappings = Object.entries(mappings).reduce((groups, [buttonName, config]) => {
         const type = config?.type || 'unknown';
@@ -72,6 +87,47 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                 </div>
             </div>
 
+            <div className="px-5 py-4 border-b border-gray-100 bg-white">
+                <div className="flex items-center gap-2 mb-3">
+                    <button
+                        onClick={() => onToggleMappingMode && onToggleMappingMode()}
+                        className={`flex-1 py-2.5 rounded-xl text-xs font-semibold tracking-wide border transition-colors ${
+                            isMappingMode
+                                ? 'bg-[#0071E3] text-white border-[#0071E3]'
+                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                        }`}
+                    >
+                        {isMappingMode ? 'Exit Mapping Mode' : 'Enter Mapping Mode'}
+                    </button>
+                </div>
+
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/70 px-3.5 py-3 text-xs leading-relaxed text-gray-500">
+                    {isMappingMode ? (
+                        armedButton ? (
+                            <>
+                                Waiting for a physical button press for <span className="font-semibold text-[#0071E3]">{armedButton}</span>.
+                            </>
+                        ) : (
+                            "Select a UI button, then press the physical button you want to bind to it."
+                        )
+                    ) : (
+                        "Enable Mapping Mode to rebind which physical control each UI button represents."
+                    )}
+                </div>
+
+                {mappingStatus && (
+                    <div className={`mt-3 rounded-xl px-3 py-2 text-[11px] font-medium ${
+                        mappingStatus.type === 'error'
+                            ? 'bg-red-50 text-red-600 border border-red-100'
+                            : mappingStatus.type === 'success'
+                                ? 'bg-green-50 text-green-600 border border-green-100'
+                                : 'bg-blue-50 text-[#0071E3] border border-blue-100'
+                    }`}>
+                        {mappingStatus.message}
+                    </div>
+                )}
+            </div>
+
             {/* Mappings List */}
             <div className="flex-1 p-5 overflow-y-auto panel-scroll">
                 {Object.keys(mappings).length === 0 ? (
@@ -108,14 +164,35 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        {typeMappings.map(({ buttonName, config }) => (
-                                            <button
-                                                key={buttonName}
-                                                onClick={() => onSelectButton(buttonName, null)}
-                                                className="w-full text-left p-3 bg-gray-50 border border-gray-100 rounded-xl cursor-pointer transition-all duration-150 hover:border-gray-300 hover:bg-white hover:shadow-sm"
-                                            >
-                                                <div className="text-[10px] text-gray-400 mb-1 font-mono">
-                                                    {buttonName}
+                                        {typeMappings.map(({ buttonName, config }) => {
+                                            const isArmed = armedButton === buttonName;
+                                            const isPressed = pressedButtonSet.has(buttonName);
+
+                                            return (
+                                                <button
+                                                    key={buttonName}
+                                                    onClick={() => onSelectButton(buttonName, null)}
+                                                    className={`w-full text-left p-3 border rounded-xl cursor-pointer transition-all duration-150 ${
+                                                        isArmed
+                                                            ? 'bg-blue-50 border-blue-200 shadow-sm'
+                                                            : isPressed
+                                                                ? 'bg-green-50 border-green-200 shadow-sm'
+                                                                : 'bg-gray-50 border-gray-100 hover:border-gray-300 hover:bg-white hover:shadow-sm'
+                                                    }`}
+                                                >
+                                                <div className="flex items-center justify-between gap-2 mb-1">
+                                                    <div className="text-[10px] text-gray-400 font-mono">
+                                                        {buttonName}
+                                                    </div>
+                                                    {(isArmed || isPressed) && (
+                                                        <div className={`text-[9px] px-2 py-0.5 rounded-full font-semibold tracking-wider ${
+                                                            isArmed
+                                                                ? 'bg-blue-100 text-[#0071E3]'
+                                                                : 'bg-green-100 text-green-600'
+                                                        }`}>
+                                                            {isArmed ? 'ARMED' : 'LIVE'}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-1.5 text-xs text-gray-900">
@@ -134,7 +211,8 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                                                     </div>
                                                 </div>
                                             </button>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );

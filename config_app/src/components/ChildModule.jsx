@@ -75,7 +75,10 @@ const ChildModule = memo(function ChildModule({
     viewMode = '3d',
     isActive = true,
     mappings = {},
-    mappingFilter = "all"
+    mappingFilter = "all",
+    pressedButtons = [],
+    armedButton = null,
+    isMappingMode = false,
 }) {
     const gltf = useGLTF(path);
     const moduleScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
@@ -121,8 +124,14 @@ const ChildModule = memo(function ChildModule({
         }
     }
 
-    function applyHighlight(mesh, enabled, color) {
+    const pressedButtonSet = useMemo(() => new Set(pressedButtons), [pressedButtons]);
+
+    function applyHighlight(mesh, options = null) {
         const isJoystickHitbox = mesh.userData.isJoystickHitbox;
+        const enabled = Boolean(options?.color);
+        const color = options?.color;
+        const intensity = options?.intensity ?? 0.45;
+        const opacity = options?.opacity ?? 0.7;
 
         const updateMaterial = (material) => {
             if (!material) {
@@ -135,17 +144,17 @@ const ChildModule = memo(function ChildModule({
             }
 
             if (isJoystickHitbox) {
-                // Joystick hitboxes: reveal on hover via opacity
+                // Joystick hitboxes: reveal via opacity
                 if (enabled) {
-                    material.opacity = 0.7;
-                    material.color.set("#0071E3");
+                    material.opacity = opacity;
+                    material.color.set(color);
                 } else {
                     material.opacity = 0;
                 }
             } else if (material.emissive) {
                 if (enabled) {
                     material.emissive.copy(color);
-                    material.emissiveIntensity = 0.45;
+                    material.emissiveIntensity = intensity;
                 } else {
                     material.emissive.copy(original.emissive || new THREE.Color(0x000000));
                     material.emissiveIntensity = original.emissiveIntensity;
@@ -376,14 +385,34 @@ const ChildModule = memo(function ChildModule({
     }, [moduleScene]);
 
     useEffect(() => {
-        const highlightColor = new THREE.Color("#0071E3");
+        const hoverColor = new THREE.Color("#0071E3");
+        const armedColor = new THREE.Color("#0A84FF");
+        const pressedColor = new THREE.Color("#34C759");
 
         buttonMeshes.current.forEach((mesh) => {
             const groupName = mesh.userData.buttonGroup;
-            const isTarget = viewMode === "2d" && hoveredButton && groupName === hoveredButton;
-            applyHighlight(mesh, isTarget, highlightColor);
+            const isPressed = pressedButtonSet.has(groupName);
+            const isArmed = viewMode === "2d" && armedButton && groupName === armedButton;
+            const isHovered = viewMode === "2d" && hoveredButton && groupName === hoveredButton;
+
+            if (isPressed) {
+                applyHighlight(mesh, { color: pressedColor, intensity: 0.55, opacity: 0.7 });
+                return;
+            }
+
+            if (isArmed) {
+                applyHighlight(mesh, { color: armedColor, intensity: 0.42, opacity: 0.52 });
+                return;
+            }
+
+            if (isHovered) {
+                applyHighlight(mesh, { color: hoverColor, intensity: 0.45, opacity: 0.7 });
+                return;
+            }
+
+            applyHighlight(mesh);
         });
-    }, [hoveredButton, viewMode]);
+    }, [armedButton, hoveredButton, pressedButtonSet, viewMode]);
 
     // Attach mouse event listeners for raycasting
     useEffect(() => {
@@ -402,6 +431,24 @@ const ChildModule = memo(function ChildModule({
     // Animation loop
     useFrame((state) => {
         if (!isActive) return;
+
+        if (pressedButtonSet.size > 0) {
+            const pressedColor = new THREE.Color("#34C759");
+            const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 7) * 0.18;
+            const pulseOpacity = 0.65 + Math.sin(state.clock.elapsedTime * 7) * 0.08;
+
+            buttonMeshes.current.forEach((mesh) => {
+                const groupName = mesh.userData.buttonGroup;
+                if (!pressedButtonSet.has(groupName)) {
+                    return;
+                }
+                applyHighlight(mesh, {
+                    color: pressedColor,
+                    intensity: pulse,
+                    opacity: pulseOpacity,
+                });
+            });
+        }
 
         frameCountRef.current++;
 
@@ -478,6 +525,8 @@ const ChildModule = memo(function ChildModule({
                 const typeColor = getTypeColor(normalizedMapping.type);
                 const borderColor = getTypeBorderColor(normalizedMapping.type);
                 const isHovered = hoveredButton === buttonName;
+                const isPressed = pressedButtonSet.has(buttonName);
+                const isArmed = armedButton === buttonName;
 
                 return (
                     <Html
@@ -487,7 +536,11 @@ const ChildModule = memo(function ChildModule({
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
                         <div style={{
-                            background: 'rgba(255, 255, 255, 0.95)',
+                            background: isPressed
+                                ? 'rgba(232, 250, 239, 0.98)'
+                                : isArmed
+                                    ? 'rgba(240, 247, 255, 0.98)'
+                                    : 'rgba(255, 255, 255, 0.95)',
                             backdropFilter: 'blur(8px)',
                             color: '#1d1d1f',
                             padding: '4px 10px',
@@ -500,11 +553,19 @@ const ChildModule = memo(function ChildModule({
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
-                            boxShadow: isHovered
-                                ? `0 0 0 2px ${borderColor}, 0 4px 12px rgba(0, 0, 0, 0.12)`
-                                : '0 1px 4px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.05)',
-                            borderLeft: `3px solid ${typeColor}`,
-                            transform: isHovered ? 'translateY(-2px) scale(1.05)' : 'none',
+                            boxShadow: isPressed
+                                ? '0 0 0 2px rgba(52, 199, 89, 0.25), 0 8px 20px rgba(52, 199, 89, 0.18)'
+                                : isArmed
+                                    ? '0 0 0 2px rgba(10, 132, 255, 0.2), 0 8px 20px rgba(10, 132, 255, 0.12)'
+                                    : isHovered
+                                 ? `0 0 0 2px ${borderColor}, 0 4px 12px rgba(0, 0, 0, 0.12)`
+                                 : '0 1px 4px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.05)',
+                            borderLeft: `3px solid ${isPressed ? '#34C759' : isArmed ? '#0A84FF' : typeColor}`,
+                            transform: isPressed
+                                ? 'translateY(-3px) scale(1.07)'
+                                : isArmed || isHovered
+                                    ? 'translateY(-2px) scale(1.05)'
+                                    : 'none',
                             transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                         }}>
                             <span style={{
@@ -573,7 +634,13 @@ const ChildModule = memo(function ChildModule({
                                 borderRadius: '4px',
                                 boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)',
                             }}>
-                                {mappings[hoveredButton] ? 'click to edit' : 'click to map'}
+                                {isMappingMode
+                                    ? armedButton === hoveredButton
+                                        ? 'press physical button'
+                                        : 'click to arm'
+                                    : mappings[hoveredButton]
+                                        ? 'click to edit'
+                                        : 'click to map'}
                             </div>
                         </div>
                     </Html>
@@ -615,9 +682,12 @@ const MemoizedChildModule = memo(ChildModule, (prevProps, nextProps) => {
         prevProps.isEditable === nextProps.isEditable &&
         prevProps.viewMode === nextProps.viewMode &&
         prevProps.isActive === nextProps.isActive &&
+        prevProps.armedButton === nextProps.armedButton &&
+        prevProps.isMappingMode === nextProps.isMappingMode &&
         prevProps.mappingFilter === nextProps.mappingFilter &&
         JSON.stringify(prevProps.position) === JSON.stringify(nextProps.position) &&
-        JSON.stringify(prevProps.mappings) === JSON.stringify(nextProps.mappings)
+        JSON.stringify(prevProps.mappings) === JSON.stringify(nextProps.mappings) &&
+        JSON.stringify(prevProps.pressedButtons) === JSON.stringify(nextProps.pressedButtons)
     );
 });
 

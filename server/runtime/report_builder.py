@@ -26,6 +26,56 @@ MODIFIER_KEYCODES = {
 DEFAULT_CONTROLS = [control.to_dict() for control in default_descriptor().controls]
 
 
+def get_device_controls(
+    device_config: Mapping[str, Any],
+    default_controls: Sequence[Mapping[str, Any]] | None = None,
+) -> list[Mapping[str, Any]]:
+    descriptor = device_config.get("descriptor") or {}
+    controls = descriptor.get("controls") or (default_controls or DEFAULT_CONTROLS)
+    return [control for control in controls if isinstance(control, Mapping)]
+
+
+def build_control_maps(
+    device_config: Mapping[str, Any],
+    default_controls: Sequence[Mapping[str, Any]] | None = None,
+) -> tuple[dict[int, Mapping[str, Any]], dict[str, Mapping[str, Any]]]:
+    controls_by_bit_index: dict[int, Mapping[str, Any]] = {}
+    controls_by_id: dict[str, Mapping[str, Any]] = {}
+
+    for control in get_device_controls(device_config, default_controls):
+        bit_index = control.get("bit_index")
+        if isinstance(bit_index, int):
+            controls_by_bit_index[bit_index] = control
+
+        control_id = control.get("id")
+        if control_id is not None:
+            controls_by_id[str(control_id)] = control
+
+    return controls_by_bit_index, controls_by_id
+
+
+def get_pressed_control_ids(
+    device_config: Mapping[str, Any],
+    state: int,
+    default_controls: Sequence[Mapping[str, Any]] | None = None,
+) -> list[str]:
+    controls_by_bit_index, _controls_by_id = build_control_maps(
+        device_config,
+        default_controls,
+    )
+    pressed_control_ids: list[str] = []
+
+    for bit_index in sorted(controls_by_bit_index):
+        if ((state >> bit_index) & 1) == 0:
+            continue
+
+        control_id = controls_by_bit_index[bit_index].get("id")
+        if control_id is not None:
+            pressed_control_ids.append(str(control_id))
+
+    return pressed_control_ids
+
+
 def resolve_keycode(entry: Any) -> int | None:
     if entry is None:
         return None
@@ -51,8 +101,7 @@ def build_mapping(
     default_controls: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[int, int]:
     active_mode = device_config.get("active_mode") or "keyboard"
-    descriptor = device_config.get("descriptor") or {}
-    controls = descriptor.get("controls") or (default_controls or DEFAULT_CONTROLS)
+    controls = get_device_controls(device_config, default_controls)
     mapping_config = (
         device_config.get("modes", {}).get(active_mode, {}).get("mapping", {})
     )

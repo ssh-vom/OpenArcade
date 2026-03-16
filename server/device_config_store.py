@@ -103,6 +103,37 @@ class DeviceConfigStore:
             device["modes"][mode]["mapping"][str(control_id)] = mapping
             return deepcopy(device)
 
+    def set_ui_binding(
+        self,
+        device_id: str,
+        ui_button: str,
+        control_id: str,
+        strategy: str = "swap",
+    ) -> dict[str, Any]:
+        with self._lock:
+            device = self._get_or_create_device_locked(device_id)
+            ui_config = device.setdefault("ui", {})
+            layout = ui_config.setdefault("layout", {})
+            normalized_control_id = str(control_id)
+            previous_control_id = layout.get(ui_button)
+
+            existing_button = None
+            for button_name, assigned_control_id in layout.items():
+                if button_name == ui_button:
+                    continue
+                if str(assigned_control_id) == normalized_control_id:
+                    existing_button = button_name
+                    break
+
+            if existing_button is not None:
+                if strategy == "swap" and previous_control_id is not None:
+                    layout[existing_button] = previous_control_id
+                else:
+                    layout.pop(existing_button, None)
+
+            layout[ui_button] = normalized_control_id
+            return deepcopy(device)
+
     def _get_or_create_device_locked(self, device_id: str) -> dict[str, Any]:
         devices = self._data.setdefault("devices", {})
         device = devices.get(device_id)

@@ -138,6 +138,8 @@ function LiveInputIcon({ active }) {
     );
 }
 
+const LIVE_STATE_POLL_INTERVAL_MS = 120;
+
 const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [selectedButton, setSelectedButton] = useState(null);
     const [activeSection, setActiveSection] = useState("mappings");
@@ -150,6 +152,11 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [loaded, setLoaded] = useState(false);
     const [viewMode, setViewMode] = useState('2d'); // '3d' or '2d'
     const [mappingFilter, setMappingFilter] = useState("all");
+    const [isMappingMode, setIsMappingMode] = useState(false);
+    const [armedButton, setArmedButton] = useState(null);
+    const [mappingStatus, setMappingStatus] = useState(null);
+    const [pressedControlIds, setPressedControlIds] = useState([]);
+    const [pressedButtons, setPressedButtons] = useState([]);
 
     useEffect(() => {
         const timer = setTimeout(() => setLoaded(true), 50);
@@ -157,6 +164,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     }, []);
 
     const currentModuleDeviceIdRef = useRef(defaultModules[0]?.deviceId || null);
+    const previousPressedControlIdsRef = useRef(new Set());
+    const livePollInFlightRef = useRef(false);
+    const sourceBindingInFlightRef = useRef(false);
 
     // Preload textures to eliminate WebGL warnings
     useEffect(() => {
@@ -187,6 +197,17 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             return deviceLayout[buttonName];
         }
         return defaultLayout[buttonName];
+    }, [defaultLayout]);
+
+    const getButtonNameForControlId = useCallback((deviceLayout, controlId) => {
+        if (controlId == null) {
+            return null;
+        }
+
+        const normalizedControlId = String(controlId);
+        const layout = deviceLayout || defaultLayout;
+        const match = Object.entries(layout).find(([, assignedControlId]) => String(assignedControlId) === normalizedControlId);
+        return match?.[0] || null;
     }, [defaultLayout]);
 
     const mockClientRef = useRef(null);
@@ -264,17 +285,21 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         setCurrentModuleIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
     }, [defaultLayout, getInputForKeycode]);
 
+    const refreshDevices = useCallback(async () => {
+        const devices = await activeClient.listDevices();
+        applyDeviceConfigs(devices);
+    }, [activeClient, applyDeviceConfigs]);
+
     useEffect(() => {
         let cancelled = false;
 
         const loadDevices = async () => {
             try {
-                const devices = await activeClient.listDevices();
-                if (!cancelled) {
-                    applyDeviceConfigs(devices);
-                }
+                await refreshDevices();
             } catch (error) {
-                console.warn("Failed to load devices:", error);
+                if (!cancelled) {
+                    console.warn("Failed to load devices:", error);
+                }
             }
         };
 
@@ -282,9 +307,43 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         return () => {
             cancelled = true;
         };
-    }, [activeClient, applyDeviceConfigs]);
+    }, [refreshDevices]);
+
+    useEffect(() => {
+        if (activeSection === "mappings" && viewMode === "2d") {
+            return;
+        }
+
+        setIsMappingMode(false);
+        setArmedButton(null);
+        setMappingStatus(null);
+    }, [activeSection, viewMode]);
+
+    const toggleMappingMode = useCallback(() => {
+        setIsMappingMode((previousValue) => {
+            const nextValue = !previousValue;
+            setSelectedButton(null);
+            setArmedButton(null);
+            setMappingStatus(nextValue
+                ? { type: "info", message: "Select a UI button, then press its physical source." }
+                : null);
+            previousPressedControlIdsRef.current = new Set(pressedControlIds.map((controlId) => String(controlId)));
+            return nextValue;
+        });
+    }, [pressedControlIds]);
 
     const handleButtonClick = useCallback((buttonName, mesh) => {
+        if (viewMode === '2d' && isMappingMode) {
+            setSelectedButton(null);
+            setArmedButton(buttonName);
+            setMappingStatus({
+                type: 'info',
+                message: `Waiting for a physical input to bind to ${buttonName}.`,
+            });
+            previousPressedControlIdsRef.current = new Set(pressedControlIds.map((controlId) => String(controlId)));
+            return;
+        }
+
         console.log(`handleButtonClick called: ${buttonName}, currentMappings:`, currentMappings);
 
         const buttonConfig = currentMappings[buttonName];
@@ -297,11 +356,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             console.log('Setting legacy config for button:', buttonName);
             setSelectedButton({ name: buttonName, mesh, action: buttonConfig || "" });
         }
-    }, [currentMappings]);
+    }, [currentMappings, isMappingMode, pressedControlIds, viewMode]);
 
     const handleModuleClick = useCallback((moduleIndex) => {
         setCurrentModuleIndex(moduleIndex);
         setSelectedButton(null);
+        setArmedButton(null);
+        setMappingStatus(null);
     }, []);
 
     const toggleViewMode = () => {
@@ -355,12 +416,18 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const handleModuleChange = (index) => {
         setCurrentModuleIndex(index);
         setSelectedButton(null);
+        setArmedButton(null);
+        setMappingStatus(null);
     };
 
     const navigatePrev = useCallback(() => {
         setCurrentModuleIndex(prev => {
             const next = prev > 0 ? prev - 1 : prev;
-            if (next !== prev) setSelectedButton(null);
+            if (next !== prev) {
+                setSelectedButton(null);
+                setArmedButton(null);
+                setMappingStatus(null);
+            }
             return next;
         });
     }, []);
@@ -368,7 +435,11 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const navigateNext = useCallback(() => {
         setCurrentModuleIndex(prev => {
             const next = prev < modules.length - 1 ? prev + 1 : prev;
-            if (next !== prev) setSelectedButton(null);
+            if (next !== prev) {
+                setSelectedButton(null);
+                setArmedButton(null);
+                setMappingStatus(null);
+            }
             return next;
         });
     }, [modules.length]);
@@ -393,6 +464,118 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [viewMode, activeSection, selectedButton, navigatePrev, navigateNext]);
+
+    useEffect(() => {
+        const currentDeviceId = currentModule?.deviceId;
+        const currentLayout = currentModule?.deviceLayout || defaultLayout;
+
+        if (activeSection !== 'mappings' || !currentDeviceId || typeof activeClient.getLiveState !== 'function') {
+            previousPressedControlIdsRef.current = new Set();
+            setPressedControlIds([]);
+            setPressedButtons([]);
+            return;
+        }
+
+        let cancelled = false;
+
+        const syncLiveState = async () => {
+            if (livePollInFlightRef.current) {
+                return;
+            }
+
+            livePollInFlightRef.current = true;
+            try {
+                const liveState = await activeClient.getLiveState(currentDeviceId);
+                if (cancelled) {
+                    return;
+                }
+
+                const nextPressedControlIds = (liveState?.pressed_control_ids || []).map((controlId) => String(controlId));
+                const nextPressedButtons = nextPressedControlIds
+                    .map((controlId) => getButtonNameForControlId(currentLayout, controlId))
+                    .filter(Boolean);
+
+                setPressedControlIds(nextPressedControlIds);
+                setPressedButtons(nextPressedButtons);
+
+                const previousPressed = previousPressedControlIdsRef.current;
+                const newlyPressedControlIds = nextPressedControlIds.filter((controlId) => !previousPressed.has(controlId));
+                previousPressedControlIdsRef.current = new Set(nextPressedControlIds);
+
+                if (!isMappingMode || !armedButton || sourceBindingInFlightRef.current) {
+                    return;
+                }
+
+                if (newlyPressedControlIds.length > 1) {
+                    setMappingStatus({ type: 'error', message: 'Press one physical button at a time.' });
+                    return;
+                }
+
+                if (newlyPressedControlIds.length !== 1) {
+                    return;
+                }
+
+                const capturedControlId = newlyPressedControlIds[0];
+                const targetButtonName = armedButton;
+
+                sourceBindingInFlightRef.current = true;
+                try {
+                    await activeClient.setUiBinding(currentDeviceId, targetButtonName, capturedControlId, 'swap');
+                    await refreshDevices();
+                    if (!cancelled) {
+                        setArmedButton(null);
+                        setMappingStatus({
+                            type: 'success',
+                            message: `${targetButtonName} now follows physical control ${capturedControlId}.`,
+                        });
+                    }
+                } catch {
+                    if (!cancelled) {
+                        console.warn('Failed to update UI binding');
+                        setMappingStatus({
+                            type: 'error',
+                            message: 'Could not save that source binding. Try again.',
+                        });
+                    }
+                } finally {
+                    sourceBindingInFlightRef.current = false;
+                }
+            } catch {
+                if (!cancelled) {
+                    setPressedControlIds([]);
+                    setPressedButtons([]);
+                    if (isMappingMode) {
+                        setMappingStatus({
+                            type: 'error',
+                            message: 'Live input polling is unavailable for this device.',
+                        });
+                    }
+                }
+            } finally {
+                livePollInFlightRef.current = false;
+            }
+        };
+
+        syncLiveState();
+        const intervalId = window.setInterval(syncLiveState, LIVE_STATE_POLL_INTERVAL_MS);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+            livePollInFlightRef.current = false;
+            previousPressedControlIdsRef.current = new Set();
+        };
+    }, [
+        activeClient,
+        activeSection,
+        armedButton,
+        currentModule?.deviceId,
+        currentModule?.deviceLayout,
+        defaultLayout,
+        getButtonNameForControlId,
+        isMappingMode,
+        refreshDevices,
+    ]);
 
     const clearAllMappings = () => {
         setModules(prev => prev.map((mod, idx) => {
@@ -465,20 +648,20 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             <div className="flex flex-1 min-h-0">
                 {/* Left Sidebar Navigation */}
                 <div className="w-[68px] bg-white border-r border-gray-200/60 flex flex-col items-center pt-4 gap-1 shrink-0">
-                    {navItems.map(({ id, label, Icon }) => (
+                    {navItems.map((item) => (
                         <button
-                            key={id}
-                            onClick={() => setActiveSection(id)}
+                            key={item.id}
+                            onClick={() => setActiveSection(item.id)}
                             className={`group relative w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                                activeSection === id
+                                activeSection === item.id
                                     ? "bg-[#0071E3]/10"
                                     : "hover:bg-gray-100"
                             }`}
-                            title={label}
+                            title={item.label}
                         >
-                            <Icon active={activeSection === id} />
+                            <item.Icon active={activeSection === item.id} />
                             {/* Active indicator dot */}
-                            {activeSection === id && (
+                            {activeSection === item.id && (
                                 <div className="absolute -left-[2px] top-1/2 -translate-y-1/2 w-1 h-5 bg-[#0071E3] rounded-r-full" />
                             )}
                         </button>
@@ -603,6 +786,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                             isActive={index === safeCurrentModuleIndex}
                                             mappings={module.mappings}
                                             mappingFilter={mappingFilter}
+                                            pressedButtons={index === safeCurrentModuleIndex ? pressedButtons : []}
+                                            armedButton={index === safeCurrentModuleIndex ? armedButton : null}
+                                            isMappingMode={index === safeCurrentModuleIndex ? isMappingMode : false}
                                             key={module.deviceId || module.id}
                                         />
                                     ))}
@@ -692,6 +878,11 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                         moduleId={currentModule.id}
                                         onSaveToDevice={saveToDevice}
                                         isConnected={currentModule.connected !== false}
+                                        isMappingMode={isMappingMode}
+                                        armedButton={armedButton}
+                                        pressedButtons={pressedButtons}
+                                        onToggleMappingMode={toggleMappingMode}
+                                        mappingStatus={mappingStatus}
                                     />
                                 )}
                             </div>

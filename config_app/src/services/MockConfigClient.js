@@ -31,6 +31,19 @@ class MockConfigClient {
         return device ? deepClone(device) : null;
     }
 
+    async getLiveState(deviceId) {
+        const device = this._data.devices?.[deviceId];
+        return {
+            device_id: deviceId,
+            connected: device?.connected !== false,
+            raw_state: 0,
+            pressed_bits: [],
+            pressed_control_ids: [],
+            seq: 0,
+            updated_at: null,
+        };
+    }
+
     async setMapping(deviceId, mode, controlId, mapping) {
         const device = this._ensureDevice(deviceId);
         const modeEntry = device.modes[mode] || { output: null, mapping: {} };
@@ -39,6 +52,35 @@ class MockConfigClient {
         device.last_seen = new Date().toISOString();
         this._save();
         return { ok: true };
+    }
+
+    async setUiBinding(deviceId, buttonName, controlId, strategy = "swap") {
+        const device = this._ensureDevice(deviceId);
+        const layout = device.ui?.layout || {};
+        const normalizedControlId = String(controlId);
+        const previousControlId = layout[buttonName];
+
+        const existingButton = Object.entries(layout).find(
+            ([currentButtonName, assignedControlId]) =>
+                currentButtonName !== buttonName && String(assignedControlId) === normalizedControlId,
+        )?.[0];
+
+        if (existingButton) {
+            if (strategy === "swap" && previousControlId != null) {
+                layout[existingButton] = previousControlId;
+            } else {
+                delete layout[existingButton];
+            }
+        }
+
+        layout[buttonName] = normalizedControlId;
+        device.ui = {
+            ...device.ui,
+            layout,
+        };
+        device.last_seen = new Date().toISOString();
+        this._save();
+        return deepClone(device);
     }
 
     async setActiveMode(deviceId, mode) {
