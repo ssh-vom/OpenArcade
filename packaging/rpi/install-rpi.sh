@@ -20,6 +20,7 @@ SERVICE_NAMES=(
     openarcade-gadget.service
     openarcade-subscriber.service
     openarcade-configd.service
+    openarcade-display.service
 )
 
 require_root() {
@@ -48,6 +49,15 @@ ensure_boot_overlay() {
     fi
 
     echo "dtoverlay=dwc2" >> "$BOOT_CONFIG"
+    REBOOT_REQUIRED=1
+}
+
+ensure_spi_enabled() {
+    if grep -Eq '^[[:space:]]*dtparam=spi=on([[:space:]]|$)' "$BOOT_CONFIG"; then
+        return
+    fi
+
+    echo "dtparam=spi=on" >> "$BOOT_CONFIG"
     REBOOT_REQUIRED=1
 }
 
@@ -134,7 +144,7 @@ udc_available() {
 
 start_services_if_ready() {
     if [[ "$REBOOT_REQUIRED" -eq 1 ]]; then
-        echo "A reboot is required before OpenArcade can expose USB gadget devices."
+        echo "A reboot is required before OpenArcade can start all services."
         return
     fi
 
@@ -146,6 +156,7 @@ start_services_if_ready() {
     systemctl restart openarcade-gadget.service
     systemctl restart openarcade-configd.service
     systemctl restart openarcade-subscriber.service
+    systemctl restart openarcade-display.service
 }
 
 print_summary() {
@@ -159,16 +170,18 @@ Service status commands:
   systemctl status openarcade-gadget.service
   systemctl status openarcade-subscriber.service
   systemctl status openarcade-configd.service
+  systemctl status openarcade-display.service
 
 Log commands:
   journalctl -u openarcade-gadget.service -f
   journalctl -u openarcade-subscriber.service -f
   journalctl -u openarcade-configd.service -f
+  journalctl -u openarcade-display.service -f
 EOF
 
     if [[ "$REBOOT_REQUIRED" -eq 1 ]]; then
         echo
-        echo "Reboot the Pi to activate the dwc2 overlay, then reconnect the USB data port."
+        echo "Reboot the Pi to activate the dwc2 overlay and SPI interface, then reconnect the USB data port."
     fi
 }
 
@@ -176,6 +189,7 @@ main() {
     require_root
     find_boot_config
     ensure_boot_overlay
+    ensure_spi_enabled
     ensure_kernel_modules
     install_os_packages
     copy_repo_tree
