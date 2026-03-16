@@ -26,7 +26,10 @@ useGLTF.preload("/OpenArcadeAssy_v2.glb");
 useGLTF.preload("/RevFinalJoystickModule_2026-03-15.glb");
 
 
-// Camera Setter Component
+// Camera Setter Component — only manages 2D orthographic camera positioning.
+// In 3D mode, the Canvas `camera` prop handles initial setup and CameraController
+// handles animated transitions. CameraSetter must NOT touch the camera in 3D mode
+// on module changes, or it will interfere with the smooth animation.
 function CameraSetter({ viewMode, currentModulePosition }) {
     const { camera } = useThree();
     const orthoZoom = 1000;
@@ -37,12 +40,6 @@ function CameraSetter({ viewMode, currentModulePosition }) {
             camera.position.set(currentModulePosition[0], 5, currentModulePosition[2]);
             camera.rotation.set(-Math.PI / 2, 0, 0);
             camera.zoom = orthoZoom;
-            camera.updateProjectionMatrix();
-        } else {
-            // Reset to 3D view
-            camera.position.set(0, 1.5, 3);
-            camera.rotation.set(0, 0, 0);
-            camera.zoom = 1;
             camera.updateProjectionMatrix();
         }
     }, [viewMode, currentModulePosition, camera]);
@@ -285,16 +282,16 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     }, [activeClient, applyDeviceConfigs]);
 
     const handleButtonClick = useCallback((buttonName, mesh) => {
-        console.log(`handleButtonClick called: ${buttonName}, currentMappings:`, currentMappings);
+        // console.log(`handleButtonClick called: ${buttonName}, currentMappings:`, currentMappings);
 
         const buttonConfig = currentMappings[buttonName];
         if (buttonConfig && typeof buttonConfig === 'object') {
             // New HID configuration format
-            console.log('Setting HID config for button:', buttonName);
+            // console.log('Setting HID config for button:', buttonName);
             setSelectedButton({ name: buttonName, mesh, ...buttonConfig });
         } else {
             // Legacy format for backward compatibility
-            console.log('Setting legacy config for button:', buttonName);
+            // console.log('Setting legacy config for button:', buttonName);
             setSelectedButton({ name: buttonName, mesh, action: buttonConfig || "" });
         }
     }, [currentMappings]);
@@ -409,7 +406,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         if (module) {
             try {
                 // Show loading state (could add toast/loading indicator here)
-                console.log('Saving configuration to device...');
+                // console.log('Saving configuration to device...');
 
                 const layout = module.deviceLayout || defaultLayout;
                 const mode = "keyboard";
@@ -426,7 +423,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 }
                 await activeClient.setActiveMode(module.deviceId, mode);
 
-                console.log('Configuration saved successfully!');
+                // console.log('Configuration saved successfully!');
                 // Could add success notification here
 
             } catch (error) {

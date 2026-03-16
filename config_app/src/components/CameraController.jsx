@@ -22,13 +22,6 @@ const CameraController = memo(function CameraController({
         if (animationStart > 0 && animationStart !== lastAnimationStart.current) {
             lastAnimationStart.current = animationStart;
             
-            console.log('Animation triggered!', {
-                from: camera.position.clone(),
-                to: cameraPositionRef.current,
-                targetFrom: orbitControlsRef.current?.target?.clone(),
-                targetTo: targetRef.current
-            });
-            
             setIsAnimating(true);
             startPositionRef.current.copy(camera.position);
             if (orbitControlsRef.current) {
@@ -45,10 +38,13 @@ const CameraController = memo(function CameraController({
         const progress = Math.min(elapsed / (duration * 1000), 1);
 
         if (progress >= 1) {
-            setIsAnimating(false);
+            // Snap camera and orbit target to exact final positions
+            camera.position.copy(cameraPositionRef.current);
             if (orbitControlsRef.current) {
                 orbitControlsRef.current.target.copy(targetRef.current);
+                orbitControlsRef.current.update();
             }
+            setIsAnimating(false);
             return;
         }
 

@@ -190,7 +190,7 @@ const ChildModule = memo(function ChildModule({
                     node = node.parent;
                 }
             }
-            console.log('Intersected button:', buttonName || intersectedMesh.name);
+            // console.log('Intersected button:', buttonName || intersectedMesh.name);
             return { name: buttonName || intersectedMesh.name, mesh: intersectedMesh };
         }
         return null;
@@ -303,7 +303,7 @@ const ChildModule = memo(function ChildModule({
                             buttonMeshes.current.add(node);
                             buttonNameByMesh.current.set(node.uuid, buttonGroupName);
                             prepareHighlightMaterial(node);
-                            console.log(`Found button mesh: ${node.name} under ${buttonGroupName}`, node);
+                            // console.log(`Found button mesh: ${node.name} under ${buttonGroupName}`, node);
                         }
                         if (node.children) {
                             node.children.forEach(findMeshes);
@@ -339,7 +339,7 @@ const ChildModule = memo(function ChildModule({
                             prepareJoystickHitboxMaterial(node);
                             buttonMeshes.current.add(node);
                             buttonNameByMesh.current.set(node.uuid, directionName);
-                            console.log(`Found joystick hitbox mesh: ${node.name} under ${directionName}`);
+                            // console.log(`Found joystick hitbox mesh: ${node.name} under ${directionName}`);
                         }
                         if (node.children) {
                             node.children.forEach(findJoystickMeshes);
@@ -371,7 +371,7 @@ const ChildModule = memo(function ChildModule({
                 }
             });
             setButtonLabelPositions(labelPositions);
-            console.log('Total button meshes found:', buttonMeshes.current.size);
+            // console.log('Total button meshes found:', buttonMeshes.current.size);
         }
     }, [moduleScene]);
 
