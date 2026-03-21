@@ -260,7 +260,7 @@ const ChildModule = memo(function ChildModule({
                 opacity: 0,
                 depthWrite: false,
                 side: THREE.DoubleSide,
-                color: new THREE.Color("#0071E3"),
+                color: new THREE.Color("#7C3AED"),
             });
             // Store in material state so applyHighlight can reference it
             buttonMaterialState.current.set(hitboxMat.uuid, {
@@ -385,9 +385,9 @@ const ChildModule = memo(function ChildModule({
     }, [moduleScene]);
 
     useEffect(() => {
-        const hoverColor = new THREE.Color("#0071E3");
-        const armedColor = new THREE.Color("#0A84FF");
-        const pressedColor = new THREE.Color("#34C759");
+        const hoverColor = new THREE.Color("#7C3AED");
+        const armedColor = new THREE.Color("#8B5CF6");
+        const pressedColor = new THREE.Color("#F97316");
 
         buttonMeshes.current.forEach((mesh) => {
             const groupName = mesh.userData.buttonGroup;
@@ -433,7 +433,7 @@ const ChildModule = memo(function ChildModule({
         if (!isActive) return;
 
         if (pressedButtonSet.size > 0) {
-            const pressedColor = new THREE.Color("#34C759");
+            const pressedColor = new THREE.Color("#F97316");
             const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 7) * 0.18;
             const pulseOpacity = 0.65 + Math.sin(state.clock.elapsedTime * 7) * 0.08;
 
@@ -469,30 +469,31 @@ const ChildModule = memo(function ChildModule({
         }
     });
 
+    // New color scheme: Violet (Gamepad), Cyan (Keyboard), Orange (Analog)
     const getTypeIcon = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '\u{1F3AE}';
-            case HID_INPUT_TYPES.KEYBOARD: return '\u{2328}';
-            case HID_INPUT_TYPES.ANALOG: return '\u{1F579}';
-            default: return '';
+            case HID_INPUT_TYPES.GAMEPAD: return 'GP';
+            case HID_INPUT_TYPES.KEYBOARD: return 'KB';
+            case HID_INPUT_TYPES.ANALOG: return 'AX';
+            default: return '—';
         }
     };
 
     const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#5856D6';
-            case HID_INPUT_TYPES.KEYBOARD: return '#007AFF';
-            case HID_INPUT_TYPES.ANALOG: return '#FF9500';
-            default: return '#8E8E93';
+            case HID_INPUT_TYPES.GAMEPAD: return '#7C3AED';   // Electric violet
+            case HID_INPUT_TYPES.KEYBOARD: return '#06B6D4'; // Cyan
+            case HID_INPUT_TYPES.ANALOG: return '#F97316';   // Coral/orange
+            default: return '#A1A1AA';
         }
     };
 
     const getTypeBorderColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(88, 86, 214, 0.4)';
-            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(0, 122, 255, 0.4)';
-            case HID_INPUT_TYPES.ANALOG: return 'rgba(255, 149, 0, 0.4)';
-            default: return 'rgba(142, 142, 147, 0.3)';
+            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(124, 58, 237, 0.35)';
+            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(6, 182, 212, 0.35)';
+            case HID_INPUT_TYPES.ANALOG: return 'rgba(249, 115, 22, 0.35)';
+            default: return 'rgba(161, 161, 170, 0.3)';
         }
     };
 
@@ -537,48 +538,52 @@ const ChildModule = memo(function ChildModule({
                     >
                         <div style={{
                             background: isPressed
-                                ? 'rgba(232, 250, 239, 0.98)'
+                                ? 'rgba(236, 253, 245, 0.98)'
                                 : isArmed
-                                    ? 'rgba(240, 247, 255, 0.98)'
-                                    : 'rgba(255, 255, 255, 0.95)',
-                            backdropFilter: 'blur(8px)',
-                            color: '#1d1d1f',
-                            padding: '4px 10px',
-                            borderRadius: '8px',
+                                    ? 'rgba(236, 254, 255, 0.98)'
+                                    : 'rgba(255, 255, 255, 0.96)',
+                            backdropFilter: 'blur(12px)',
+                            color: '#18181B',
+                            padding: '5px 12px',
+                            borderRadius: '10px',
                             fontSize: '10px',
-                            fontFamily: "'Inter', -apple-system, sans-serif",
+                            fontFamily: "'DM Sans', -apple-system, sans-serif",
                             fontWeight: '500',
                             letterSpacing: '0.01em',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px',
+                            gap: '8px',
                             boxShadow: isPressed
-                                ? '0 0 0 2px rgba(52, 199, 89, 0.25), 0 8px 20px rgba(52, 199, 89, 0.18)'
+                                ? '0 0 0 2px rgba(16, 185, 129, 0.3), 0 8px 24px rgba(16, 185, 129, 0.2)'
                                 : isArmed
-                                    ? '0 0 0 2px rgba(10, 132, 255, 0.2), 0 8px 20px rgba(10, 132, 255, 0.12)'
+                                    ? '0 0 0 2px rgba(6, 182, 212, 0.25), 0 8px 24px rgba(6, 182, 212, 0.15)'
                                     : isHovered
-                                 ? `0 0 0 2px ${borderColor}, 0 4px 12px rgba(0, 0, 0, 0.12)`
-                                 : '0 1px 4px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.05)',
-                            borderLeft: `3px solid ${isPressed ? '#34C759' : isArmed ? '#0A84FF' : typeColor}`,
+                                 ? `0 0 0 2px ${borderColor}, 0 6px 16px rgba(0, 0, 0, 0.1)`
+                                 : '0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.03)',
+                            borderLeft: `3px solid ${isPressed ? '#10B981' : isArmed ? '#06B6D4' : typeColor}`,
                             transform: isPressed
-                                ? 'translateY(-3px) scale(1.07)'
+                                ? 'translateY(-4px) scale(1.08)'
                                 : isArmed || isHovered
-                                    ? 'translateY(-2px) scale(1.05)'
+                                    ? 'translateY(-2px) scale(1.04)'
                                     : 'none',
-                            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                            transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease',
                         }}>
                             <span style={{
-                                fontSize: '11px',
-                                lineHeight: '1',
-                                opacity: 0.6,
+                                fontSize: '9px',
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontWeight: '600',
+                                letterSpacing: '0.05em',
+                                color: typeColor,
+                                background: `${typeColor}15`,
+                                padding: '2px 5px',
+                                borderRadius: '4px',
                             }}>
                                 {getTypeIcon(normalizedMapping.type)}
                             </span>
                             <span style={{
-                                borderLeft: '1px solid rgba(0, 0, 0, 0.06)',
-                                paddingLeft: '6px',
                                 fontWeight: '500',
+                                color: '#18181B',
                             }}>
                                 {label}
                             </span>
@@ -607,32 +612,32 @@ const ChildModule = memo(function ChildModule({
                         }}>
                             {showHoveredMapping && !mappings[hoveredButton] && (
                                 <div style={{
-                                    background: 'rgba(255, 255, 255, 0.95)',
+                                    background: 'rgba(255, 253, 250, 0.95)',
                                     backdropFilter: 'blur(8px)',
-                                    color: '#1d1d1f',
+                                    color: '#18181B',
                                     padding: '4px 10px',
                                     borderRadius: '6px',
                                     fontSize: '10px',
-                                    fontFamily: "'Inter', -apple-system, sans-serif",
+                                    fontFamily: "'DM Sans', system-ui, sans-serif",
                                     fontWeight: '500',
                                     whiteSpace: 'nowrap',
                                     borderLeft: `3px solid ${getTypeColor(hoveredMapping?.type)}`,
-                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                                 }}>
                                     {hoveredMapping?.label}
                                 </div>
                             )}
                             <div style={{
-                                background: 'rgba(0, 0, 0, 0.7)',
+                                background: 'rgba(124, 58, 237, 0.9)',
                                 color: '#ffffff',
                                 fontSize: '8px',
-                                fontFamily: "'Inter', -apple-system, sans-serif",
-                                fontWeight: '600',
-                                letterSpacing: '0.08em',
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontWeight: '500',
+                                letterSpacing: '0.05em',
                                 textTransform: 'uppercase',
                                 padding: '2px 8px',
                                 borderRadius: '4px',
-                                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)',
+                                boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)',
                             }}>
                                 {isMappingMode
                                     ? armedButton === hoveredButton
@@ -667,7 +672,7 @@ function IndicatorRing({ buttonName, gltf }) {
         <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.04, 0.055, 32]} />
             <meshBasicMaterial
-                color="#0071E3"
+                color="#7C3AED"
                 transparent
                 opacity={0.9}
                 side={THREE.DoubleSide}

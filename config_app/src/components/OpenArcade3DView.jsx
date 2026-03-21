@@ -50,10 +50,10 @@ function CameraSetter({ viewMode, currentModulePosition }) {
     return null;
 }
 
-// Minimal Particle System Component — subtle neutral particles for light theme
+// Minimal Particle System Component — subtle warm particles for light theme
 function Particles() {
     const particlesRef = useRef();
-    const count = 25;
+    const count = 30;
 
     const positions = useMemo(() => {
         const pos = new Float32Array(count * 3);
@@ -91,10 +91,10 @@ function Particles() {
                 />
             </bufferGeometry>
             <pointsMaterial
-                size={0.05}
-                color="#c7c7cc"
+                size={0.04}
+                color="#A78BFA"
                 transparent
-                opacity={0.4}
+                opacity={0.35}
                 sizeAttenuation
                 blending={THREE.AdditiveBlending}
             />
@@ -102,16 +102,16 @@ function Particles() {
     );
 }
 
-// Sidebar nav icon components
+// Sidebar nav icon components — New refined design
 function MappingsIcon({ active }) {
     return (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke={active ? "#0071E3" : "#86868b"} strokeWidth="1.5"
+            stroke={active ? "#7C3AED" : "#A1A1AA"} strokeWidth="1.75"
             strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" />
-            <rect x="14" y="3" width="7" height="7" rx="1.5" />
-            <rect x="3" y="14" width="7" height="7" rx="1.5" />
-            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            <rect x="3" y="3" width="7" height="7" rx="2" />
+            <rect x="14" y="3" width="7" height="7" rx="2" />
+            <rect x="3" y="14" width="7" height="7" rx="2" />
+            <rect x="14" y="14" width="7" height="7" rx="2" />
         </svg>
     );
 }
@@ -119,7 +119,7 @@ function MappingsIcon({ active }) {
 function ProfilesIcon({ active }) {
     return (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke={active ? "#0071E3" : "#86868b"} strokeWidth="1.5"
+            stroke={active ? "#7C3AED" : "#A1A1AA"} strokeWidth="1.75"
             strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5z" />
             <path d="M2 17l10 5 10-5" />
@@ -131,7 +131,7 @@ function ProfilesIcon({ active }) {
 function LiveInputIcon({ active }) {
     return (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke={active ? "#0071E3" : "#86868b"} strokeWidth="1.5"
+            stroke={active ? "#7C3AED" : "#A1A1AA"} strokeWidth="1.75"
             strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
         </svg>
@@ -629,7 +629,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
     return (
         <div
-            className={`w-screen h-screen flex flex-col overflow-hidden bg-[#f5f5f7] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+            className={`w-screen h-screen flex flex-col overflow-hidden bg-[#FAFAF8] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
         >
             {/* Top Header */}
             <ControllerHUD
@@ -646,39 +646,76 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             />
 
             <div className="flex flex-1 min-h-0">
-                {/* Left Sidebar Navigation */}
-                <div className="w-[68px] bg-white border-r border-gray-200/60 flex flex-col items-center pt-4 gap-1 shrink-0">
-                    {navItems.map((item) => (
+                {/* Left Sidebar Navigation — Refined styling */}
+                <div 
+                    className="w-[72px] bg-white flex flex-col items-center pt-5 gap-2 shrink-0"
+                    style={{
+                        borderRight: '1px solid rgba(0, 0, 0, 0.06)',
+                        boxShadow: '1px 0 3px rgba(0, 0, 0, 0.02)'
+                    }}
+                >
+                    {navItems.map((item, index) => (
                         <button
                             key={item.id}
                             onClick={() => setActiveSection(item.id)}
-                            className={`group relative w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ${
-                                activeSection === item.id
-                                    ? "bg-[#0071E3]/10"
-                                    : "hover:bg-gray-100"
-                            }`}
+                            className={`group relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-200 cursor-pointer border-none
+                                ${activeSection === item.id
+                                    ? "bg-[#7C3AED]/10"
+                                    : "bg-transparent hover:bg-[#F4F4F5]"
+                                }`}
                             title={item.label}
+                            style={{
+                                animationDelay: `${index * 50}ms`
+                            }}
                         >
                             <item.Icon active={activeSection === item.id} />
-                            {/* Active indicator dot */}
+                            {/* Active indicator bar */}
                             {activeSection === item.id && (
-                                <div className="absolute -left-[2px] top-1/2 -translate-y-1/2 w-1 h-5 bg-[#0071E3] rounded-r-full" />
+                                <div 
+                                    className="absolute -left-[1px] top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#7C3AED] rounded-r-full"
+                                    style={{ boxShadow: '2px 0 8px rgba(124, 58, 237, 0.3)' }}
+                                />
                             )}
                         </button>
                     ))}
+                    
+                    {/* Divider */}
+                    <div className="w-8 h-px bg-[#E4E4E7] my-2" />
+                    
+                    {/* Version indicator at bottom */}
+                    <div className="mt-auto mb-4">
+                        <div 
+                            className="text-[9px] text-[#A1A1AA] font-medium tracking-wider text-center leading-tight"
+                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                        >
+                            v0.1
+                        </div>
+                    </div>
                 </div>
 
                 {/* Main Content Area */}
                 {showMappingsView ? (
                     <>
-                        {/* Canvas Area */}
+                        {/* Canvas Area with Blueprint grid */}
                         <div className="flex-1 relative animate-fade-in">
+                            {/* Blueprint grid overlay */}
+                            <div 
+                                className="absolute inset-0 pointer-events-none z-0"
+                                style={{
+                                    background: `
+                                        linear-gradient(rgba(124, 58, 237, 0.025) 1px, transparent 1px),
+                                        linear-gradient(90deg, rgba(124, 58, 237, 0.025) 1px, transparent 1px)
+                                    `,
+                                    backgroundSize: '24px 24px'
+                                }}
+                            />
+                            
                             <Canvas
                                 key={viewMode}
                                 orthographic={viewMode === '2d'}
                                 camera={viewMode === '3d' ? { position: [0, 1.5, 3], fov: 45 } : { position: [0, 5, 0], rotation: [-Math.PI / 2, 0, 0], zoom: 25 }}
                                 style={{
-                                    background: "linear-gradient(180deg, #f5f5f7 0%, #ebebed 100%)",
+                                    background: "linear-gradient(180deg, #FAFAF8 0%, #F0F0EE 100%)",
                                     width: "100%",
                                     height: "100%",
                                     cursor: viewMode === '2d' ? 'pointer' : 'grab'
@@ -692,16 +729,16 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     }
                                 }}
                             >
-                                {/* --- Enhanced Lighting System --- */}
+                                {/* --- Enhanced Lighting System for warm light theme --- */}
 
-                                {/* Ambient base light — neutral warm for light bg */}
-                                <ambientLight intensity={1.0} color="#f0f0f2" />
+                                {/* Ambient base light — warm tone */}
+                                <ambientLight intensity={1.1} color="#FFF8F0" />
 
                                 {/* Key Light - bright directional with shadows */}
                                 <directionalLight
                                     position={[5, 12, 8]}
-                                    intensity={1.2}
-                                    color="#f7f8fb"
+                                    intensity={1.3}
+                                    color="#FFFAF5"
                                     castShadow
                                     shadow-mapSize={[2048, 2048]}
                                     shadow-camera-far={50}
@@ -713,34 +750,34 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     shadow-radius={3}
                                 />
 
-                                {/* Fill Light - cool soft light */}
+                                {/* Fill Light - soft violet tinted */}
                                 <directionalLight
                                     position={[-8, 6, 4]}
-                                    intensity={0.5}
-                                    color="#dce4ee"
+                                    intensity={0.4}
+                                    color="#E8E0F0"
                                 />
 
                                 {/* Rim Light - back light for edge definition */}
                                 <directionalLight
                                     position={[0, 3, -10]}
-                                    intensity={0.5}
-                                    color="#c8d4e0"
+                                    intensity={0.45}
+                                    color="#F0E8E0"
                                 />
 
-                                {/* Accent Light 1 */}
+                                {/* Accent Light 1 — subtle violet */}
                                 <pointLight
                                     position={[3, 4, 3]}
-                                    intensity={0.35}
-                                    color="#f0f0f5"
+                                    intensity={0.3}
+                                    color="#EDE9FE"
                                     distance={15}
                                     decay={2}
                                 />
 
-                                {/* Accent Light 2 */}
+                                {/* Accent Light 2 — warm */}
                                 <pointLight
                                     position={[-4, 3, -2]}
-                                    intensity={0.25}
-                                    color="#d8e0ea"
+                                    intensity={0.2}
+                                    color="#FEF3E8"
                                     distance={12}
                                     decay={2}
                                 />
@@ -752,21 +789,21 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     receiveShadow
                                 >
                                     <planeGeometry args={[50, 50]} />
-                                    <shadowMaterial opacity={0.12} />
+                                    <shadowMaterial opacity={0.08} />
                                 </mesh>
 
-                                {/* --- Subtle Grid --- */}
+                                {/* --- Subtle Grid — warm tones --- */}
                                 <gridHelper
-                                    args={[40, 40, "#d2d2d7", "#e5e5ea"]}
+                                    args={[40, 40, "#E4E0DC", "#EBE8E4"]}
                                     position={[0, -0.15, 0]}
                                 />
                                 <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, 0]}>
                                     <planeGeometry args={[40, 40, 40, 40]} />
                                     <meshBasicMaterial
-                                        color="#d2d2d7"
+                                        color="#D4D0CC"
                                         wireframe
                                         transparent
-                                        opacity={0.15}
+                                        opacity={0.12}
                                     />
                                 </mesh>
 
@@ -809,13 +846,14 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     <button
                                         onClick={navigatePrev}
                                         disabled={safeCurrentModuleIndex === 0}
-                                        className={`absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${
+                                        className={`absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${
                                             safeCurrentModuleIndex === 0
                                                 ? "opacity-30 cursor-default"
-                                                : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
+                                                : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
                                         }`}
+                                        style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
                                     >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#18181B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="15 18 9 12 15 6" />
                                         </svg>
                                     </button>
@@ -824,33 +862,48 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     <button
                                         onClick={navigateNext}
                                         disabled={safeCurrentModuleIndex === modules.length - 1}
-                                        className={`absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/60 shadow-sm transition-all duration-200 ${
+                                        className={`absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${
                                             safeCurrentModuleIndex === modules.length - 1
                                                 ? "opacity-30 cursor-default"
-                                                : "hover:bg-white hover:shadow-md active:scale-95 cursor-pointer"
+                                                : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
                                         }`}
+                                        style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
                                     >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d1d1f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#18181B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <polyline points="9 18 15 12 9 6" />
                                         </svg>
                                     </button>
 
-                                    {/* Module indicator dots */}
-                                    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200/60 shadow-sm">
+                                    {/* Module indicator pills */}
+                                    <div 
+                                        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-[#E4E4E7]"
+                                        style={{ boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+                                    >
                                         {modules.map((mod, i) => (
                                             <button
                                                 key={mod.deviceId || mod.id}
                                                 onClick={() => handleModuleChange(i)}
-                                                className={`flex items-center gap-2 transition-all duration-200 ${
-                                                    i === safeCurrentModuleIndex ? "opacity-100" : "opacity-40 hover:opacity-70"
+                                                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-none ${
+                                                    i === safeCurrentModuleIndex 
+                                                        ? "bg-[#7C3AED]/10" 
+                                                        : "bg-transparent hover:bg-[#F4F4F5]"
                                                 }`}
                                             >
                                                 <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                                    i === safeCurrentModuleIndex ? "bg-[#0071E3] scale-125" : "bg-gray-400"
-                                                }`} />
-                                                <span className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
-                                                    i === safeCurrentModuleIndex ? "text-[#1d1d1f]" : "text-gray-400"
-                                                }`}>
+                                                    i === safeCurrentModuleIndex 
+                                                        ? "bg-[#7C3AED] scale-110" 
+                                                        : "bg-[#A1A1AA]"
+                                                }`}
+                                                style={i === safeCurrentModuleIndex ? {
+                                                    boxShadow: '0 0 8px rgba(124, 58, 237, 0.4)'
+                                                } : {}}
+                                                />
+                                                <span 
+                                                    className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
+                                                        i === safeCurrentModuleIndex ? "text-[#18181B]" : "text-[#A1A1AA]"
+                                                    }`}
+                                                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                                                >
                                                     {mod.name}
                                                 </span>
                                             </button>
@@ -861,7 +914,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                         </div>
 
                         {/* Right Sidebar (Inspector) */}
-                        <div className="flex flex-col w-[300px] h-full shrink-0">
+                        <div className="flex flex-col w-[320px] h-full shrink-0">
                             <div className="flex-1 overflow-auto">
                                 {viewMode === '3d' ? (
                                     <ButtonMappingsPanel
