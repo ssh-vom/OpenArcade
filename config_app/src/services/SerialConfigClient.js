@@ -140,6 +140,80 @@ export default class SerialConfigClient {
         return response;
     }
 
+    async listProfiles(deviceId) {
+        const response = await this.sendCommand({
+            cmd: "list_profiles",
+            device_id: deviceId,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || `list_profiles_failed:${JSON.stringify(response)}`);
+        }
+        return response.profiles || [];
+    }
+
+    async createProfile(deviceId, name, plateId = "button-module-v1") {
+        const response = await this.sendCommand({
+            cmd: "create_profile",
+            device_id: deviceId,
+            name,
+            plate_id: plateId,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || `create_profile_failed:${JSON.stringify(response)}`);
+        }
+        return response.profile;
+    }
+
+    async deleteProfile(deviceId, profileId) {
+        const response = await this.sendCommand({
+            cmd: "delete_profile",
+            device_id: deviceId,
+            profile_id: profileId,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || `delete_profile_failed:${JSON.stringify(response)}`);
+        }
+        return response;
+    }
+
+    async setActiveProfile(deviceId, profileId) {
+        const response = await this.sendCommand({
+            cmd: "set_active_profile",
+            device_id: deviceId,
+            profile_id: profileId,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || `set_active_profile_failed:${JSON.stringify(response)}`);
+        }
+        return response.device || null;
+    }
+
+    async renameProfile(deviceId, profileId, name) {
+        const response = await this.sendCommand({
+            cmd: "rename_profile",
+            device_id: deviceId,
+            profile_id: profileId,
+            name,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || `rename_profile_failed:${JSON.stringify(response)}`);
+        }
+        return response;
+    }
+
+    async setProfilePlate(deviceId, profileId, plateId) {
+        const response = await this.sendCommand({
+            cmd: "set_profile_plate",
+            device_id: deviceId,
+            profile_id: profileId,
+            plate_id: plateId,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || `set_profile_plate_failed:${JSON.stringify(response)}`);
+        }
+        return response;
+    }
+
     _startReadLoop() {
         if (this._readLoopRunning || !this.reader) {
             return;

@@ -12,6 +12,7 @@ import ProfilesPanel from "./ProfilesPanel.jsx";
 import LiveInputPanel from "./LiveInputPanel.jsx";
 import MockConfigClient from "../services/MockConfigClient.js";
 import ControllerHUD from "./ControllerHUD.jsx";
+import plateCatalog from "@shared/plate_catalog.json";
 import * as THREE from "three";
 import {
     DEFAULT_LAYOUT,
@@ -21,10 +22,13 @@ import {
     getKeycodeForInput,
 } from "../services/HIDManager.js";
 
+const PLATE_CATALOG = Object.fromEntries(plateCatalog.plates.map((p) => [p.id, p]));
+
 // Preload GLBs with texture generation
 useGLTF.preload("/OpenArcadeAssy_v2.glb");
 useGLTF.preload("/RevFinalJoystickModule_2026-03-15.glb");
-
+useGLTF.preload("/TP_L_8ButtonA1.glb");
+useGLTF.preload("/TP_R_8ButtonA1.glb");
 
 // Camera Setter Component
 function CameraSetter({ viewMode, currentModulePosition }) {
@@ -157,7 +161,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [mappingStatus, setMappingStatus] = useState(null);
     const [pressedControlIds, setPressedControlIds] = useState([]);
     const [pressedButtons, setPressedButtons] = useState([]);
+    const [activeProfile, setActiveProfile] = useState(null);
+    const [profilesRefreshKey, setProfilesRefreshKey] = useState(0);
 
+    const triggerProfileRefresh = useCallback(() => setProfilesRefreshKey((k) => k + 1), []);
     useEffect(() => {
         const timer = setTimeout(() => setLoaded(true), 50);
         return () => clearTimeout(timer);
@@ -167,7 +174,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const previousPressedControlIdsRef = useRef(new Set());
     const livePollInFlightRef = useRef(false);
     const sourceBindingInFlightRef = useRef(false);
-
+    const hasLoadedRef = useRef(false);
     // Preload textures to eliminate WebGL warnings
     useEffect(() => {
         // Force texture generation to prevent lazy initialization warnings
@@ -231,12 +238,14 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             const uiLayout = deviceConfig?.ui?.layout;
             const hasLayout = uiLayout && Object.keys(uiLayout).length > 0;
             const layout = hasLayout ? uiLayout : defaultLayout;
-            const model = typeof deviceConfig?.ui?.model === "string"
-                ? deviceConfig.ui.model.toLowerCase()
-                : null;
-            const mode = deviceConfig?.active_mode || "keyboard";
-            const mappingConfig = deviceConfig?.modes?.[mode]?.mapping || {};
-
+            const profiles = deviceConfig?.profiles || {};
+            const activeProfileId = deviceConfig?.active_profile;
+            const deviceActiveProfile = activeProfileId ? profiles[activeProfileId] : null;
+            const mode = deviceActiveProfile?.active_mode || "keyboard";
+            const mappingConfig = deviceActiveProfile?.modes?.[mode]?.mapping || {};
+            const plateId = deviceActiveProfile?.plate_id || "button-module-v1";
+            const plateEntry = PLATE_CATALOG[plateId];
+            const resolvedPath = plateEntry?.controller_model || "/OpenArcadeAssy_v2.glb";
             const reverseLayout = Object.entries(layout).reduce((acc, [buttonName, controlId]) => {
                 acc[String(controlId)] = buttonName;
                 return acc;
@@ -259,13 +268,11 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 };
             });
 
-            const isJoystickModel = model && (model === "joystick" || model.includes("joy"));
-
             return {
                 id: deviceId,
                 name: deviceConfig?.name || deviceId,
                 deviceId,
-                path: isJoystickModel ? "/RevFinalJoystickModule_2026-03-15.glb" : "/OpenArcadeAssy_v2.glb",
+                path: resolvedPath,
                 mappings,
                 position: positions[index % positions.length],
                 deviceLayout: layout,
@@ -277,14 +284,24 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             setModules(nextModules);
             const nextIndex = nextModules.findIndex((module) => module.deviceId === selectedDeviceId);
             setCurrentModuleIndex(nextIndex >= 0 ? nextIndex : 0);
+
+            const selectedEntry = entriesToRender.find(([id]) => id === selectedDeviceId) || entriesToRender[0];
+            if (selectedEntry) {
+                const [, selectedConfig] = selectedEntry;
+                const profMap = selectedConfig?.profiles || {};
+                const apId = selectedConfig?.active_profile;
+                setActiveProfile(apId && profMap[apId] ? profMap[apId] : null);
+            } else {
+                setActiveProfile(null);
+            }
             return;
         }
 
         setModules(defaultModules);
         const fallbackIndex = defaultModules.findIndex((module) => module.deviceId === selectedDeviceId);
         setCurrentModuleIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
-    }, [defaultLayout, getInputForKeycode]);
-
+        setActiveProfile(null);
+    }, [defaultLayout, getInputForKeycode, getInputLabel]);
     const refreshDevices = useCallback(async () => {
         const devices = await activeClient.listDevices();
         applyDeviceConfigs(devices);
@@ -296,6 +313,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         const loadDevices = async () => {
             try {
                 await refreshDevices();
+                hasLoadedRef.current = true;
             } catch (error) {
                 if (!cancelled) {
                     console.warn("Failed to load devices:", error);
@@ -309,6 +327,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         };
     }, [refreshDevices]);
 
+    useEffect(() => {
+        if (!hasLoadedRef.current) {
+            return;
+        }
+
+        refreshDevices();
+    }, [safeCurrentModuleIndex, refreshDevices]);
     useEffect(() => {
         if (activeSection === "mappings" && viewMode === "2d") {
             return;
@@ -942,12 +967,20 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                         </div>
                     </>
                 ) : activeSection === "profiles" ? (
-                    <ProfilesPanel />
+                    <ProfilesPanel
+                        deviceId={currentModule?.deviceId || null}
+                        configClient={activeClient}
+                        activeProfile={activeProfile}
+                        refreshKey={profilesRefreshKey}
+                        onProfileChanged={() => {
+                            triggerProfileRefresh();
+                            refreshDevices();
+                        }}
+                    />
                 ) : (
                     <LiveInputPanel />
                 )}
             </div>
-
             {/* Modal Layer */}
             {selectedButton && (
                 viewMode === '3d' ? (

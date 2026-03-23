@@ -115,6 +115,91 @@ def _handle_set_ui_binding(
     return {"ok": True, "device": device}
 
 
+def _handle_list_profiles(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    if not device_id:
+        return {"ok": False, "error": "missing_device_id"}
+    profiles = store.list_profiles(device_id)
+    return {"ok": True, "profiles": profiles}
+
+
+def _handle_create_profile(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    name = message.get("name")
+    plate_id = message.get("plate_id") or "button-module-v1"
+    if not device_id or not name:
+        return {"ok": False, "error": "missing_fields"}
+    profile = store.create_profile(device_id, name, plate_id)
+    store.save()
+    return {"ok": True, "profile": profile}
+
+
+def _handle_delete_profile(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    profile_id = message.get("profile_id")
+    if not device_id or not profile_id:
+        return {"ok": False, "error": "missing_fields"}
+    try:
+        store.delete_profile(device_id, profile_id)
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+    store.save()
+    return {"ok": True}
+
+
+def _handle_set_active_profile(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    profile_id = message.get("profile_id")
+    if not device_id or not profile_id:
+        return {"ok": False, "error": "missing_fields"}
+    try:
+        device = store.set_active_profile(device_id, profile_id)
+    except KeyError:
+        return {"ok": False, "error": "profile_not_found"}
+    store.save()
+    return {"ok": True, "device": device}
+
+
+def _handle_rename_profile(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    profile_id = message.get("profile_id")
+    name = message.get("name")
+    if not device_id or not profile_id or not name:
+        return {"ok": False, "error": "missing_fields"}
+    try:
+        store.rename_profile(device_id, profile_id, name)
+    except KeyError:
+        return {"ok": False, "error": "profile_not_found"}
+    store.save()
+    return {"ok": True}
+
+
+def _handle_set_profile_plate(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    profile_id = message.get("profile_id")
+    plate_id = message.get("plate_id")
+    if not device_id or not profile_id or not plate_id:
+        return {"ok": False, "error": "missing_fields"}
+    try:
+        store.set_profile_plate(device_id, profile_id, plate_id)
+    except KeyError:
+        return {"ok": False, "error": "profile_not_found"}
+    store.save()
+    return {"ok": True}
+
+
 def _handle_get_live_state(
     store: DeviceConfigStore, message: dict[str, Any]
 ) -> dict[str, Any]:
@@ -169,6 +254,12 @@ COMMAND_HANDLERS = {
     "set_mapping": _handle_set_mapping,
     "set_active_mode": _handle_set_active_mode,
     "set_ui_binding": _handle_set_ui_binding,
+    "list_profiles": _handle_list_profiles,
+    "create_profile": _handle_create_profile,
+    "delete_profile": _handle_delete_profile,
+    "set_active_profile": _handle_set_active_profile,
+    "rename_profile": _handle_rename_profile,
+    "set_profile_plate": _handle_set_profile_plate,
     "set_last_seen": _handle_set_last_seen,
 }
 
@@ -176,6 +267,7 @@ RUNTIME_UPDATE_COMMANDS = {
     "set_descriptor",
     "set_mapping",
     "set_active_mode",
+    "set_active_profile",
 }
 
 
