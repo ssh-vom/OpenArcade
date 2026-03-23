@@ -2,7 +2,7 @@
 
 OpenArcade is deployed on the Pi as four native systemd services:
 
-- openarcade-gadget.service    — one-shot USB gadget setup (dwc2 / HID + CDC descriptors)
+- openarcade-gadget.service    — one-shot USB gadget setup (dwc2 / HID + CDC + USB Ethernet descriptors)
 - openarcade-subscriber.service — async BLE to HID runtime with HID output worker
 - openarcade-configd.service   — USB serial configuration service on /dev/ttyGS0
 - openarcade-display.service   — I2C SSD1306 status display (module count + Pi temp)
@@ -20,6 +20,7 @@ The installer:
 - stores persistent config in /var/lib/openarcade/config.json
 - installs systemd unit files into /etc/systemd/system and enables them
 - enables the dwc2 overlay, enables I2C, and loads libcomposite
+- installs and enables SSH + mDNS (avahi-daemon), and sets hostname from `OPENARCADE_HOSTNAME`
 
 If the installer enables dwc2 or I2C for the first time, reboot once after install.
 
@@ -40,6 +41,11 @@ app directory and restart all services cleanly.
     systemctl status openarcade-subscriber.service
     systemctl status openarcade-configd.service
     systemctl status openarcade-display.service
+
+### SSH over USB
+The gadget service creates HID + serial + USB Ethernet functions. On macOS/Linux hosts,
+you should see a new USB network interface when the Pi data port is connected. The default
+hostname is `thiscoolpi.local` (configured by `OPENARCADE_HOSTNAME` in the env file).
 
 ### Live logs
     journalctl -u openarcade-subscriber.service -f

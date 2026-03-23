@@ -13,6 +13,7 @@ ENV_TEMPLATE_FILE="$SCRIPT_DIR/openarcade.env.example"
 ENV_OVERRIDE_FILE="$SCRIPT_DIR/openarcade.env"
 MODULES_FILE="/etc/modules-load.d/openarcade-gadget.conf"
 SYSTEMD_DIR="/etc/systemd/system"
+DEFAULT_HOSTNAME="thiscoolpi"
 BOOT_CONFIG=""
 REBOOT_REQUIRED=0
 
@@ -72,10 +73,47 @@ EOF
 install_os_packages() {
     apt-get update
     apt-get install -y --no-install-recommends \
+        avahi-daemon \
         bluez \
+        openssh-server \
         python3 \
         python3-pip \
         python3-venv
+}
+
+read_hostname_from_env() {
+    local hostname_value="$DEFAULT_HOSTNAME"
+    local line
+
+    if [[ -f "$ENV_FILE" ]]; then
+        while IFS= read -r line; do
+            if [[ "$line" == OPENARCADE_HOSTNAME=* ]]; then
+                hostname_value="${line#OPENARCADE_HOSTNAME=}"
+            fi
+        done < "$ENV_FILE"
+    fi
+
+    printf '%s' "$hostname_value"
+}
+
+ensure_hostname() {
+    local desired_hostname
+    desired_hostname="$(read_hostname_from_env)"
+
+    if [[ -z "$desired_hostname" ]]; then
+        desired_hostname="$DEFAULT_HOSTNAME"
+    fi
+
+    if [[ "$(hostnamectl --static)" == "$desired_hostname" ]]; then
+        return
+    fi
+
+    hostnamectl set-hostname "$desired_hostname"
+}
+
+ensure_base_services() {
+    systemctl enable avahi-daemon ssh
+    systemctl restart avahi-daemon ssh
 }
 
 copy_repo_tree() {
@@ -196,7 +234,9 @@ main() {
     setup_python_env
     setup_state_dir
     install_env_file
+    ensure_hostname
     install_systemd_units
+    ensure_base_services
     start_services_if_ready
     print_summary
 }
