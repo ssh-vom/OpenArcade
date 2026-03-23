@@ -32,6 +32,50 @@ def write_line(fd: int, payload: dict[str, Any]) -> None:
     os.write(fd, data.encode("utf-8"))
 
 
+def _normalize_device_id(device_id: Any) -> str:
+    if not isinstance(device_id, str):
+        return ""
+    return "".join(ch for ch in device_id.strip().upper() if ch.isalnum())
+
+
+def _build_connected_lookup(live_connected_devices: set[str]) -> set[str]:
+    connected_lookup: set[str] = set()
+    for live_device_id in live_connected_devices:
+        normalized = _normalize_device_id(live_device_id)
+        if normalized:
+            connected_lookup.add(normalized)
+    return connected_lookup
+
+
+def _persist_missing_live_devices(
+    store: DeviceConfigStore,
+    live_connected_devices: set[str],
+) -> None:
+    data = store.get_all()
+    devices = data.get("devices", {})
+    if not isinstance(devices, dict):
+        devices = {}
+
+    known_ids: set[str] = set()
+    for device_id in devices:
+        normalized = _normalize_device_id(device_id)
+        if normalized:
+            known_ids.add(normalized)
+
+    added_new_device = False
+    for live_device_id in sorted(live_connected_devices):
+        normalized = _normalize_device_id(live_device_id)
+        if not normalized or normalized in known_ids:
+            continue
+
+        store.upsert_device(live_device_id)
+        known_ids.add(normalized)
+        added_new_device = True
+
+    if added_new_device:
+        store.save()
+
+
 def _handle_ping(_store: DeviceConfigStore, _message: dict[str, Any]) -> dict[str, Any]:
     return {"ok": True, "reply": "pong"}
 
@@ -39,13 +83,22 @@ def _handle_ping(_store: DeviceConfigStore, _message: dict[str, Any]) -> dict[st
 def _handle_list_devices(
     store: DeviceConfigStore, _message: dict[str, Any]
 ) -> dict[str, Any]:
+    live_connected_devices = {
+        device_id
+        for device_id in get_connected_devices()
+        if isinstance(device_id, str) and device_id.strip()
+    }
+    _persist_missing_live_devices(store, live_connected_devices)
+
     data = store.get_all()
-    live_connected_devices = get_connected_devices()
     devices = data.get("devices", {})
+    connected_lookup = _build_connected_lookup(live_connected_devices)
     if isinstance(devices, dict):
         for device_id, device in devices.items():
             if isinstance(device, dict):
-                device["connected"] = device_id in live_connected_devices
+                device["connected"] = (
+                    _normalize_device_id(device_id) in connected_lookup
+                )
     return {"ok": True, "devices": devices}
 
 
@@ -57,8 +110,9 @@ def _handle_get_device(
         return {"ok": False, "error": "missing_device_id"}
 
     device = store.get_device(device_id)
+    connected_lookup = _build_connected_lookup(get_connected_devices())
     if isinstance(device, dict):
-        device["connected"] = device_id in get_connected_devices()
+        device["connected"] = _normalize_device_id(device_id) in connected_lookup
     return {"ok": True, "device": device}
 
 
@@ -232,11 +286,13 @@ def _handle_get_live_state(
         if ((raw_state >> bit_index) & 1) == 1
     ]
 
+    connected_lookup = _build_connected_lookup(get_connected_devices())
+
     return {
         "ok": True,
         "live_state": {
             "device_id": device_id,
-            "connected": device_id in get_connected_devices(),
+            "connected": _normalize_device_id(device_id) in connected_lookup,
             "raw_state": raw_state,
             "pressed_bits": pressed_bits,
             "pressed_control_ids": get_pressed_control_ids(device, raw_state),
