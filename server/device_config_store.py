@@ -12,6 +12,27 @@ from typing import Any
 OPENARCADE_CONFIG_PATH_ENV_VAR = "OPENARCADE_CONFIG_PATH"
 LEGACY_DEVICE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 
+DEFAULT_UI_LAYOUT = {
+    "button_1": "1",
+    "button_2": "2",
+    "button_3": "3",
+    "button_4": "4",
+    "button_5": "5",
+    "button_6": "6",
+    "button_7": "7",
+    "button_8": "8",
+    "button_start": "14",
+    "button_bt": "15",
+    "js_u": "16",
+    "js_d": "17",
+    "js_l": "18",
+    "js_r": "19",
+    "small_1": "20",
+    "small_2": "21",
+    "small_3": "22",
+    "small_4": "23",
+}
+
 
 def resolve_default_config_path() -> str:
     return os.environ.get(OPENARCADE_CONFIG_PATH_ENV_VAR, LEGACY_DEVICE_CONFIG_PATH)
@@ -33,6 +54,71 @@ class DeviceConfigStore:
             "gamepad": {"output": "hid_gamepad", "mapping": {}},
         }
 
+    def _normalize_control_id(self, control_id: Any) -> str | None:
+        if control_id is None:
+            return None
+        if isinstance(control_id, str):
+            normalized = control_id.strip()
+            return normalized or None
+        if isinstance(control_id, int):
+            return str(control_id)
+        return None
+
+    def _apply_layout_binding(
+        self,
+        layout: dict[str, str | None],
+        ui_button: str,
+        control_id: str | None,
+        strategy: str = "override",
+    ) -> None:
+        if not isinstance(ui_button, str):
+            return
+
+        previous_control_id = layout.get(ui_button)
+        existing_button = None
+
+        if control_id is not None:
+            for button_name, assigned_control_id in layout.items():
+                if button_name == ui_button:
+                    continue
+                if assigned_control_id == control_id:
+                    existing_button = button_name
+                    break
+
+        if existing_button is not None:
+            if strategy == "swap":
+                layout[existing_button] = previous_control_id
+            else:
+                layout[existing_button] = None
+
+        layout[ui_button] = control_id
+
+    def _normalize_layout(
+        self,
+        layout: dict[str, Any] | None,
+    ) -> dict[str, str | None]:
+        normalized_layout: dict[str, str | None] = {
+            button_name: str(control_id)
+            for button_name, control_id in DEFAULT_UI_LAYOUT.items()
+        }
+
+        if not isinstance(layout, dict):
+            return normalized_layout
+
+        for button_name, raw_control_id in layout.items():
+            if not isinstance(button_name, str):
+                continue
+
+            normalized_control_id = self._normalize_control_id(raw_control_id)
+            self._apply_layout_binding(
+                normalized_layout,
+                button_name,
+                normalized_control_id,
+                strategy="override",
+            )
+
+        return normalized_layout
+
     def _make_profile(
         self,
         profile_id: str,
@@ -47,23 +133,29 @@ class DeviceConfigStore:
             "name": name,
             "plate_id": plate_id,
             "active_mode": active_mode,
-            "modes": deepcopy(modes) if isinstance(modes, dict) else self._default_modes(),
-            "ui": {"layout": deepcopy(layout) if isinstance(layout, dict) else {}},
+            "modes": deepcopy(modes)
+            if isinstance(modes, dict)
+            else self._default_modes(),
+            "ui": {"layout": self._normalize_layout(layout)},
         }
 
     def _normalize_profile_locked(
         self, profile_id: str, profile: dict[str, Any] | None
     ) -> dict[str, Any]:
         source = profile if isinstance(profile, dict) else {}
-        ui = source.get("ui") if isinstance(source.get("ui"), dict) else {}
-        layout = ui.get("layout") if isinstance(ui.get("layout"), dict) else {}
+        raw_ui = source.get("ui")
+        ui = raw_ui if isinstance(raw_ui, dict) else {}
+        raw_layout = ui.get("layout")
+        layout = raw_layout if isinstance(raw_layout, dict) else {}
 
         normalized = self._make_profile(
             profile_id=profile_id,
             name=str(source.get("name") or "Default"),
             plate_id=str(source.get("plate_id") or "button-module-v1"),
             active_mode=str(source.get("active_mode") or "keyboard"),
-            modes=source.get("modes") if isinstance(source.get("modes"), dict) else None,
+            modes=source.get("modes")
+            if isinstance(source.get("modes"), dict)
+            else None,
             layout=layout,
         )
         normalized["id"] = str(source.get("id") or profile_id)
@@ -83,9 +175,13 @@ class DeviceConfigStore:
 
         if has_v1_fields:
             profile_id = str(uuid.uuid4())
-            raw_ui = device.get("ui") if isinstance(device.get("ui"), dict) else {}
-            layout = raw_ui.get("layout") if isinstance(raw_ui.get("layout"), dict) else {}
-            modes = device.get("modes") if isinstance(device.get("modes"), dict) else None
+            legacy_ui = device.get("ui")
+            raw_ui = legacy_ui if isinstance(legacy_ui, dict) else {}
+            raw_layout = raw_ui.get("layout")
+            layout = raw_layout if isinstance(raw_layout, dict) else {}
+            modes = (
+                device.get("modes") if isinstance(device.get("modes"), dict) else None
+            )
             profile = self._make_profile(
                 profile_id=profile_id,
                 active_mode=str(device.get("active_mode") or "keyboard"),
@@ -203,7 +299,11 @@ class DeviceConfigStore:
             profiles = device.get("profiles")
             if not isinstance(profiles, dict):
                 return []
-            return [deepcopy(profile) for profile in profiles.values() if isinstance(profile, dict)]
+            return [
+                deepcopy(profile)
+                for profile in profiles.values()
+                if isinstance(profile, dict)
+            ]
 
     def get_active_profile(self, device_id: str) -> dict[str, Any] | None:
         with self._lock:
@@ -217,19 +317,19 @@ class DeviceConfigStore:
             profile = device.get("profiles", {}).get(profile_id)
             return deepcopy(profile) if isinstance(profile, dict) else None
 
-    def create_profile(self, device_id: str, name: str, plate_id: str) -> dict[str, Any]:
+    def create_profile(
+        self, device_id: str, name: str, plate_id: str
+    ) -> dict[str, Any]:
         with self._lock:
             device = self._get_or_create_device_locked(device_id)
             active_profile = self._get_active_profile_locked(device_id)
             new_profile_id = str(uuid.uuid4())
 
-            active_ui = (
-                active_profile.get("ui")
-                if isinstance(active_profile.get("ui"), dict)
-                else {}
-            )
+            raw_active_ui = active_profile.get("ui")
+            active_ui = raw_active_ui if isinstance(raw_active_ui, dict) else {}
+            raw_active_layout = active_ui.get("layout")
             active_layout = (
-                active_ui.get("layout") if isinstance(active_ui.get("layout"), dict) else {}
+                raw_active_layout if isinstance(raw_active_layout, dict) else {}
             )
 
             new_profile = self._make_profile(
@@ -267,7 +367,9 @@ class DeviceConfigStore:
             device["active_profile"] = profile_id
             return deepcopy(device)
 
-    def rename_profile(self, device_id: str, profile_id: str, name: str) -> dict[str, Any]:
+    def rename_profile(
+        self, device_id: str, profile_id: str, name: str
+    ) -> dict[str, Any]:
         with self._lock:
             device = self._get_or_create_device_locked(device_id)
             profiles = device.get("profiles")
@@ -311,32 +413,25 @@ class DeviceConfigStore:
         device_id: str,
         ui_button: str,
         control_id: str,
-        strategy: str = "swap",
+        strategy: str = "override",
     ) -> dict[str, Any]:
         with self._lock:
             device = self._get_or_create_device_locked(device_id)
             active_profile = self._get_active_profile_locked(device_id)
 
             ui_config = active_profile.setdefault("ui", {})
-            layout = ui_config.setdefault("layout", {})
-            normalized_control_id = str(control_id)
-            previous_control_id = layout.get(ui_button)
-
-            existing_button = None
-            for button_name, assigned_control_id in layout.items():
-                if button_name == ui_button:
-                    continue
-                if str(assigned_control_id) == normalized_control_id:
-                    existing_button = button_name
-                    break
-
-            if existing_button is not None:
-                if strategy == "swap" and previous_control_id is not None:
-                    layout[existing_button] = previous_control_id
-                else:
-                    layout.pop(existing_button, None)
-
-            layout[ui_button] = normalized_control_id
+            raw_layout = ui_config.get("layout")
+            layout = self._normalize_layout(
+                raw_layout if isinstance(raw_layout, dict) else None
+            )
+            normalized_control_id = self._normalize_control_id(control_id)
+            self._apply_layout_binding(
+                layout,
+                ui_button,
+                normalized_control_id,
+                strategy=strategy,
+            )
+            ui_config["layout"] = layout
             return deepcopy(device)
 
     def _get_or_create_device_locked(self, device_id: str) -> dict[str, Any]:

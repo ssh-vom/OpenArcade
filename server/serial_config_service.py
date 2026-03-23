@@ -172,7 +172,7 @@ def _handle_set_ui_binding(
     device_id = message.get("device_id")
     ui_button = message.get("ui_button")
     control_id = message.get("control_id")
-    strategy = message.get("strategy") or "swap"
+    strategy = message.get("strategy") or "override"
     if not device_id or not ui_button or control_id is None:
         return {"ok": False, "error": "missing_fields"}
 
