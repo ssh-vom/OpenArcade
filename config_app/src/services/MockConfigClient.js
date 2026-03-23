@@ -109,6 +109,14 @@ class MockConfigClient {
         return { ok: true };
     }
 
+    async renameDevice(deviceId, name) {
+        const device = this._ensureDevice(deviceId);
+        device.name = name.trim();
+        device.last_seen = new Date().toISOString();
+        this._save();
+        return { ok: true };
+    }
+
     _getActiveProfile(device) {
         return device?.profiles?.[device.active_profile] || null;
     }

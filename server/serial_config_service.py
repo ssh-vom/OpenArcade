@@ -74,6 +74,18 @@ def _handle_set_descriptor(
     return {"ok": True}
 
 
+def _handle_set_device_name(
+    store: DeviceConfigStore, message: dict[str, Any]
+) -> dict[str, Any]:
+    device_id = message.get("device_id")
+    name = message.get("name")
+    if not device_id or not isinstance(name, str) or not name.strip():
+        return {"ok": False, "error": "missing_fields"}
+    store.set_device_name(device_id, name)
+    store.save()
+    return {"ok": True}
+
+
 def _handle_set_mapping(
     store: DeviceConfigStore, message: dict[str, Any]
 ) -> dict[str, Any]:
@@ -251,6 +263,7 @@ COMMAND_HANDLERS = {
     "get_device": _handle_get_device,
     "get_live_state": _handle_get_live_state,
     "set_descriptor": _handle_set_descriptor,
+    "set_device_name": _handle_set_device_name,
     "set_mapping": _handle_set_mapping,
     "set_active_mode": _handle_set_active_mode,
     "set_ui_binding": _handle_set_ui_binding,

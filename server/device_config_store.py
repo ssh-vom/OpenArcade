@@ -191,6 +191,10 @@ class DeviceConfigStore:
     ) -> dict[str, Any]:
         return self.upsert_device(device_id, {"descriptor": descriptor})
 
+    def set_device_name(self, device_id: str, name: str) -> dict[str, Any]:
+        """Set a human-readable nickname for a device. Stored at the device root."""
+        return self.upsert_device(device_id, {"name": name.strip()})
+
     def list_profiles(self, device_id: str) -> list[dict[str, Any]]:
         with self._lock:
             device = self._data.get("devices", {}).get(device_id)

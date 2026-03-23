@@ -140,6 +140,18 @@ export default class SerialConfigClient {
         return response;
     }
 
+    async renameDevice(deviceId, name) {
+        const response = await this.sendCommand({
+            cmd: "set_device_name",
+            device_id: deviceId,
+            name,
+        });
+        if (!response.ok) {
+            throw new Error(response.error || "set_device_name_failed");
+        }
+        return response;
+    }
+
     async listProfiles(deviceId) {
         const response = await this.sendCommand({
             cmd: "list_profiles",
