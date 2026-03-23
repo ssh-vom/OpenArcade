@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any
 
 from bleak import BleakScanner
 
 
 TARGET_DEVICE_NAME = "NimBLE_GATT"
+
+logger = logging.getLogger("OpenArcade")
 
 
 class DiscoveryService:
@@ -17,12 +20,23 @@ class DiscoveryService:
 
     async def start(self) -> None:
         self._loop = asyncio.get_running_loop()
-        self._scanner = BleakScanner(detection_callback=self._handle_detection)
-        await self._scanner.start()
+        try:
+            self._scanner = BleakScanner(
+                detection_callback=self._handle_detection,
+                bluez={"or_patterns": []},
+            )
+            await self._scanner.start()
+            logger.info("BLE scanner started")
+        except Exception as exc:
+            logger.error("Failed to start BLE scanner: %s", exc)
+            raise
 
     async def stop(self) -> None:
         if self._scanner is not None:
-            await self._scanner.stop()
+            try:
+                await self._scanner.stop()
+            except Exception as exc:
+                logger.warning("BLE scanner stop error: %s", exc)
 
     def _handle_detection(self, device: Any, advertisement_data: Any) -> None:
         name = device.name or getattr(advertisement_data, "local_name", None)

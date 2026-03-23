@@ -100,11 +100,22 @@ def build_mapping(
     device_config: Mapping[str, Any],
     default_controls: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[int, int]:
-    active_mode = device_config.get("active_mode") or "keyboard"
+    profiles = device_config.get("profiles") or {}
+    active_profile_id = device_config.get("active_profile")
+    active_profile = profiles.get(active_profile_id) if active_profile_id else None
+
+    if active_profile is not None:
+        active_mode = active_profile.get("active_mode") or "keyboard"
+        mapping_config = (
+            active_profile.get("modes", {}).get(active_mode, {}).get("mapping", {})
+        )
+    else:
+        active_mode = device_config.get("active_mode") or "keyboard"
+        mapping_config = (
+            device_config.get("modes", {}).get(active_mode, {}).get("mapping", {})
+        )
+
     controls = get_device_controls(device_config, default_controls)
-    mapping_config = (
-        device_config.get("modes", {}).get(active_mode, {}).get("mapping", {})
-    )
 
     mapping: dict[int, int] = {}
     for control in controls:

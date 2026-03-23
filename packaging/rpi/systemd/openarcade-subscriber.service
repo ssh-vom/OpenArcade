@@ -1,5 +1,5 @@
 [Unit]
-Description=OpenArcade BLE runtime
+Description=OpenArcade BLE to HID runtime
 Requires=openarcade-gadget.service
 After=openarcade-gadget.service bluetooth.target
 Wants=bluetooth.target
@@ -8,11 +8,13 @@ Wants=bluetooth.target
 Type=simple
 EnvironmentFile=-/etc/openarcade/openarcade.env
 WorkingDirectory=/opt/openarcade/app/server
-ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/runtime_main.py
+ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/runtime_main.py --config $OPENARCADE_CONFIG_PATH
 Restart=on-failure
-RestartSec=2
+RestartSec=5
 KillMode=mixed
 TimeoutStopSec=15
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
 
 [Install]
 WantedBy=multi-user.target
