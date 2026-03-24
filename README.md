@@ -105,12 +105,6 @@ Open the 3D configurator to visualize module arrangements and plan your controll
 | CAD | Autodesk Inventor |
 | 3D printing | Bambu Studio / PrusaSlicer |
 
-## Project status
-
-OpenArcade is a university mechatronics project (McMaster University, MECHTRON 4TB6). Current milestone: Rev 0 system validation.
-
-See the `Deliverables/` folder for complete system design documentation, hazard analysis, and development process.
-
 ## License
 
 See individual component licenses.
