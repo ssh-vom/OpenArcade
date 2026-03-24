@@ -31,6 +31,11 @@ Response includes all devices in the config store.
 { "cmd": "get_device", "device_id": "AA:BB:CC:DD:EE:FF" }
 ```
 
+### `get_live_state`
+```json
+{ "cmd": "get_live_state", "device_id": "AA:BB:CC:DD:EE:FF" }
+```
+
 ### `set_descriptor`
 ```json
 { "cmd": "set_descriptor", "device_id": "AA:BB:CC:DD:EE:FF", "descriptor": { ... } }
@@ -44,6 +49,17 @@ Response includes all devices in the config store.
   "mode": "keyboard",
   "control_id": "1",
   "mapping": { "keycode": "HID_KEY_Z" }
+}
+```
+
+### `set_ui_binding`
+```json
+{
+  "cmd": "set_ui_binding",
+  "device_id": "AA:BB:CC:DD:EE:FF",
+  "ui_button": "button_1",
+  "control_id": "2",
+  "strategy": "swap"
 }
 ```
 

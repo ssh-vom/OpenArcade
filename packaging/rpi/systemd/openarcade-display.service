@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenArcade parent display service
+After=openarcade-subscriber.service
+Wants=openarcade-subscriber.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openarcade/openarcade.env
+WorkingDirectory=/opt/openarcade/app/server
+ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/display_status_service.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

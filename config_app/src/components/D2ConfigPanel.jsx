@@ -1,6 +1,21 @@
 import { HID_INPUT_TYPES } from "../services/HIDManager.js";
 
-export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, onClearAll, moduleId, onSaveToDevice, isConnected = true }) {
+export default function D2ConfigPanel({
+    mappings,
+    moduleName,
+    onSelectButton,
+    onClearAll,
+    moduleId,
+    onSaveToDevice,
+    isConnected = true,
+    isMappingMode = false,
+    armedButton = null,
+    pressedButtons = [],
+    onToggleMappingMode,
+    mappingStatus = null,
+}) {
+    const pressedButtonSet = new Set(pressedButtons);
+
     // Group mappings by input type
     const groupedMappings = Object.entries(mappings).reduce((groups, [buttonName, config]) => {
         const type = config?.type || 'unknown';
@@ -16,20 +31,25 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
             case HID_INPUT_TYPES.GAMEPAD: return 'GP';
             case HID_INPUT_TYPES.KEYBOARD: return 'KB';
             case HID_INPUT_TYPES.ANALOG: return 'AX';
-            default: return 'NA';
+            default: return '—';
         }
     };
 
-    const getTypeTone = (type) => {
+    const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD:
-                return { color: "#d7b15a", border: "rgba(215, 177, 90, 0.3)" };
-            case HID_INPUT_TYPES.KEYBOARD:
-                return { color: "#f0d48a", border: "rgba(240, 212, 138, 0.3)" };
-            case HID_INPUT_TYPES.ANALOG:
-                return { color: "#c08a4a", border: "rgba(192, 138, 74, 0.3)" };
-            default:
-                return { color: "var(--oa-muted)", border: "rgba(154, 144, 126, 0.3)" };
+            case HID_INPUT_TYPES.GAMEPAD: return '#7C3AED';
+            case HID_INPUT_TYPES.KEYBOARD: return '#06B6D4';
+            case HID_INPUT_TYPES.ANALOG: return '#F97316';
+            default: return '#A1A1AA';
+        }
+    };
+
+    const getTypeBgClass = (type) => {
+        switch (type) {
+            case HID_INPUT_TYPES.GAMEPAD: return { bg: 'rgba(124, 58, 237, 0.08)', border: 'rgba(124, 58, 237, 0.2)', text: '#7C3AED' };
+            case HID_INPUT_TYPES.KEYBOARD: return { bg: 'rgba(6, 182, 212, 0.08)', border: 'rgba(6, 182, 212, 0.2)', text: '#06B6D4' };
+            case HID_INPUT_TYPES.ANALOG: return { bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.2)', text: '#F97316' };
+            default: return { bg: '#F4F4F5', border: '#E4E4E7', text: '#A1A1AA' };
         }
     };
 
@@ -43,204 +63,295 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
     };
 
     return (
-        <>
-        <div style={{
-            width: "300px",
-            height: "100%",
-            background: "linear-gradient(180deg, rgba(18, 24, 32, 0.96) 0%, rgba(10, 14, 19, 0.92) 100%)",
-            borderLeft: "1px solid var(--oa-panel-border)",
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 10,
-            flexShrink: 0,
-            animation: "slideInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both",
-            backdropFilter: "blur(10px)",
-            boxShadow: "var(--oa-shadow-soft)",
-        }}>
-            {/* Header */}
-            <div style={{
-                padding: "20px",
-                borderBottom: "1px solid var(--oa-panel-border)",
-                background: "transparent",
-            }}>
-                <div style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "var(--oa-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "8px",
-                }}>
-                    HID Configuration
+        <div 
+            className="w-[320px] h-full bg-white flex flex-col shrink-0 animate-slide-in-right"
+            style={{
+                borderLeft: '1px solid #E4E4E7',
+            }}
+        >
+            {/* Header Section */}
+            <div className="p-6 pb-5">
+                {/* Label + Title */}
+                <div className="mb-5">
+                    <div 
+                        className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.12em] mb-1.5"
+                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                    >
+                        Configuration
+                    </div>
+                    <h3 
+                        className="m-0 text-xl font-semibold text-[#18181B] tracking-tight"
+                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    >
+                        {moduleName}
+                    </h3>
                 </div>
-                <h3 style={{
-                    margin: 0,
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    color: "var(--oa-text)",
-                }}>
-                    {moduleName}
-                </h3>
-            </div>
 
-            {/* Device Status */}
-            <div style={{
-                padding: "16px 20px",
-                borderBottom: "1px solid var(--oa-panel-border)",
-                background: "rgba(255,255,255,0.02)",
-            }}>
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "12px",
-                }}>
-                    <div style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: isConnected ? "var(--oa-accent)" : "var(--oa-muted)",
-                        animation: isConnected ? "pulse 2s infinite" : "none",
-                    }} />
-                    <span style={{ color: "var(--oa-muted)" }}>
+                {/* Device Status */}
+                <div 
+                    className="px-4 py-3.5 rounded-xl flex items-center gap-3"
+                    style={{
+                        background: isConnected ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
+                        border: isConnected ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid rgba(239, 68, 68, 0.15)'
+                    }}
+                >
+                    <div
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 ${isConnected ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`}
+                        style={isConnected ? { 
+                            animation: 'pulse-dot 2s infinite',
+                            boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)'
+                        } : {}}
+                    />
+                    <span 
+                        className="text-sm font-medium"
+                        style={{ 
+                            fontFamily: "'DM Sans', sans-serif",
+                            color: isConnected ? '#10B981' : '#EF4444'
+                        }}
+                    >
                         {isConnected ? "Device Connected" : "Device Offline"}
                     </span>
                 </div>
             </div>
 
+            {/* Divider */}
+            <div className="mx-6 h-px bg-[#F4F4F5]" />
+
+            {/* Mapping Mode Section */}
+            <div className="p-6">
+                <button
+                    onClick={() => onToggleMappingMode && onToggleMappingMode()}
+                    className={`w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide border-2 transition-all duration-200 cursor-pointer ${
+                        isMappingMode
+                            ? 'bg-[#7C3AED] text-white border-[#7C3AED]'
+                            : 'bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#7C3AED] hover:text-[#7C3AED]'
+                    }`}
+                    style={{ 
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        boxShadow: isMappingMode ? '0 4px 16px rgba(124, 58, 237, 0.3)' : 'none'
+                    }}
+                >
+                    {isMappingMode ? 'Exit Mapping Mode' : 'Enter Mapping Mode'}
+                </button>
+
+                {/* Instructions card */}
+                <div 
+                    className="mt-5 rounded-xl px-5 py-4 text-sm leading-relaxed"
+                    style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        background: '#FAFAFA',
+                        border: '1px solid #F4F4F5',
+                        color: '#52525B'
+                    }}
+                >
+                    {isMappingMode ? (
+                        armedButton ? (
+                            <>
+                                Waiting for physical input for{' '}
+                                <span 
+                                    className="font-semibold px-2 py-1 rounded-md inline-block mt-1"
+                                    style={{ 
+                                        background: 'rgba(124, 58, 237, 0.1)',
+                                        color: '#7C3AED',
+                                        fontFamily: "'IBM Plex Mono', monospace"
+                                    }}
+                                >
+                                    {armedButton}
+                                </span>
+                            </>
+                        ) : (
+                            "Select a UI button, then press the physical button you want to bind."
+                        )
+                    ) : (
+                        "Enable Mapping Mode to rebind physical controls to UI buttons."
+                    )}
+                </div>
+
+                {/* Status message */}
+                {mappingStatus && (
+                    <div 
+                        className="mt-4 rounded-xl px-5 py-3.5 text-sm font-medium"
+                        style={{
+                            fontFamily: "'DM Sans', sans-serif",
+                            background: mappingStatus.type === 'error'
+                                ? 'rgba(239, 68, 68, 0.08)'
+                                : mappingStatus.type === 'success'
+                                    ? 'rgba(16, 185, 129, 0.08)'
+                                    : 'rgba(6, 182, 212, 0.08)',
+                            border: `1px solid ${
+                                mappingStatus.type === 'error'
+                                    ? 'rgba(239, 68, 68, 0.2)'
+                                    : mappingStatus.type === 'success'
+                                        ? 'rgba(16, 185, 129, 0.2)'
+                                        : 'rgba(6, 182, 212, 0.2)'
+                            }`,
+                            color: mappingStatus.type === 'error'
+                                ? '#EF4444'
+                                : mappingStatus.type === 'success'
+                                    ? '#10B981'
+                                    : '#06B6D4'
+                        }}
+                    >
+                        {mappingStatus.message}
+                    </div>
+                )}
+            </div>
+
+            {/* Divider */}
+            <div className="mx-6 h-px bg-[#F4F4F5]" />
+
             {/* Mappings List */}
-            <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
+            <div className="flex-1 p-6 overflow-y-auto panel-scroll">
                 {Object.keys(mappings).length === 0 ? (
-                    <div style={{
-                        padding: "40px 0",
-                        textAlign: "center",
-                        color: "var(--oa-muted)",
-                        fontSize: "13px",
-                        border: "1px dashed var(--oa-panel-border)",
-                        borderRadius: "8px",
-                        background: "rgba(255,255,255,0.02)"
-                    }}>
-                        <div style={{ fontSize: "11px", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "12px" }}>
-                            Awaiting Mapping
+                    <div 
+                        className="py-10 px-6 text-center rounded-2xl"
+                        style={{
+                            background: '#FAFAFA',
+                            border: '2px dashed #E4E4E7'
+                        }}
+                    >
+                        <div 
+                            className="text-[10px] tracking-[0.15em] uppercase mb-2 font-semibold text-[#A1A1AA]"
+                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                        >
+                            No Mappings
                         </div>
-                        No buttons configured.
-                        <br />
-                        <span style={{ fontSize: "11px", color: "var(--oa-muted)", display: "block", marginTop: "8px" }}>
-                            Click a button in the 2D view
-                            <br />to configure HID input.
-                        </span>
+                        <div 
+                            className="text-sm text-[#71717A] leading-relaxed"
+                            style={{ fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                            Click a button in the 2D view<br />to configure HID input.
+                        </div>
                     </div>
                 ) : (
-                    <div>
+                    <div className="space-y-6">
                         {/* Type Groups */}
                         {Object.entries(groupedMappings).map(([type, typeMappings]) => {
-                            const tone = getTypeTone(type);
+                            const typeStyles = getTypeBgClass(type);
+                            const typeColor = getTypeColor(type);
                             return (
-                                <div key={type} style={{ marginBottom: "24px" }}>
-                                    <div style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: "8px",
-                                        marginBottom: "12px",
-                                        fontSize: "12px",
-                                        color: tone.color,
-                                        fontWeight: "600",
-                                    }}>
-                                        <span style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            width: "26px",
-                                            height: "22px",
-                                            borderRadius: "6px",
-                                            background: "rgba(255,255,255,0.04)",
-                                            border: `1px solid ${tone.border}`,
-                                            fontSize: "10px",
-                                            letterSpacing: "0.08em",
-                                        }}>
+                                <div key={type}>
+                                    {/* Type header */}
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <span
+                                            className="inline-flex items-center justify-center w-8 h-7 rounded-lg text-[10px] font-bold tracking-wider"
+                                            style={{ 
+                                                background: typeStyles.bg,
+                                                border: `1px solid ${typeStyles.border}`,
+                                                color: typeStyles.text,
+                                                fontFamily: "'IBM Plex Mono', monospace"
+                                            }}
+                                        >
                                             {getTypeIcon(type)}
                                         </span>
-                                        <span>{getTypeLabel(type)}</span>
-                                        <span style={{
-                                            color: "var(--oa-muted)",
-                                            background: "rgba(255,255,255,0.03)",
-                                            padding: "2px 6px",
-                                            borderRadius: "10px",
-                                            border: "1px solid var(--oa-panel-border)",
-                                            marginLeft: "auto"
-                                        }}>
+                                        <span 
+                                            className="text-sm font-semibold"
+                                            style={{ 
+                                                color: typeColor,
+                                                fontFamily: "'Space Grotesk', sans-serif"
+                                            }}
+                                        >
+                                            {getTypeLabel(type)}
+                                        </span>
+                                        <span 
+                                            className="text-[10px] text-[#A1A1AA] bg-[#F4F4F5] px-2.5 py-1 rounded-full font-medium ml-auto"
+                                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                        >
                                             {typeMappings.length}
                                         </span>
                                     </div>
 
-                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                        {typeMappings.map(({ buttonName, config }) => (
-                                            <button
-                                                key={buttonName}
-                                                onClick={() => onSelectButton(buttonName, null)}
-                                                style={{
-                                                    width: "100%",
-                                                    textAlign: "left",
-                                                    padding: "10px",
-                                                    background: "rgba(255,255,255,0.03)",
-                                                    border: `1px solid ${tone.border}`,
-                                                    borderRadius: "8px",
-                                                    cursor: "pointer",
-                                                    transition: "all 0.15s ease",
-                                                }}
-                                                onMouseOver={(e) => {
-                                                    e.currentTarget.style.borderColor = tone.color;
-                                                    e.currentTarget.style.background = "rgba(255,255,255,0.07)";
-                                                }}
-                                                onMouseOut={(e) => {
-                                                    e.currentTarget.style.borderColor = tone.border;
-                                                    e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                                                }}
-                                            >
-                                                <div style={{
-                                                    fontSize: "10px",
-                                                    color: "var(--oa-muted)",
-                                                    marginBottom: "3px",
-                                                    fontFamily: "monospace",
-                                                }}>
-                                                    {buttonName}
-                                                </div>
-                                                <div style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "space-between",
-                                                }}>
-                                                    <div style={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: "6px",
-                                                        fontSize: "12px",
-                                                        color: "var(--oa-text)",
-                                                    }}>
-                                                        <span style={{
-                                                            fontSize: "9px",
-                                                            opacity: 0.8,
-                                                            letterSpacing: "0.08em",
-                                                            color: tone.color,
-                                                        }}>
-                                                            {getTypeIcon(config.type)}
-                                                        </span>
-                                                        <span>{config.label || config.input}</span>
+                                    {/* Mapping cards */}
+                                    <div className="flex flex-col gap-3">
+                                        {typeMappings.map(({ buttonName, config }) => {
+                                            const isArmed = armedButton === buttonName;
+                                            const isPressed = pressedButtonSet.has(buttonName);
+
+                                            return (
+                                                <button
+                                                    key={buttonName}
+                                                    onClick={() => onSelectButton(buttonName, null)}
+                                                    className="w-full text-left p-4 rounded-xl cursor-pointer transition-all duration-150 border-none"
+                                                    style={{
+                                                        background: isArmed
+                                                            ? 'rgba(6, 182, 212, 0.08)'
+                                                            : isPressed
+                                                                ? 'rgba(16, 185, 129, 0.08)'
+                                                                : '#FAFAFA',
+                                                        border: isArmed
+                                                            ? '2px solid rgba(6, 182, 212, 0.3)'
+                                                            : isPressed
+                                                                ? '2px solid rgba(16, 185, 129, 0.3)'
+                                                                : '1px solid #E4E4E7',
+                                                        boxShadow: (isArmed || isPressed)
+                                                            ? `0 0 0 3px ${isArmed ? 'rgba(6, 182, 212, 0.1)' : 'rgba(16, 185, 129, 0.1)'}`
+                                                            : 'none'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (!isArmed && !isPressed) {
+                                                            e.currentTarget.style.background = '#FFFFFF';
+                                                            e.currentTarget.style.borderColor = 'rgba(124, 58, 237, 0.3)';
+                                                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
+                                                        }
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (!isArmed && !isPressed) {
+                                                            e.currentTarget.style.background = '#FAFAFA';
+                                                            e.currentTarget.style.borderColor = '#E4E4E7';
+                                                            e.currentTarget.style.boxShadow = 'none';
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                                        <div 
+                                                            className="text-[11px] text-[#A1A1AA]"
+                                                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                        >
+                                                            {buttonName}
+                                                        </div>
+                                                        {(isArmed || isPressed) && (
+                                                            <div 
+                                                                className="text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider"
+                                                                style={{
+                                                                    fontFamily: "'IBM Plex Mono', monospace",
+                                                                    background: isArmed ? 'rgba(6, 182, 212, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                                                    color: isArmed ? '#06B6D4' : '#10B981'
+                                                                }}
+                                                            >
+                                                                {isArmed ? 'ARMED' : 'LIVE'}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div style={{
-                                                        fontSize: "10px",
-                                                        color: "var(--oa-muted)",
-                                                        background: "rgba(255,255,255,0.04)",
-                                                        padding: "2px 6px",
-                                                        borderRadius: "3px",
-                                                    }}>
-                                                        {typeof config.action === "string"
-                                                            ? config.action
-                                                            : config.action?.label || config.action?.input || "Mapped"}
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2.5 text-sm text-[#18181B]">
+                                                            <span
+                                                                className="text-[9px] font-bold tracking-wider"
+                                                                style={{ 
+                                                                    color: typeColor,
+                                                                    fontFamily: "'IBM Plex Mono', monospace"
+                                                                }}
+                                                            >
+                                                                {getTypeIcon(config.type)}
+                                                            </span>
+                                                            <span 
+                                                                className="font-medium"
+                                                                style={{ fontFamily: "'DM Sans', sans-serif" }}
+                                                            >
+                                                                {config.label || config.input}
+                                                            </span>
+                                                        </div>
+                                                        <div 
+                                                            className="text-[10px] text-[#71717A] bg-[#F4F4F5] px-2.5 py-1 rounded-md"
+                                                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                        >
+                                                            {typeof config.action === "string"
+                                                                ? config.action
+                                                                : config.action?.label || config.action?.input || "Mapped"}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </button>
-                                        ))}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );
@@ -248,73 +359,37 @@ export default function D2ConfigPanel({ mappings, moduleName, onSelectButton, on
                     </div>
                 )}
             </div>
-            
+
             {/* Action Bar */}
-            <div style={{
-                padding: "16px 20px",
-                borderTop: "1px solid var(--oa-panel-border)",
-                background: "transparent",
-            }}>
-                <div style={{ display: "flex", gap: "8px" }}>
+            <div 
+                className="p-6 pt-5"
+                style={{ 
+                    borderTop: '1px solid #E4E4E7',
+                    background: '#FAFAFA'
+                }}
+            >
+                <div className="flex gap-3">
                     {Object.keys(mappings).length > 0 && (
-                        <button 
+                        <button
                             onClick={onClearAll}
-                            style={{
-                                flex: 1,
-                                padding: "8px",
-                                background: "rgba(230, 118, 108, 0.12)",
-                                border: "1px solid rgba(230, 118, 108, 0.35)",
-                                borderRadius: "8px",
-                                color: "var(--oa-danger)",
-                                fontSize: "12px",
-                                fontWeight: "500",
-                                cursor: "pointer",
-                                transition: "all 0.2s",
-                            }}
-                            onMouseOver={(e) => e.target.style.background = "rgba(230, 118, 108, 0.2)"}
-                            onMouseOut={(e) => e.target.style.background = "rgba(230, 118, 108, 0.12)"}
+                            className="flex-1 py-3.5 bg-white border-2 border-[#FECACA] rounded-xl text-[#EF4444] text-sm font-semibold cursor-pointer transition-all duration-150 hover:bg-[#FEF2F2] hover:border-[#EF4444]"
+                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                         >
                             Clear All
                         </button>
                     )}
-                    <button 
+                    <button
                         onClick={() => onSaveToDevice && onSaveToDevice(moduleId)}
-                        style={{
-                            flex: 2,
-                            padding: "8px",
-                            background: "rgba(215, 177, 90, 0.16)",
-                            border: "1px solid rgba(215, 177, 90, 0.4)",
-                            borderRadius: "8px",
-                            color: "var(--oa-accent)",
-                            fontSize: "12px",
-                            fontWeight: "500",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
+                        className="flex-[2] py-3.5 bg-[#7C3AED] hover:bg-[#6D28D9] border-none rounded-xl text-white text-sm font-semibold cursor-pointer transition-all duration-150"
+                        style={{ 
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)'
                         }}
-                        onMouseOver={(e) => e.target.style.background = "rgba(215, 177, 90, 0.24)"}
-                        onMouseOut={(e) => e.target.style.background = "rgba(215, 177, 90, 0.16)"}
                     >
                         Save to Device
                     </button>
                 </div>
             </div>
         </div>
-        <style>{`
-            @keyframes slideInRight {
-                from {
-                    opacity: 0;
-                    transform: translateX(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            }
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
-            }
-        `}</style>
-        </>
     );
 }

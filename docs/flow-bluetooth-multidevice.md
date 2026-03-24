@@ -9,17 +9,17 @@ flowchart LR
     end
     BLE((BLE))
     subgraph Pi["Parent Hub (RPi Zero 2 W)"]
-        Scanner[ble_scanner.py\nBleakScanner]
-        FoundQ[(found_queue)]
-        Aggregator[aggregator.py]
-        Clients[BleakClient\nper device]
+        Discovery[runtime/discovery.py\nBleakScanner]
+        Sessions[runtime/sessions.py]
+        Clients[runtime/device_session.py\nBleakClient per device]
         States[device_states]
-        HidQ[(hid_queue)]
+        Reports[runtime/report_builder.py]
+        HidQ[(latest HID report)]
     end
 
     A -- advertise/notify --> BLE
     B -- advertise/notify --> BLE
     C -- advertise/notify --> BLE
-    Scanner --> FoundQ --> Aggregator --> Clients
-    BLE --> Clients --> States --> Aggregator --> HidQ
+    BLE --> Discovery --> Sessions --> Clients
+    Clients --> States --> Reports --> HidQ
 ```

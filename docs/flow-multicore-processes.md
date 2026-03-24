@@ -1,27 +1,22 @@
-# Multicore Process Layout (Parent Hub)
+# Runtime Process Layout (Parent Hub)
 
 ```mermaid
 flowchart LR
-    Main[subscriber.py\nMain Process]
-    subgraph ScannerProc["Scanner Process"]
-        Scanner[ble_scanner.py]
+    Main[runtime_main.py\nMain Process]
+    subgraph RuntimeProc["Async Runtime"]
+        Runtime[runtime/app.py]
     end
-    subgraph AggregatorProc["Aggregator Process"]
-        Aggregator[aggregator.py]
+    subgraph HidProc["HID Output Worker"]
+        HID[hid_output_worker.py]
     end
-    subgraph HidProc["HID Writer Process"]
-        HID[hid_writer.py]
+    subgraph ConfigSvc["Separate Config Service"]
+        Config[serial_config_service.py]
     end
-    FoundQ[(found_queue)]
-    HidQ[(hid_queue)]
-    Stop[(stop_event)]
+    RuntimeSock[(runtime control socket)]
+    HidQ[(latest HID report)]
 
-    Main --> ScannerProc
-    Main --> AggregatorProc
+    Main --> RuntimeProc
     Main --> HidProc
-    Scanner --> FoundQ --> Aggregator
-    Aggregator --> HidQ --> HID
-    Stop --- Scanner
-    Stop --- Aggregator
-    Stop --- HID
+    Config --> RuntimeSock --> Runtime
+    Runtime --> HidQ --> HID
 ```

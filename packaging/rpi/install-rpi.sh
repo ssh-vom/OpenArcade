@@ -13,6 +13,7 @@ ENV_TEMPLATE_FILE="$SCRIPT_DIR/openarcade.env.example"
 ENV_OVERRIDE_FILE="$SCRIPT_DIR/openarcade.env"
 MODULES_FILE="/etc/modules-load.d/openarcade-gadget.conf"
 SYSTEMD_DIR="/etc/systemd/system"
+DEFAULT_HOSTNAME="thiscoolpi"
 BOOT_CONFIG=""
 REBOOT_REQUIRED=0
 
@@ -20,6 +21,7 @@ SERVICE_NAMES=(
     openarcade-gadget.service
     openarcade-subscriber.service
     openarcade-configd.service
+    openarcade-display.service
 )
 
 require_root() {
@@ -73,6 +75,15 @@ ensure_boot_overlay() {
     REBOOT_REQUIRED=1
 }
 
+ensure_i2c_enabled() {
+    if grep -Eq '^[[:space:]]*dtparam=i2c_arm=on([[:space:]]|$)' "$BOOT_CONFIG"; then
+        return
+    fi
+
+    echo "dtparam=i2c_arm=on" >> "$BOOT_CONFIG"
+    REBOOT_REQUIRED=1
+}
+
 ensure_kernel_modules() {
     mkdir -p "$(dirname "$MODULES_FILE")"
     cat > "$MODULES_FILE" <<'EOF'
@@ -86,10 +97,47 @@ EOF
 install_os_packages() {
     apt-get update
     apt-get install -y --no-install-recommends \
+        avahi-daemon \
         bluez \
+        openssh-server \
         python3 \
         python3-pip \
         python3-venv
+}
+
+read_hostname_from_env() {
+    local hostname_value="$DEFAULT_HOSTNAME"
+    local line
+
+    if [[ -f "$ENV_FILE" ]]; then
+        while IFS= read -r line; do
+            if [[ "$line" == OPENARCADE_HOSTNAME=* ]]; then
+                hostname_value="${line#OPENARCADE_HOSTNAME=}"
+            fi
+        done < "$ENV_FILE"
+    fi
+
+    printf '%s' "$hostname_value"
+}
+
+ensure_hostname() {
+    local desired_hostname
+    desired_hostname="$(read_hostname_from_env)"
+
+    if [[ -z "$desired_hostname" ]]; then
+        desired_hostname="$DEFAULT_HOSTNAME"
+    fi
+
+    if [[ "$(hostnamectl --static)" == "$desired_hostname" ]]; then
+        return
+    fi
+
+    hostnamectl set-hostname "$desired_hostname"
+}
+
+ensure_base_services() {
+    systemctl enable avahi-daemon ssh
+    systemctl restart avahi-daemon ssh
 }
 
 copy_repo_tree() {
@@ -158,7 +206,7 @@ udc_available() {
 
 start_services_if_ready() {
     if [[ "$REBOOT_REQUIRED" -eq 1 ]]; then
-        echo "A reboot is required before OpenArcade can expose USB gadget devices."
+        echo "A reboot is required before OpenArcade can start all services."
         return
     fi
 
@@ -170,6 +218,7 @@ start_services_if_ready() {
     systemctl restart openarcade-gadget.service
     systemctl restart openarcade-configd.service
     systemctl restart openarcade-subscriber.service
+    systemctl restart openarcade-display.service
 }
 
 print_summary() {
@@ -183,16 +232,18 @@ Service status commands:
   systemctl status openarcade-gadget.service
   systemctl status openarcade-subscriber.service
   systemctl status openarcade-configd.service
+  systemctl status openarcade-display.service
 
 Log commands:
   journalctl -u openarcade-gadget.service -f
   journalctl -u openarcade-subscriber.service -f
   journalctl -u openarcade-configd.service -f
+  journalctl -u openarcade-display.service -f
 EOF
 
     if [[ "$REBOOT_REQUIRED" -eq 1 ]]; then
         echo
-        echo "Reboot the Pi to activate the dwc2 overlay, then reconnect the USB data port."
+        echo "Reboot the Pi to activate the dwc2 overlay and I2C interface, then reconnect the USB data port."
     fi
 }
 
@@ -200,13 +251,16 @@ main() {
     require_root
     find_boot_config
     ensure_boot_overlay
+    ensure_i2c_enabled
     ensure_kernel_modules
     install_os_packages
     copy_repo_tree
     setup_python_env
     setup_state_dir
     install_env_file
+    ensure_hostname
     install_systemd_units
+    ensure_base_services
     start_services_if_ready
     print_summary
 }

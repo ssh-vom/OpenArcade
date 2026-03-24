@@ -75,7 +75,10 @@ const ChildModule = memo(function ChildModule({
     viewMode = '3d',
     isActive = true,
     mappings = {},
-    mappingFilter = "all"
+    mappingFilter = "all",
+    pressedButtons = [],
+    armedButton = null,
+    isMappingMode = false,
 }) {
     const gltf = useGLTF(path);
     const moduleScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
@@ -121,7 +124,15 @@ const ChildModule = memo(function ChildModule({
         }
     }
 
-    function applyHighlight(mesh, enabled, color) {
+    const pressedButtonSet = useMemo(() => new Set(pressedButtons), [pressedButtons]);
+
+    function applyHighlight(mesh, options = null) {
+        const isJoystickHitbox = mesh.userData.isJoystickHitbox;
+        const enabled = Boolean(options?.color);
+        const color = options?.color;
+        const intensity = options?.intensity ?? 0.45;
+        const opacity = options?.opacity ?? 0.7;
+
         const updateMaterial = (material) => {
             if (!material) {
                 return;
@@ -132,10 +143,18 @@ const ChildModule = memo(function ChildModule({
                 return;
             }
 
-            if (material.emissive) {
+            if (isJoystickHitbox) {
+                // Joystick hitboxes: reveal via opacity
+                if (enabled) {
+                    material.opacity = opacity;
+                    material.color.set(color);
+                } else {
+                    material.opacity = 0;
+                }
+            } else if (material.emissive) {
                 if (enabled) {
                     material.emissive.copy(color);
-                    material.emissiveIntensity = 0.45;
+                    material.emissiveIntensity = intensity;
                 } else {
                     material.emissive.copy(original.emissive || new THREE.Color(0x000000));
                     material.emissiveIntensity = original.emissiveIntensity;
@@ -173,7 +192,7 @@ const ChildModule = memo(function ChildModule({
             if (!buttonName) {
                 let node = intersectedMesh;
                 while (node) {
-                    if (node.name && node.name.startsWith("button_")) {
+                    if (node.name && (node.name.startsWith("button_") || node.name.startsWith("small_") || node.name.startsWith("js_"))) {
                         buttonName = node.name;
                         break;
                     }
@@ -226,6 +245,50 @@ const ChildModule = memo(function ChildModule({
         }
     }, [isEditable, onModuleClick]);
 
+    // Detect joystick module from GLB path
+    const isJoystickModule = path.toLowerCase().includes('joystick');
+
+    function prepareJoystickHitboxMaterial(mesh) {
+        // Make mesh visible but fully transparent for raycasting
+        mesh.visible = true;
+        mesh.userData.isJoystickHitbox = true;
+
+        const makeHitbox = (material) => {
+            if (!material) return material;
+            const hitboxMat = new THREE.MeshBasicMaterial({
+                transparent: true,
+                opacity: 0,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                color: new THREE.Color("#7C3AED"),
+            });
+            // Store in material state so applyHighlight can reference it
+            buttonMaterialState.current.set(hitboxMat.uuid, {
+                uuid: hitboxMat.uuid,
+                emissive: null,
+                emissiveIntensity: 0,
+                opacity: 0,
+            });
+            return hitboxMat;
+        };
+
+        if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map(makeHitbox);
+        } else {
+            mesh.material = makeHitbox(mesh.material);
+        }
+    }
+
+    function ensureAncestorsVisible(node) {
+        let current = node.parent;
+        while (current) {
+            if (!current.visible) {
+                current.visible = true;
+            }
+            current = current.parent;
+        }
+    }
+
     useEffect(() => {
         if (moduleScene) {
             buttonMeshes.current.clear();
@@ -239,7 +302,8 @@ const ChildModule = memo(function ChildModule({
             }
 
             moduleScene.traverse((rootChild) => {
-                if (rootChild.name.startsWith('button_')) {
+                // --- Standard button detection (button_* and small_*) ---
+                if (rootChild.name.startsWith('button_') || rootChild.name.startsWith('small_')) {
                     const buttonGroupName = rootChild.name;
                     // Helper to recursively find and register all meshes within this button group
                     const findMeshes = (node) => {
@@ -272,6 +336,48 @@ const ChildModule = memo(function ChildModule({
                     center.y += 0.035;
                     labelPositions[buttonGroupName] = [center.x, center.y, center.z];
                 }
+
+                // --- Joystick direction hitbox detection ---
+                if (isJoystickModule && rootChild.name.startsWith('js_')) {
+                    const directionName = rootChild.name; // e.g., js_u, js_d, js_l, js_r
+                    ensureAncestorsVisible(rootChild);
+
+                    const findJoystickMeshes = (node) => {
+                        if (node.isMesh) {
+                            node.userData.buttonGroup = directionName;
+                            prepareJoystickHitboxMaterial(node);
+                            buttonMeshes.current.add(node);
+                            buttonNameByMesh.current.set(node.uuid, directionName);
+                            console.log(`Found joystick hitbox mesh: ${node.name} under ${directionName}`);
+                        }
+                        if (node.children) {
+                            node.children.forEach(findJoystickMeshes);
+                        }
+                    };
+
+                    findJoystickMeshes(rootChild);
+
+                    // Compute label position from bounding box center
+                    // Temporarily make visible to compute bounds
+                    const prevVisible = rootChild.visible;
+                    rootChild.visible = true;
+                    const box = new THREE.Box3().setFromObject(rootChild);
+                    rootChild.visible = prevVisible;
+
+                    const center = new THREE.Vector3();
+                    if (!box.isEmpty()) {
+                        box.getCenter(center);
+                    } else {
+                        rootChild.getWorldPosition(center);
+                    }
+
+                    if (groupRef.current) {
+                        groupRef.current.worldToLocal(center);
+                    }
+
+                    center.y += 0.06;
+                    labelPositions[directionName] = [center.x, center.y, center.z];
+                }
             });
             setButtonLabelPositions(labelPositions);
             console.log('Total button meshes found:', buttonMeshes.current.size);
@@ -279,14 +385,34 @@ const ChildModule = memo(function ChildModule({
     }, [moduleScene]);
 
     useEffect(() => {
-        const highlightColor = new THREE.Color("#d7b15a");
+        const hoverColor = new THREE.Color("#7C3AED");
+        const armedColor = new THREE.Color("#8B5CF6");
+        const pressedColor = new THREE.Color("#F97316");
 
         buttonMeshes.current.forEach((mesh) => {
             const groupName = mesh.userData.buttonGroup;
-            const isTarget = viewMode === "2d" && hoveredButton && groupName === hoveredButton;
-            applyHighlight(mesh, isTarget, highlightColor);
+            const isPressed = pressedButtonSet.has(groupName);
+            const isArmed = viewMode === "2d" && armedButton && groupName === armedButton;
+            const isHovered = viewMode === "2d" && hoveredButton && groupName === hoveredButton;
+
+            if (isPressed) {
+                applyHighlight(mesh, { color: pressedColor, intensity: 0.55, opacity: 0.7 });
+                return;
+            }
+
+            if (isArmed) {
+                applyHighlight(mesh, { color: armedColor, intensity: 0.42, opacity: 0.52 });
+                return;
+            }
+
+            if (isHovered) {
+                applyHighlight(mesh, { color: hoverColor, intensity: 0.45, opacity: 0.7 });
+                return;
+            }
+
+            applyHighlight(mesh);
         });
-    }, [hoveredButton, viewMode]);
+    }, [armedButton, hoveredButton, pressedButtonSet, viewMode]);
 
     // Attach mouse event listeners for raycasting
     useEffect(() => {
@@ -305,6 +431,24 @@ const ChildModule = memo(function ChildModule({
     // Animation loop
     useFrame((state) => {
         if (!isActive) return;
+
+        if (pressedButtonSet.size > 0) {
+            const pressedColor = new THREE.Color("#F97316");
+            const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 7) * 0.18;
+            const pulseOpacity = 0.65 + Math.sin(state.clock.elapsedTime * 7) * 0.08;
+
+            buttonMeshes.current.forEach((mesh) => {
+                const groupName = mesh.userData.buttonGroup;
+                if (!pressedButtonSet.has(groupName)) {
+                    return;
+                }
+                applyHighlight(mesh, {
+                    color: pressedColor,
+                    intensity: pulse,
+                    opacity: pulseOpacity,
+                });
+            });
+        }
 
         frameCountRef.current++;
 
@@ -325,21 +469,31 @@ const ChildModule = memo(function ChildModule({
         }
     });
 
+    // New color scheme: Violet (Gamepad), Cyan (Keyboard), Orange (Analog)
     const getTypeIcon = (type) => {
         switch (type) {
             case HID_INPUT_TYPES.GAMEPAD: return 'GP';
             case HID_INPUT_TYPES.KEYBOARD: return 'KB';
             case HID_INPUT_TYPES.ANALOG: return 'AX';
-            default: return 'NA';
+            default: return '—';
         }
     };
 
     const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#d7b15a';
-            case HID_INPUT_TYPES.KEYBOARD: return '#f0d48a';
-            case HID_INPUT_TYPES.ANALOG: return '#c08a4a';
-            default: return '#9a907e';
+            case HID_INPUT_TYPES.GAMEPAD: return '#7C3AED';   // Electric violet
+            case HID_INPUT_TYPES.KEYBOARD: return '#06B6D4'; // Cyan
+            case HID_INPUT_TYPES.ANALOG: return '#F97316';   // Coral/orange
+            default: return '#A1A1AA';
+        }
+    };
+
+    const getTypeBorderColor = (type) => {
+        switch (type) {
+            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(124, 58, 237, 0.35)';
+            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(6, 182, 212, 0.35)';
+            case HID_INPUT_TYPES.ANALOG: return 'rgba(249, 115, 22, 0.35)';
+            default: return 'rgba(161, 161, 170, 0.3)';
         }
     };
 
@@ -370,6 +524,10 @@ const ChildModule = memo(function ChildModule({
                 const label = normalizedMapping.label;
                 if (!label) return null;
                 const typeColor = getTypeColor(normalizedMapping.type);
+                const borderColor = getTypeBorderColor(normalizedMapping.type);
+                const isHovered = hoveredButton === buttonName;
+                const isPressed = pressedButtonSet.has(buttonName);
+                const isArmed = armedButton === buttonName;
 
                 return (
                     <Html
@@ -379,87 +537,120 @@ const ChildModule = memo(function ChildModule({
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
                         <div style={{
-                            background: 'rgba(0, 0, 0, 0.72)',
-                            color: '#ffffff',
-                            padding: '2px 6px',
-                            borderRadius: '999px',
-                            fontSize: '9px',
-                            fontWeight: '600',
+                            background: isPressed
+                                ? 'rgba(236, 253, 245, 0.98)'
+                                : isArmed
+                                    ? 'rgba(236, 254, 255, 0.98)'
+                                    : 'rgba(255, 255, 255, 0.96)',
+                            backdropFilter: 'blur(12px)',
+                            color: '#18181B',
+                            padding: '5px 12px',
+                            borderRadius: '10px',
+                            fontSize: '10px',
+                            fontFamily: "'DM Sans', -apple-system, sans-serif",
+                            fontWeight: '500',
+                            letterSpacing: '0.01em',
                             whiteSpace: 'nowrap',
-                            border: `1px solid ${typeColor}`,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '4px',
-                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.35)',
-                            backdropFilter: 'blur(6px)'
+                            gap: '8px',
+                            boxShadow: isPressed
+                                ? '0 0 0 2px rgba(16, 185, 129, 0.3), 0 8px 24px rgba(16, 185, 129, 0.2)'
+                                : isArmed
+                                    ? '0 0 0 2px rgba(6, 182, 212, 0.25), 0 8px 24px rgba(6, 182, 212, 0.15)'
+                                    : isHovered
+                                 ? `0 0 0 2px ${borderColor}, 0 6px 16px rgba(0, 0, 0, 0.1)`
+                                 : '0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.03)',
+                            borderLeft: `3px solid ${isPressed ? '#10B981' : isArmed ? '#06B6D4' : typeColor}`,
+                            transform: isPressed
+                                ? 'translateY(-4px) scale(1.08)'
+                                : isArmed || isHovered
+                                    ? 'translateY(-2px) scale(1.04)'
+                                    : 'none',
+                            transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease',
                         }}>
                             <span style={{
-                                fontSize: '8px',
-                                letterSpacing: '0.08em',
+                                fontSize: '9px',
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontWeight: '600',
+                                letterSpacing: '0.05em',
                                 color: typeColor,
+                                background: `${typeColor}15`,
+                                padding: '2px 5px',
+                                borderRadius: '4px',
                             }}>
                                 {getTypeIcon(normalizedMapping.type)}
                             </span>
-                            <span>{label}</span>
+                            <span style={{
+                                fontWeight: '500',
+                                color: '#18181B',
+                            }}>
+                                {label}
+                            </span>
                         </div>
                     </Html>
                 );
             })}
 
-            {/* Hover overlays for 2D mode */}
-            {viewMode === '2d' && hoveredButton && showHoveredMapping && (
-                <Html
-                    position={[0, 0.15, 0]}
-                    center
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                    <div style={{
-                        background: 'rgba(0, 0, 0, 0.85)',
-                        color: '#ffffff',
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: '500',
-                        whiteSpace: 'nowrap',
-                        border: `1px solid ${getTypeColor(hoveredMapping.type)}`,
-                        backdropFilter: 'blur(4px)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                    }}>
-                        <span style={{
-                            fontSize: "9px",
-                            letterSpacing: "0.08em",
-                            color: getTypeColor(hoveredMapping.type),
-                        }}>
-                            {getTypeIcon(hoveredMapping.type)}
-                        </span>
-                        <span>{hoveredMapping.label}</span>
-                    </div>
-                </Html>
-            )}
+            {/* Hover tooltip for 2D mode - positioned at hovered button */}
+            {viewMode === '2d' && hoveredButton && (() => {
+                const hoverPos = buttonLabelPositions[hoveredButton];
+                if (!hoverPos) return null;
+                const offsetPos = [hoverPos[0], hoverPos[1] + 0.025, hoverPos[2]];
 
-            {/* Cursor hint when hovered */}
-            {viewMode === '2d' && hoveredButton && (
-                <Html
-                    position={[0, 0.2, 0]}
-                    center
-                    style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                    <div style={{
-                        background: '#d7b15a',
-                        color: '#ffffff',
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                        fontSize: '10px',
-                        fontWeight: '600',
-                        whiteSpace: 'nowrap',
-                        boxShadow: '0 2px 8px rgba(215, 177, 90, 0.35)'
-                    }}>
-                        Click to Configure
-                    </div>
-                </Html>
-            )}
+                return (
+                    <Html
+                        position={offsetPos}
+                        center
+                        style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '3px',
+                        }}>
+                            {showHoveredMapping && !mappings[hoveredButton] && (
+                                <div style={{
+                                    background: 'rgba(255, 253, 250, 0.95)',
+                                    backdropFilter: 'blur(8px)',
+                                    color: '#18181B',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    fontSize: '10px',
+                                    fontFamily: "'DM Sans', system-ui, sans-serif",
+                                    fontWeight: '500',
+                                    whiteSpace: 'nowrap',
+                                    borderLeft: `3px solid ${getTypeColor(hoveredMapping?.type)}`,
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                                }}>
+                                    {hoveredMapping?.label}
+                                </div>
+                            )}
+                            <div style={{
+                                background: 'rgba(124, 58, 237, 0.9)',
+                                color: '#ffffff',
+                                fontSize: '8px',
+                                fontFamily: "'IBM Plex Mono', monospace",
+                                fontWeight: '500',
+                                letterSpacing: '0.05em',
+                                textTransform: 'uppercase',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)',
+                            }}>
+                                {isMappingMode
+                                    ? armedButton === hoveredButton
+                                        ? 'press physical button'
+                                        : 'click to arm'
+                                    : mappings[hoveredButton]
+                                        ? 'click to edit'
+                                        : 'click to map'}
+                            </div>
+                        </div>
+                    </Html>
+                );
+            })()}
         </group>
     );
 });
@@ -481,7 +672,7 @@ function IndicatorRing({ buttonName, gltf }) {
         <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.04, 0.055, 32]} />
             <meshBasicMaterial
-                color="#d7b15a"
+                color="#7C3AED"
                 transparent
                 opacity={0.9}
                 side={THREE.DoubleSide}
@@ -496,9 +687,12 @@ const MemoizedChildModule = memo(ChildModule, (prevProps, nextProps) => {
         prevProps.isEditable === nextProps.isEditable &&
         prevProps.viewMode === nextProps.viewMode &&
         prevProps.isActive === nextProps.isActive &&
+        prevProps.armedButton === nextProps.armedButton &&
+        prevProps.isMappingMode === nextProps.isMappingMode &&
         prevProps.mappingFilter === nextProps.mappingFilter &&
         JSON.stringify(prevProps.position) === JSON.stringify(nextProps.position) &&
-        JSON.stringify(prevProps.mappings) === JSON.stringify(nextProps.mappings)
+        JSON.stringify(prevProps.mappings) === JSON.stringify(nextProps.mappings) &&
+        JSON.stringify(prevProps.pressedButtons) === JSON.stringify(nextProps.pressedButtons)
     );
 });
 

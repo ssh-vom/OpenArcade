@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { 
-  HID_INPUT_TYPES, 
-  getInputOptions, 
-  getInputLabel 
+import {
+  HID_INPUT_TYPES,
+  getInputLabel
 } from "../services/HIDManager.js";
+import KeyboardLayout from "./KeyboardLayout.jsx";
+import ControllerDiagram from "./ControllerDiagram.jsx";
+import AnalogPicker from "./AnalogPicker.jsx";
 
-// Enhanced HID Configuration Modal
+/**
+ * Full-screen HID Button Mapping Modal
+ * 
+ * Two-column layout:
+ * - Left: Visual input selector (keyboard/controller/analog)
+ * - Right: Configuration panel (type selector, settings, actions)
+ */
 export default function ButtonMappingModal({ button, onSave, onCancel, onClear }) {
   const [inputType, setInputType] = useState(button.type || HID_INPUT_TYPES.GAMEPAD);
   const [selectedInput, setSelectedInput] = useState(button.input || "");
@@ -17,25 +25,28 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
     direction: 'bidirectional'
   });
 
-  const inputOptions = getInputOptions(inputType);
-  const isAnalog = inputType === HID_INPUT_TYPES.ANALOG || 
-                  (inputType === HID_INPUT_TYPES.GAMEPAD && inputOptions.find(opt => opt.value === selectedInput)?.isAnalog);
+  // Check if selected input is analog
+  const isAnalogInput = inputType === HID_INPUT_TYPES.ANALOG ||
+    (inputType === HID_INPUT_TYPES.GAMEPAD && (
+      selectedInput?.includes('trigger') ||
+      selectedInput?.includes('stick_x') ||
+      selectedInput?.includes('stick_y')
+    ));
 
-  const getTypeTone = (type) => {
+  const getTypeConfig = (type) => {
     switch (type) {
       case HID_INPUT_TYPES.GAMEPAD:
-        return { color: "#d7b15a", border: "rgba(215, 177, 90, 0.3)" };
+        return { color: '#7C3AED', icon: '🎮', label: 'Gamepad' };
       case HID_INPUT_TYPES.KEYBOARD:
-        return { color: "#f0d48a", border: "rgba(240, 212, 138, 0.3)" };
+        return { color: '#06B6D4', icon: '⌨️', label: 'Keyboard' };
       case HID_INPUT_TYPES.ANALOG:
-        return { color: "#c08a4a", border: "rgba(192, 138, 74, 0.3)" };
+        return { color: '#F97316', icon: '🕹️', label: 'Analog' };
       default:
-        return { color: "var(--oa-muted)", border: "rgba(154, 144, 126, 0.3)" };
+        return { color: '#A1A1AA', icon: '?', label: 'Unknown' };
     }
   };
 
-  const activeTone = getTypeTone(inputType);
-  const activeTypeColor = activeTone.color;
+  const currentTypeConfig = getTypeConfig(inputType);
 
   const handleSave = () => {
     const resolvedAction = action || getInputLabel(inputType, selectedInput);
@@ -46,7 +57,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
       label: getInputLabel(inputType, selectedInput)
     };
 
-    if (isAnalog) {
+    if (isAnalogInput) {
       config.analogConfig = analogConfig;
     }
 
@@ -58,333 +69,361 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
     setSelectedInput(""); // Reset input when type changes
   };
 
-  const groupedOptions = inputOptions.reduce((groups, option) => {
-    const category = option.category || 'Other';
-    if (!groups[category]) {
-      groups[category] = [];
+  // Render the appropriate visual selector based on input type
+  const renderVisualSelector = () => {
+    switch (inputType) {
+      case HID_INPUT_TYPES.KEYBOARD:
+        return (
+          <KeyboardLayout
+            selectedInput={selectedInput}
+            onSelect={setSelectedInput}
+            accentColor={currentTypeConfig.color}
+          />
+        );
+      case HID_INPUT_TYPES.GAMEPAD:
+        return (
+          <ControllerDiagram
+            selectedInput={selectedInput}
+            onSelect={setSelectedInput}
+            accentColor={currentTypeConfig.color}
+          />
+        );
+      case HID_INPUT_TYPES.ANALOG:
+        return (
+          <AnalogPicker
+            selectedInput={selectedInput}
+            onSelect={setSelectedInput}
+            accentColor={currentTypeConfig.color}
+          />
+        );
+      default:
+        return null;
     }
-    groups[category].push(option);
-    return groups;
-  }, {});
+  };
 
   return (
     <div
-    className="oa-modal-overlay"
-    onClick={onCancel}
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in"
+      onClick={onCancel}
     >
       <div
-      className="oa-panel-surface oa-modal-card"
-      style={{
-        borderRadius: "16px",
-        width: "480px",
-        maxHeight: "90vh",
-        overflowY: "auto",
-      }}
-      onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-3xl w-full max-w-[1280px] h-[min(90vh,800px)] overflow-hidden flex animate-scale-in"
+        style={{
+          boxShadow: '0 25px 80px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.03)'
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{
-          fontSize: "11px",
-          fontWeight: "600",
-          color: "var(--oa-muted)",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          marginBottom: "8px",
-        }}>
-          Configure Input
-        </div>
-        
-        <h2 style={{
-          margin: "0 0 20px 0",
-          fontSize: "18px",
-          fontWeight: "600",
-          color: "var(--oa-text)",
-        }}>
-          {button.name}
-        </h2>
-
-        {/* Input Type Selection */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "13px",
-            color: "var(--oa-muted)",
-          }}>
-            Input Type
-          </label>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={() => handleInputTypeChange(HID_INPUT_TYPES.GAMEPAD)}
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: inputType === HID_INPUT_TYPES.GAMEPAD ? "rgba(215, 177, 90, 0.2)" : "rgba(255,255,255,0.03)",
-                color: inputType === HID_INPUT_TYPES.GAMEPAD ? "#22180a" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.GAMEPAD ? "1px solid rgba(215, 177, 90, 0.5)" : "1px solid var(--oa-panel-border)",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "600",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              Gamepad
-            </button>
-            <button
-              onClick={() => handleInputTypeChange(HID_INPUT_TYPES.KEYBOARD)}
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: inputType === HID_INPUT_TYPES.KEYBOARD ? "rgba(240, 212, 138, 0.2)" : "rgba(255,255,255,0.03)",
-                color: inputType === HID_INPUT_TYPES.KEYBOARD ? "#0b0d10" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.KEYBOARD ? "1px solid rgba(240, 212, 138, 0.5)" : "1px solid var(--oa-panel-border)",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "600",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              Keyboard
-            </button>
-            <button
-              onClick={() => handleInputTypeChange(HID_INPUT_TYPES.ANALOG)}
-              style={{
-                flex: 1,
-                padding: "8px",
-                background: inputType === HID_INPUT_TYPES.ANALOG ? "rgba(192, 138, 74, 0.2)" : "rgba(255,255,255,0.03)",
-                color: inputType === HID_INPUT_TYPES.ANALOG ? "#251c09" : "var(--oa-muted)",
-                border: inputType === HID_INPUT_TYPES.ANALOG ? "1px solid rgba(192, 138, 74, 0.5)" : "1px solid var(--oa-panel-border)",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "600",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-              }}
-            >
-              Analog
-            </button>
-          </div>
-        </div>
-
-        {/* Input Selection */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "13px",
-            color: "var(--oa-muted)",
-          }}>
-            Select {inputType === HID_INPUT_TYPES.GAMEPAD ? "Button" : inputType === HID_INPUT_TYPES.KEYBOARD ? "Key" : "Axis"}
-          </label>
-          <select
-            value={selectedInput}
-            onChange={(e) => setSelectedInput(e.target.value)}
+        {/* Left Column - Visual Selector */}
+        <div 
+          className="flex-1 flex flex-col items-center justify-center p-12 relative overflow-auto"
+          style={{
+            background: 'linear-gradient(135deg, #FAFAFA 0%, #F4F4F5 100%)',
+            borderRight: '1px solid #E4E4E7'
+          }}
+        >
+          {/* Decorative grid pattern */}
+          <div 
+            className="absolute inset-0 opacity-30"
             style={{
-              width: "100%",
-              padding: "10px 12px",
-              background: "rgba(255,255,255,0.03)",
-              border: `1px solid ${activeTone.border}`,
-              borderRadius: "8px",
-              fontSize: "14px",
-              color: "var(--oa-text)",
-              outline: "none",
+              backgroundImage: `
+                linear-gradient(#E4E4E7 1px, transparent 1px),
+                linear-gradient(90deg, #E4E4E7 1px, transparent 1px)
+              `,
+              backgroundSize: '24px 24px'
             }}
-          >
-            <option value="">Select an input...</option>
-            {Object.entries(groupedOptions).map(([category, options]) => (
-              <optgroup key={category} label={category}>
-                {options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-
-        {/* Analog Configuration */}
-        {isAnalog && (
-          <div style={{ 
-            marginBottom: "20px", 
-            padding: "16px", 
-            background: "rgba(255,255,255,0.03)", 
-            borderRadius: "10px", 
-            border: `1px solid ${activeTone.border}` 
-          }}>
-            <label style={{
-              display: "block",
-              marginBottom: "12px",
-              fontSize: "13px",
-              color: "var(--oa-muted)",
-            }}>
-              Analog Settings
-            </label>
-            
-            <div style={{ marginBottom: "12px" }}>
-              <label style={{
-                display: "block",
-                marginBottom: "4px",
-                fontSize: "12px",
-                color: "var(--oa-muted)",
-              }}>
-                Threshold: {analogConfig.threshold.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0.05"
-                max="0.5"
-                step="0.05"
-                value={analogConfig.threshold}
-                onChange={(e) => setAnalogConfig({...analogConfig, threshold: parseFloat(e.target.value)})}
-                style={{ width: "100%", accentColor: activeTypeColor }}
-              />
-            </div>
-
-            <div>
-              <label style={{
-                display: "block",
-                marginBottom: "4px",
-                fontSize: "12px",
-                color: "var(--oa-muted)",
-              }}>
-                Sensitivity: {analogConfig.sensitivity.toFixed(1)}
-              </label>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={analogConfig.sensitivity}
-                onChange={(e) => setAnalogConfig({...analogConfig, sensitivity: parseFloat(e.target.value)})}
-                style={{ width: "100%", accentColor: activeTypeColor }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Action Assignment */}
-        <div style={{ marginBottom: "20px" }}>
-          <label style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: "13px",
-            color: "var(--oa-muted)",
-          }}>
-            Action Name
-          </label>
-          <input
-            type="text"
-            value={action}
-            onChange={(e) => setAction(e.target.value)}
-            placeholder="e.g., Jump, Fire, Move Left"
-            autoFocus
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              fontSize: "14px",
-              color: "var(--oa-text)",
-              outline: "none",
-              transition: "border-color 0.15s ease",
-            }}
-            onFocus={(e) => e.target.style.borderColor = "var(--oa-accent)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--oa-panel-border)"}
-            onKeyDown={(e) => { if(e.key === 'Enter') handleSave() }}
           />
+          
+          {/* Content */}
+          <div className="relative z-10">
+            {renderVisualSelector()}
+          </div>
         </div>
 
-        {/* Current Mapping Display */}
-        {button.action && (
-          <div style={{
-            padding: "12px",
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: "10px",
-            marginBottom: "20px",
-            border: "1px solid rgba(255,255,255,0.06)"
-          }}>
-            <div style={{
-              fontSize: "11px",
-              color: "var(--oa-muted)",
-              marginBottom: "4px",
-            }}>
-              Current Mapping
+        {/* Right Column - Configuration */}
+        <div className="w-[380px] flex flex-col bg-white shrink-0">
+          {/* Header */}
+          <div className="px-7 pt-7 pb-5">
+            <div 
+              className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.12em] mb-2"
+              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+            >
+              Configure Input
             </div>
-            <div style={{
-              fontSize: "13px",
-              color: "var(--oa-muted)",
-            }}>
-              {button.type}: {button.label || button.input} → {button.action}
+            <h2 
+              className="m-0 text-2xl font-semibold text-[#18181B] tracking-tight"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            >
+              {button.name}
+            </h2>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto panel-scroll px-7 pb-6">
+            {/* Input Type Selection */}
+            <div className="mb-6">
+              <label 
+                className="block mb-3 text-sm text-[#52525B] font-medium"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Input Type
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { type: HID_INPUT_TYPES.GAMEPAD, ...getTypeConfig(HID_INPUT_TYPES.GAMEPAD) },
+                  { type: HID_INPUT_TYPES.KEYBOARD, ...getTypeConfig(HID_INPUT_TYPES.KEYBOARD) },
+                  { type: HID_INPUT_TYPES.ANALOG, ...getTypeConfig(HID_INPUT_TYPES.ANALOG) },
+                ].map(({ type, color, icon, label }) => {
+                  const isActive = inputType === type;
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => handleInputTypeChange(type)}
+                      className="flex-1 py-3 px-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150 flex flex-col items-center gap-1"
+                      style={{ 
+                        fontFamily: "'Space Grotesk', sans-serif",
+                        background: isActive ? `${color}12` : '#F9FAFB',
+                        border: isActive ? `2px solid ${color}` : '2px solid #E4E4E7',
+                        color: isActive ? color : '#71717A'
+                      }}
+                    >
+                      <span className="text-lg">{icon}</span>
+                      <span className="text-xs">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selected Input Display */}
+            <div className="mb-6">
+              <label 
+                className="block mb-3 text-sm text-[#52525B] font-medium"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Selected Input
+              </label>
+              
+              {selectedInput ? (
+                <div 
+                  className="px-5 py-4 rounded-xl"
+                  style={{
+                    background: `${currentTypeConfig.color}08`,
+                    border: `2px solid ${currentTypeConfig.color}30`
+                  }}
+                >
+                  <div 
+                    className="text-[10px] font-bold uppercase tracking-wider mb-1"
+                    style={{ 
+                      color: currentTypeConfig.color,
+                      fontFamily: "'IBM Plex Mono', monospace"
+                    }}
+                  >
+                    {currentTypeConfig.label}
+                  </div>
+                  <div 
+                    className="text-lg font-semibold text-[#18181B]"
+                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                  >
+                    {getInputLabel(inputType, selectedInput)}
+                  </div>
+                  {isAnalogInput && (
+                    <div 
+                      className="mt-2 flex items-center gap-1.5 text-xs"
+                      style={{ color: '#F97316' }}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-[#F97316]" />
+                      <span style={{ fontFamily: "'DM Sans', sans-serif" }}>Analog input</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div 
+                  className="px-5 py-8 rounded-xl text-center"
+                  style={{
+                    background: '#F9FAFB',
+                    border: '2px dashed #E4E4E7'
+                  }}
+                >
+                  <div 
+                    className="text-sm text-[#A1A1AA]"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    Click an input on the left
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Analog Configuration */}
+            {isAnalogInput && (
+              <div 
+                className="mb-6 p-5 rounded-xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.04) 0%, rgba(249, 115, 22, 0.01) 100%)',
+                  border: '1px solid rgba(249, 115, 22, 0.15)'
+                }}
+              >
+                <label 
+                  className="block mb-4 text-sm text-[#F97316] font-semibold"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  Analog Settings
+                </label>
+
+                <div className="mb-4">
+                  <label 
+                    className="flex justify-between mb-2 text-xs text-[#52525B]"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    <span>Threshold</span>
+                    <span 
+                      className="text-[#F97316] font-semibold"
+                      style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                    >
+                      {analogConfig.threshold.toFixed(2)}
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0.05"
+                    max="0.5"
+                    step="0.05"
+                    value={analogConfig.threshold}
+                    onChange={(e) => setAnalogConfig({ ...analogConfig, threshold: parseFloat(e.target.value) })}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{ 
+                      accentColor: '#F97316',
+                      background: 'linear-gradient(to right, #F97316 0%, #F9731640 100%)'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label 
+                    className="flex justify-between mb-2 text-xs text-[#52525B]"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  >
+                    <span>Sensitivity</span>
+                    <span 
+                      className="text-[#F97316] font-semibold"
+                      style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                    >
+                      {analogConfig.sensitivity.toFixed(1)}x
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2.0"
+                    step="0.1"
+                    value={analogConfig.sensitivity}
+                    onChange={(e) => setAnalogConfig({ ...analogConfig, sensitivity: parseFloat(e.target.value) })}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{ 
+                      accentColor: '#F97316',
+                      background: 'linear-gradient(to right, #F97316 0%, #F9731640 100%)'
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Action Assignment */}
+            <div className="mb-6">
+              <label 
+                className="block mb-3 text-sm text-[#52525B] font-medium"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Action Name <span className="text-[#A1A1AA] font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={action}
+                onChange={(e) => setAction(e.target.value)}
+                placeholder={selectedInput ? `Default: ${getInputLabel(inputType, selectedInput)}` : "e.g., Jump, Fire"}
+                className="w-full px-4 py-3.5 bg-[#F9FAFB] hover:bg-white border-2 border-[#E4E4E7] rounded-xl text-sm text-[#18181B] outline-none transition-all duration-150 focus:border-[#7C3AED] focus:bg-white"
+                style={{ 
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && selectedInput) handleSave() }}
+              />
+            </div>
+
+            {/* Current Mapping Display */}
+            {button.action && (
+              <div 
+                className="p-4 rounded-xl mb-2"
+                style={{
+                  background: '#F9FAFB',
+                  border: '1px solid #E4E4E7'
+                }}
+              >
+                <div 
+                  className="text-[10px] text-[#A1A1AA] mb-1.5 font-semibold uppercase tracking-wider"
+                  style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                >
+                  Current Mapping
+                </div>
+                <div 
+                  className="text-sm text-[#52525B]"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {button.label || button.input} → {button.action}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer Actions */}
+          <div 
+            className="px-7 py-5 border-t border-[#F4F4F5] flex flex-col gap-3"
+            style={{ background: '#FAFAFA' }}
+          >
+            {/* Primary actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleSave}
+                disabled={!selectedInput}
+                className={`flex-1 py-3.5 border-none rounded-xl text-sm font-semibold transition-all duration-150
+                  ${selectedInput
+                    ? 'bg-[#7C3AED] hover:bg-[#6D28D9] text-white cursor-pointer'
+                    : 'bg-[#E4E4E7] text-[#A1A1AA] cursor-not-allowed'
+                  }`}
+                style={{ 
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  boxShadow: selectedInput ? '0 4px 12px rgba(124, 58, 237, 0.25)' : 'none'
+                }}
+              >
+                Save Mapping
+              </button>
+            </div>
+            
+            {/* Secondary actions */}
+            <div className="flex gap-3 justify-between">
+              {button.action && (
+                <button
+                  onClick={() => onClear(button.name)}
+                  className="px-4 py-2 bg-white text-[#EF4444] border border-[#FECACA] rounded-lg text-xs font-semibold cursor-pointer hover:bg-[#FEF2F2] transition-all duration-150"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  Clear Mapping
+                </button>
+              )}
+              <button
+                onClick={onCancel}
+                className="px-4 py-2 bg-transparent text-[#71717A] border-none text-xs font-medium cursor-pointer hover:text-[#18181B] transition-colors ml-auto"
+                style={{ fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Action Buttons */}
-        <div style={{
-          display: "flex",
-          gap: "10px",
-          justifyContent: "flex-end",
-        }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: "8px 16px",
-              background: "transparent",
-              color: "var(--oa-muted)",
-              border: "none",
-              fontSize: "13px",
-              cursor: "pointer",
-            }}
-            onMouseOver={(e) => e.target.style.color = "var(--oa-text)"}
-            onMouseOut={(e) => e.target.style.color = "var(--oa-muted)"}
-          >
-            Cancel
-          </button>
-          {button.action && (
-            <button
-              onClick={() => onClear(button.name)}
-              style={{
-                padding: "8px 12px",
-                background: "rgba(230, 118, 108, 0.12)",
-                color: "var(--oa-danger)",
-                border: "1px solid rgba(230, 118, 108, 0.35)",
-                borderRadius: "8px",
-                fontSize: "13px",
-                cursor: "pointer",
-              }}
-            >
-              Clear
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={!selectedInput}
-            style={{
-              padding: "8px 20px",
-              background: selectedInput ? "var(--oa-accent)" : "rgba(255,255,255,0.08)",
-              color: selectedInput ? "#0b0d10" : "var(--oa-muted)",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "13px",
-              fontWeight: "500",
-              cursor: selectedInput ? "pointer" : "not-allowed",
-            }}
-            onMouseOver={(e) => {
-              if (selectedInput) e.target.style.background = "var(--oa-accent-strong)";
-            }}
-            onMouseOut={(e) => {
-              if (selectedInput) e.target.style.background = "var(--oa-accent)";
-            }}
-          >
-            Save
-          </button>
         </div>
       </div>
     </div>

@@ -4,6 +4,10 @@ set -u
 
 GADGET_DIR="/sys/kernel/config/usb_gadget/openarcade"
 
+USB_HOST_ADDR="02:12:34:56:78:9a"
+USB_DEV_ADDR="02:12:34:56:78:9b"
+USB_IPV4_ADDR="169.254.64.64/16"
+
 echo "[*] Setting up USB HID gadget..."
 
 cd /sys/kernel/config/usb_gadget/
@@ -29,6 +33,11 @@ if [ -d "$GADGET_DIR" ]; then
         rm "$GADGET_DIR/configs/c.1/acm.usb0" || true
     fi
 
+    # Unlink ECM function from config before removing
+    if [ -L "$GADGET_DIR/configs/c.1/ecm.usb0" ]; then
+        rm "$GADGET_DIR/configs/c.1/ecm.usb0" || true
+    fi
+
     # Remove HID function if it exists
     if [ -d "$GADGET_DIR/functions/hid.usb0" ]; then
         rmdir "$GADGET_DIR/functions/hid.usb0" || true
@@ -37,6 +46,11 @@ if [ -d "$GADGET_DIR" ]; then
     # Remove ACM function if it exists
     if [ -d "$GADGET_DIR/functions/acm.usb0" ]; then
         rmdir "$GADGET_DIR/functions/acm.usb0" || true
+    fi
+
+    # Remove ECM function if it exists
+    if [ -d "$GADGET_DIR/functions/ecm.usb0" ]; then
+        rmdir "$GADGET_DIR/functions/ecm.usb0" || true
     fi
 
     # Finally remove the gadget directory
@@ -57,8 +71,8 @@ echo 0x0200 > bcdUSB        # USB 2.0
 
 mkdir -p strings/0x409
 echo "fedcba9876544210" > strings/0x409/serialnumber
-echo "Arcade Industries" > strings/0x409/manufacturer
-echo "OpenArcade" > strings/0x409/product
+echo "OpenArcade" > strings/0x409/manufacturer
+echo "OpenArcade Composite Gadget" > strings/0x409/product
 
 mkdir -p configs/c.1/strings/0x409
 echo "Config 1: HID" > configs/c.1/strings/0x409/configuration
@@ -88,7 +102,15 @@ mkdir -p functions/acm.usb0
 ln -s functions/acm.usb0 configs/c.1/
 
 # ------------------------------------------------------------
-# 5. Enable gadget
+# 5. Create ECM (USB network) function
+# ------------------------------------------------------------
+mkdir -p functions/ecm.usb0
+echo "$USB_HOST_ADDR" > functions/ecm.usb0/host_addr
+echo "$USB_DEV_ADDR" > functions/ecm.usb0/dev_addr
+ln -s functions/ecm.usb0 configs/c.1/
+
+# ------------------------------------------------------------
+# 6. Enable gadget
 # ------------------------------------------------------------
 UDC_NAME=$(ls /sys/class/udc | head -n 1 || true)
 if [ -z "$UDC_NAME" ]; then
@@ -98,5 +120,14 @@ fi
 
 echo "[*] Binding to UDC: $UDC_NAME"
 echo "$UDC_NAME" > UDC
+
+# Bring up usb0 for SSH over USB and mDNS resolution.
+if ip link show usb0 >/dev/null 2>&1; then
+    ip link set usb0 up || true
+
+    if ! ip -4 addr show dev usb0 | grep -q "$USB_IPV4_ADDR"; then
+        ip addr add "$USB_IPV4_ADDR" dev usb0 || true
+    fi
+fi
 
 echo "[✓] USB HID gadget setup complete!"

@@ -73,10 +73,10 @@ The module will start advertising as "OpenArcade-XX" over BLE.
 
 ```bash
 cd server
-uv run subscriber.py
+uv run runtime_main.py
 ```
 
-The Pi will scan for child modules, subscribe to their notifications, and output the aggregated controller state.
+The Pi will run the async BLE runtime, subscribe to module notifications, and output the aggregated controller state.
 
 ### Install as boot services on Raspberry Pi Zero 2 W
 
@@ -86,7 +86,7 @@ sudo ./packaging/rpi/install-rpi.sh
 
 This installs OpenArcade under `/opt/openarcade`, stores persistent config in
 `/var/lib/openarcade/config.json`, and enables three `systemd` services for the
-USB gadget setup, the BLE/HID runtime, and the serial config daemon.
+USB gadget setup, the BLE/HID runtime, and the serial config service.
 
 ### Design your layout
 

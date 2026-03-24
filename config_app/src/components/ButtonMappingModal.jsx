@@ -9,47 +9,35 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
 
     return (
         <div
-        className="oa-modal-overlay"
-        onClick={onCancel} // Click outside to close
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={onCancel}
         >
             <div
-            className="oa-panel-surface oa-modal-card"
-            style={{
-                borderRadius: "14px",
-                width: "360px",
-            }}
-            onClick={(e) => e.stopPropagation()} // Prevent click through
+                className="bg-white rounded-2xl p-7 w-[420px] max-w-[90%] animate-scale-in"
+                style={{
+                    boxShadow: '0 8px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.03)'
+                }}
+                onClick={(e) => e.stopPropagation()}
             >
-                <div style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "var(--oa-muted)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: "8px",
-                }}>
+                <div 
+                    className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.12em] mb-2"
+                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                >
                     Configure Input
                 </div>
-                
-                <h2 style={{
-                    margin: "0 0 20px 0",
-                    fontSize: "18px",
-                    fontWeight: "600",
-                    color: "var(--oa-text)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                }}>
+
+                <h2 
+                    className="m-0 mb-6 text-xl font-semibold text-[#18181B] tracking-tight flex items-center gap-2"
+                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
                     {button.name}
                 </h2>
 
-                <div style={{ marginBottom: "20px" }}>
-                    <label style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontSize: "13px",
-                        color: "var(--oa-muted)",
-                    }}>
+                <div className="mb-6">
+                    <label 
+                        className="block mb-2.5 text-sm text-[#52525B] font-medium"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
                         Assign Action
                     </label>
                     <input
@@ -58,74 +46,44 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                         onChange={(e) => setAction(e.target.value)}
                         placeholder="e.g., Jump"
                         autoFocus
-                        style={{
-                            width: "100%",
-                            padding: "10px 12px",
-                            background: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.08)",
-                            borderRadius: "10px",
-                            fontSize: "14px",
-                            color: "var(--oa-text)",
-                            outline: "none",
-                            transition: "border-color 0.15s ease",
+                        className="w-full px-4 py-3 bg-[#F4F4F5] hover:bg-white border border-[#E4E4E7] rounded-xl text-sm text-[#18181B] outline-none transition-all duration-150 focus:border-[#7C3AED] focus:bg-white"
+                        style={{ 
+                            fontFamily: "'DM Sans', sans-serif"
                         }}
-                        onFocus={(e) => e.target.style.borderColor = "var(--oa-accent)"}
-                        onBlur={(e) => e.target.style.borderColor = "var(--oa-panel-border)"}
-                        // Allow enter key to save
+                        onFocus={(e) => {
+                            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                            e.currentTarget.style.boxShadow = 'none';
+                        }}
                         onKeyDown={(e) => { if(e.key === 'Enter') handleSave() }}
                     />
                 </div>
 
-                <div style={{
-                    display: "flex",
-                    gap: "10px",
-                    justifyContent: "flex-end",
-                }}>
-                     <button
+                <div className="flex gap-3 justify-end">
+                    <button
                         onClick={onCancel}
-                        style={{
-                            padding: "8px 16px",
-                            background: "transparent",
-                            color: "var(--oa-muted)",
-                            border: "none",
-                            fontSize: "13px",
-                            cursor: "pointer",
-                        }}
-                        onMouseOver={(e) => e.target.style.color = "var(--oa-text)"}
-                        onMouseOut={(e) => e.target.style.color = "var(--oa-muted)"}
+                        className="px-5 py-2.5 bg-transparent text-[#52525B] border-none text-sm font-medium cursor-pointer hover:text-[#18181B] transition-colors"
+                        style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
                         Cancel
                     </button>
                     {button.action && (
                         <button
                             onClick={() => onClear(button.name)}
-                            style={{
-                                padding: "8px 12px",
-                                background: "rgba(230, 118, 108, 0.12)",
-                                color: "var(--oa-danger)",
-                                border: "1px solid rgba(230, 118, 108, 0.35)",
-                                borderRadius: "8px",
-                                fontSize: "13px",
-                                cursor: "pointer",
-                            }}
+                            className="px-4 py-2.5 bg-white text-[#EF4444] border border-[#FECACA] rounded-xl text-sm font-semibold cursor-pointer hover:bg-[#FEF2F2] transition-all duration-150"
+                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                         >
                             Clear
                         </button>
                     )}
                     <button
                         onClick={handleSave}
-                        style={{
-                            padding: "8px 20px",
-                            background: "var(--oa-accent)",
-                            color: "#0b0d10",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontSize: "13px",
-                            fontWeight: "500",
-                            cursor: "pointer",
+                        className="px-6 py-2.5 bg-[#7C3AED] hover:bg-[#6D28D9] text-white border-none rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150"
+                        style={{ 
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            boxShadow: '0 2px 8px rgba(124, 58, 237, 0.25)'
                         }}
-                        onMouseOver={(e) => e.target.style.background = "var(--oa-accent-strong)"}
-                        onMouseOut={(e) => e.target.style.background = "var(--oa-accent)"}
                     >
                         Save
                     </button>
