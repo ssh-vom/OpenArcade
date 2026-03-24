@@ -24,3 +24,10 @@ node_modules/
 node_modules
 server/config.json
 
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
