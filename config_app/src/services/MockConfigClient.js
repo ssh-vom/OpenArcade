@@ -61,31 +61,16 @@ class MockConfigClient {
         return { ok: true };
     }
 
-    async setUiBinding(deviceId, buttonName, controlId, strategy = "swap") {
+    async setUiBinding(deviceId, buttonName, controlId, strategy = "override") {
         const device = this._ensureDevice(deviceId);
         const profile = this._getActiveProfile(device);
         if (!profile) {
             throw new Error("profile_not_found");
         }
 
-        const layout = profile.ui?.layout || {};
-        const normalizedControlId = String(controlId);
-        const previousControlId = layout[buttonName];
-
-        const existingButton = Object.entries(layout).find(
-            ([currentButtonName, assignedControlId]) =>
-                currentButtonName !== buttonName && String(assignedControlId) === normalizedControlId,
-        )?.[0];
-
-        if (existingButton) {
-            if (strategy === "swap" && previousControlId != null) {
-                layout[existingButton] = previousControlId;
-            } else {
-                delete layout[existingButton];
-            }
-        }
-
-        layout[buttonName] = normalizedControlId;
+        const layout = this._normalizeLayout(profile.ui?.layout);
+        const normalizedControlId = this._normalizeControlId(controlId);
+        this._applyLayoutBinding(layout, buttonName, normalizedControlId, strategy);
         profile.ui = {
             ...profile.ui,
             layout,
@@ -119,6 +104,70 @@ class MockConfigClient {
 
     _getActiveProfile(device) {
         return device?.profiles?.[device.active_profile] || null;
+    }
+
+    _normalizeControlId(controlId) {
+        if (controlId == null) {
+            return null;
+        }
+
+        const normalized = String(controlId).trim();
+        return normalized.length > 0 ? normalized : null;
+    }
+
+    _applyLayoutBinding(layout, buttonName, controlId, strategy = "override") {
+        if (typeof buttonName !== "string" || !buttonName) {
+            return;
+        }
+
+        const previousControlId = layout[buttonName] ?? null;
+        let existingButton = null;
+        if (controlId != null) {
+            existingButton = Object.entries(layout).find(
+                ([currentButtonName, assignedControlId]) => (
+                    currentButtonName !== buttonName
+                    && assignedControlId != null
+                    && String(assignedControlId) === controlId
+                ),
+            )?.[0] || null;
+        }
+
+        if (existingButton) {
+            if (strategy === "swap") {
+                layout[existingButton] = previousControlId;
+            } else {
+                layout[existingButton] = null;
+            }
+        }
+
+        layout[buttonName] = controlId;
+    }
+
+    _normalizeLayout(layout) {
+        const normalizedLayout = {
+            ...Object.fromEntries(
+                Object.entries(DEFAULT_LAYOUT).map(([buttonName, controlId]) => [
+                    buttonName,
+                    String(controlId),
+                ]),
+            ),
+        };
+
+        if (!layout || typeof layout !== "object") {
+            return normalizedLayout;
+        }
+
+        Object.entries(layout).forEach(([buttonName, rawControlId]) => {
+            const normalizedControlId = this._normalizeControlId(rawControlId);
+            this._applyLayoutBinding(
+                normalizedLayout,
+                buttonName,
+                normalizedControlId,
+                "override",
+            );
+        });
+
+        return normalizedLayout;
     }
 
     async listProfiles(deviceId) {
@@ -254,30 +303,56 @@ class MockConfigClient {
         let migrated = false;
 
         Object.values(this._data.devices).forEach((device) => {
-            if (!device || device.profiles) {
+            if (!device) {
                 return;
             }
 
-            const profileId = "default-profile";
-            const profile = {
-                id: profileId,
-                name: "Default",
-                plate_id: "button-module-v1",
-                active_mode: device.active_mode || "keyboard",
-                modes:
-                    device.modes || {
-                        keyboard: { output: "hid_keyboard", mapping: {} },
-                        gamepad: { output: "hid_gamepad", mapping: {} },
-                    },
-                ui: device.ui || { layout: {} },
-            };
+            if (!device.profiles) {
+                const profileId = "default-profile";
+                const profile = {
+                    id: profileId,
+                    name: "Default",
+                    plate_id: "button-module-v1",
+                    active_mode: device.active_mode || "keyboard",
+                    modes:
+                        device.modes || {
+                            keyboard: { output: "hid_keyboard", mapping: {} },
+                            gamepad: { output: "hid_gamepad", mapping: {} },
+                        },
+                    ui: device.ui || { layout: {} },
+                };
 
-            device.profiles = { [profileId]: profile };
-            device.active_profile = profileId;
-            delete device.active_mode;
-            delete device.modes;
-            delete device.ui;
-            migrated = true;
+                device.profiles = { [profileId]: profile };
+                device.active_profile = profileId;
+                delete device.active_mode;
+                delete device.modes;
+                delete device.ui;
+                migrated = true;
+            }
+
+            if (!device.profiles || typeof device.profiles !== "object") {
+                return;
+            }
+
+            Object.values(device.profiles).forEach((profile) => {
+                if (!profile || typeof profile !== "object") {
+                    return;
+                }
+
+                const hasUiObject = profile.ui && typeof profile.ui === "object";
+                const previousLayout = hasUiObject ? profile.ui.layout : undefined;
+                const normalizedLayout = this._normalizeLayout(previousLayout);
+
+                const layoutChanged = JSON.stringify(previousLayout || {}) !== JSON.stringify(normalizedLayout);
+                if (!hasUiObject || layoutChanged) {
+                    migrated = true;
+                }
+
+                profile.ui = {
+                    ...(hasUiObject ? profile.ui : {}),
+                    layout: normalizedLayout,
+                };
+            });
         });
 
         if (migrated) {

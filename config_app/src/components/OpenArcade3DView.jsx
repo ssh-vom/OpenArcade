@@ -163,6 +163,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [pressedButtons, setPressedButtons] = useState([]);
     const [activeProfile, setActiveProfile] = useState(null);
     const [profilesRefreshKey, setProfilesRefreshKey] = useState(0);
+    const [showOnlyConnected, setShowOnlyConnected] = useState(false);
 
     const triggerProfileRefresh = useCallback(() => setProfilesRefreshKey((k) => k + 1), []);
     useEffect(() => {
@@ -189,9 +190,21 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     }, []);
 
     const safeCurrentModuleIndex = currentModuleIndex < modules.length ? currentModuleIndex : 0;
+    const visibleModules = showOnlyConnected
+        ? modules.filter((m) => m.connected !== false)
+        : modules;
     const currentModule = modules[safeCurrentModuleIndex] || defaultModules[0];
     const currentMappings = currentModule?.mappings || {};
     const cameraControl = useCameraController({ currentModuleIndex: safeCurrentModuleIndex, modules, enabled: viewMode === '3d' });
+
+    useEffect(() => {
+        if (!showOnlyConnected) return;
+        const currentIsVisible = modules[safeCurrentModuleIndex]?.connected !== false;
+        if (!currentIsVisible) {
+            const firstVisible = modules.findIndex((m) => m.connected !== false);
+            if (firstVisible >= 0) setCurrentModuleIndex(firstVisible);
+        }
+    }, [showOnlyConnected, modules, safeCurrentModuleIndex]);
 
     useEffect(() => {
         currentModuleDeviceIdRef.current = currentModule?.deviceId || null;
@@ -200,10 +213,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const defaultLayout = DEFAULT_LAYOUT;
 
     const getControlIdForButton = useCallback((deviceLayout, buttonName) => {
-        if (deviceLayout && deviceLayout[buttonName]) {
-            return deviceLayout[buttonName];
+        if (deviceLayout && Object.prototype.hasOwnProperty.call(deviceLayout, buttonName)) {
+            return deviceLayout[buttonName] ?? null;
         }
-        return defaultLayout[buttonName];
+        return defaultLayout[buttonName] ?? null;
     }, [defaultLayout]);
 
     const getButtonNameForControlId = useCallback((deviceLayout, controlId) => {
@@ -213,7 +226,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
         const normalizedControlId = String(controlId);
         const layout = deviceLayout || defaultLayout;
-        const match = Object.entries(layout).find(([, assignedControlId]) => String(assignedControlId) === normalizedControlId);
+        const match = Object.entries(layout).find(([, assignedControlId]) => (
+            assignedControlId != null && String(assignedControlId) === normalizedControlId
+        ));
         return match?.[0] || null;
     }, [defaultLayout]);
 
@@ -230,23 +245,38 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         }
 
         const positions = [[-1.5, 0, 0], [0, 0, 0], [1.5, 0, 0], [3, 0, 0]];
-        const realDevices = deviceEntries.filter(([deviceId]) => deviceId.includes(":"));
-        const entriesToRender = realDevices.length > 0 ? realDevices : deviceEntries;
+        const entriesToRender = [...deviceEntries].sort(([, leftConfig], [, rightConfig]) => {
+            const leftConnected = leftConfig?.connected !== false;
+            const rightConnected = rightConfig?.connected !== false;
+            if (leftConnected === rightConnected) {
+                return 0;
+            }
+            return leftConnected ? -1 : 1;
+        });
         const selectedDeviceId = currentModuleDeviceIdRef.current;
 
         const nextModules = entriesToRender.map(([deviceId, deviceConfig], index) => {
-            const uiLayout = deviceConfig?.ui?.layout;
-            const hasLayout = uiLayout && Object.keys(uiLayout).length > 0;
-            const layout = hasLayout ? uiLayout : defaultLayout;
             const profiles = deviceConfig?.profiles || {};
             const activeProfileId = deviceConfig?.active_profile;
             const deviceActiveProfile = activeProfileId ? profiles[activeProfileId] : null;
+            const profileLayout = deviceActiveProfile?.ui?.layout;
+            const legacyLayout = deviceConfig?.ui?.layout;
+            const resolvedLayout = profileLayout && typeof profileLayout === "object"
+                ? profileLayout
+                : (legacyLayout && typeof legacyLayout === "object" ? legacyLayout : null);
+            const layout = {
+                ...defaultLayout,
+                ...(resolvedLayout || {}),
+            };
             const mode = deviceActiveProfile?.active_mode || "keyboard";
             const mappingConfig = deviceActiveProfile?.modes?.[mode]?.mapping || {};
             const plateId = deviceActiveProfile?.plate_id || "button-module-v1";
             const plateEntry = PLATE_CATALOG[plateId];
             const resolvedPath = plateEntry?.controller_model || "/OpenArcadeAssy_v2.glb";
             const reverseLayout = Object.entries(layout).reduce((acc, [buttonName, controlId]) => {
+                if (controlId == null || controlId === "") {
+                    return acc;
+                }
                 acc[String(controlId)] = buttonName;
                 return acc;
             }, {});
@@ -307,6 +337,15 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         applyDeviceConfigs(devices);
     }, [activeClient, applyDeviceConfigs]);
 
+    const handleRenameDevice = useCallback(async (deviceId, name) => {
+        if (!deviceId || !name?.trim()) return;
+        try {
+            await activeClient.renameDevice(deviceId, name.trim());
+            await refreshDevices();
+        } catch (error) {
+            console.warn("Failed to rename device:", error);
+        }
+    }, [activeClient, refreshDevices]);
     useEffect(() => {
         let cancelled = false;
 
@@ -447,28 +486,32 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
     const navigatePrev = useCallback(() => {
         setCurrentModuleIndex(prev => {
-            const next = prev > 0 ? prev - 1 : prev;
-            if (next !== prev) {
+            const candidates = showOnlyConnected
+                ? modules.map((m, i) => i).filter(i => modules[i]?.connected !== false)
+                : modules.map((_, i) => i);
+            const prevIdx = candidates.filter(i => i < prev).at(-1) ?? prev;
+            if (prevIdx !== prev) {
                 setSelectedButton(null);
                 setArmedButton(null);
                 setMappingStatus(null);
             }
-            return next;
+            return prevIdx;
         });
-    }, []);
+    }, [modules, showOnlyConnected]);
 
     const navigateNext = useCallback(() => {
         setCurrentModuleIndex(prev => {
-            const next = prev < modules.length - 1 ? prev + 1 : prev;
-            if (next !== prev) {
+            const nextIdx = showOnlyConnected
+                ? (modules.map((m, i) => i).filter(i => modules[i]?.connected !== false && i > prev)[0] ?? prev)
+                : (prev < modules.length - 1 ? prev + 1 : prev);
+            if (nextIdx !== prev) {
                 setSelectedButton(null);
                 setArmedButton(null);
                 setMappingStatus(null);
             }
-            return next;
+            return nextIdx;
         });
-    }, [modules.length]);
-
+    }, [modules, showOnlyConnected]);
     // Arrow key navigation in 2D view
     useEffect(() => {
         if (viewMode !== '2d' || activeSection !== 'mappings') return;
@@ -545,13 +588,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
                 sourceBindingInFlightRef.current = true;
                 try {
-                    await activeClient.setUiBinding(currentDeviceId, targetButtonName, capturedControlId, 'swap');
+                    await activeClient.setUiBinding(currentDeviceId, targetButtonName, capturedControlId, 'override');
                     await refreshDevices();
                     if (!cancelled) {
                         setArmedButton(null);
                         setMappingStatus({
                             type: 'success',
-                            message: `${targetButtonName} now follows physical control ${capturedControlId}.`,
+                            message: `${targetButtonName} now follows physical control ${capturedControlId}; previous owner unbound.`,
                         });
                     }
                 } catch {
@@ -651,7 +694,12 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     ];
 
     const showMappingsView = activeSection === "mappings";
-
+    const hasPrev = showOnlyConnected
+        ? modules.slice(0, safeCurrentModuleIndex).some((m) => m.connected !== false)
+        : safeCurrentModuleIndex > 0;
+    const hasNext = showOnlyConnected
+        ? modules.slice(safeCurrentModuleIndex + 1).some((m) => m.connected !== false)
+        : safeCurrentModuleIndex < modules.length - 1;
     return (
         <div
             className={`w-screen h-screen flex flex-col overflow-hidden bg-[#FAFAF8] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
@@ -668,6 +716,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                 mappingFilter={mappingFilter}
                 onMappingFilterChange={setMappingFilter}
                 onToggleView={toggleViewMode}
+                showOnlyConnected={showOnlyConnected}
+                onToggleConnectedFilter={() => setShowOnlyConnected((v) => !v)}
+                onRenameDevice={handleRenameDevice}
             />
 
             <div className="flex flex-1 min-h-0">
@@ -837,23 +888,26 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
                                 <Bounds clip observe={false} margin={1}>
                                     <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
-                                    {modules.map((module, index) => (
-                                        <MemoizedChildModule
-                                            path={module.path}
-                                            onButtonClick={handleButtonClick}
-                                            onModuleClick={() => handleModuleClick(index)}
-                                            isEditable={index === safeCurrentModuleIndex}
-                                            position={module.position}
-                                            viewMode={viewMode}
-                                            isActive={index === safeCurrentModuleIndex}
-                                            mappings={module.mappings}
-                                            mappingFilter={mappingFilter}
-                                            pressedButtons={index === safeCurrentModuleIndex ? pressedButtons : []}
-                                            armedButton={index === safeCurrentModuleIndex ? armedButton : null}
-                                            isMappingMode={index === safeCurrentModuleIndex ? isMappingMode : false}
-                                            key={module.deviceId || module.id}
-                                        />
-                                    ))}
+                                    {visibleModules.map((module) => {
+                                        const globalIndex = modules.indexOf(module);
+                                        return (
+                                            <MemoizedChildModule
+                                                path={module.path}
+                                                onButtonClick={handleButtonClick}
+                                                onModuleClick={() => handleModuleClick(globalIndex)}
+                                                isEditable={globalIndex === safeCurrentModuleIndex}
+                                                position={module.position}
+                                                viewMode={viewMode}
+                                                isActive={globalIndex === safeCurrentModuleIndex}
+                                                mappings={module.mappings}
+                                                mappingFilter={mappingFilter}
+                                                pressedButtons={globalIndex === safeCurrentModuleIndex ? pressedButtons : []}
+                                                armedButton={globalIndex === safeCurrentModuleIndex ? armedButton : null}
+                                                isMappingMode={globalIndex === safeCurrentModuleIndex ? isMappingMode : false}
+                                                key={module.deviceId || module.id}
+                                            />
+                                        );
+                                    })}
                                 </Bounds>
                                 {viewMode === '3d' && (
                                     <CameraController
@@ -870,9 +924,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     {/* Left arrow */}
                                     <button
                                         onClick={navigatePrev}
-                                        disabled={safeCurrentModuleIndex === 0}
+                                        disabled={!hasPrev}
                                         className={`absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${
-                                            safeCurrentModuleIndex === 0
+                                            !hasPrev
                                                 ? "opacity-30 cursor-default"
                                                 : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
                                         }`}
@@ -886,9 +940,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     {/* Right arrow */}
                                     <button
                                         onClick={navigateNext}
-                                        disabled={safeCurrentModuleIndex === modules.length - 1}
+                                        disabled={!hasNext}
                                         className={`absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${
-                                            safeCurrentModuleIndex === modules.length - 1
+                                            !hasNext
                                                 ? "opacity-30 cursor-default"
                                                 : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
                                         }`}
@@ -904,35 +958,38 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                         className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-[#E4E4E7]"
                                         style={{ boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
                                     >
-                                        {modules.map((mod, i) => (
-                                            <button
-                                                key={mod.deviceId || mod.id}
-                                                onClick={() => handleModuleChange(i)}
-                                                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-none ${
-                                                    i === safeCurrentModuleIndex 
-                                                        ? "bg-[#7C3AED]/10" 
-                                                        : "bg-transparent hover:bg-[#F4F4F5]"
-                                                }`}
-                                            >
-                                                <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                                    i === safeCurrentModuleIndex 
-                                                        ? "bg-[#7C3AED] scale-110" 
-                                                        : "bg-[#A1A1AA]"
-                                                }`}
-                                                style={i === safeCurrentModuleIndex ? {
-                                                    boxShadow: '0 0 8px rgba(124, 58, 237, 0.4)'
-                                                } : {}}
-                                                />
-                                                <span 
-                                                    className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
-                                                        i === safeCurrentModuleIndex ? "text-[#18181B]" : "text-[#A1A1AA]"
+                                        {visibleModules.map((mod) => {
+                                            const globalIndex = modules.indexOf(mod);
+                                            return (
+                                                <button
+                                                    key={mod.deviceId || mod.id}
+                                                    onClick={() => handleModuleChange(globalIndex)}
+                                                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-none ${
+                                                        globalIndex === safeCurrentModuleIndex
+                                                            ? "bg-[#7C3AED]/10"
+                                                            : "bg-transparent hover:bg-[#F4F4F5]"
                                                     }`}
-                                                    style={{ fontFamily: "'DM Sans', sans-serif" }}
                                                 >
-                                                    {mod.name}
-                                                </span>
-                                            </button>
-                                        ))}
+                                                    <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                                                        globalIndex === safeCurrentModuleIndex
+                                                            ? "bg-[#7C3AED] scale-110"
+                                                            : "bg-[#A1A1AA]"
+                                                    }`}
+                                                    style={globalIndex === safeCurrentModuleIndex ? {
+                                                        boxShadow: '0 0 8px rgba(124, 58, 237, 0.4)'
+                                                    } : {}}
+                                                    />
+                                                    <span
+                                                        className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
+                                                            globalIndex === safeCurrentModuleIndex ? "text-[#18181B]" : "text-[#A1A1AA]"
+                                                        }`}
+                                                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                                                    >
+                                                        {mod.name}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </>
                             )}

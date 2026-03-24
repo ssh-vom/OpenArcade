@@ -114,7 +114,7 @@ export default class SerialConfigClient {
         return response;
     }
 
-    async setUiBinding(deviceId, buttonName, controlId, strategy = "swap") {
+    async setUiBinding(deviceId, buttonName, controlId, strategy = "override") {
         const response = await this.sendCommand({
             cmd: "set_ui_binding",
             device_id: deviceId,
