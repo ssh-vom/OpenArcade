@@ -1,0 +1,5 @@
+name = "open-arcade"
+compatibility_date = "2026-03-24"
+
+[assets]
+directory = "./dist"
