@@ -4,14 +4,15 @@ import PlateTopPreview from "./PlateTopPreview.jsx";
 
 const PLATES = plateCatalog.plates;
 
-function PlateCard({ plate, isSelected, isLoading, onClick }) {
+function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) {
     return (
         <button
             type="button"
             onClick={onClick}
             disabled={isLoading}
-            className="relative text-left rounded-xl overflow-hidden transition-all duration-200"
+            className="relative text-left rounded-xl overflow-hidden plate-card-animate transition-shadow duration-300 ease-out hover:shadow-lg"
             style={{
+                "--stagger": staggerIndex,
                 border: `1.5px solid ${isSelected ? plate.accent_color : "#E4E4E7"}`,
                 background: "#FFFFFF",
                 boxShadow: isSelected
@@ -102,7 +103,7 @@ export default function PlateGalleryPanel({
 
     return (
         <div
-            className="h-full flex flex-col relative overflow-hidden"
+            className="h-full flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden"
             style={{ background: "linear-gradient(180deg, #FAFAF8 0%, #F4F4F2 100%)" }}
         >
             <div
@@ -147,7 +148,7 @@ export default function PlateGalleryPanel({
 
             <div className="relative z-[1] flex-1 overflow-y-auto panel-scroll px-4 pb-4">
                 <div className="grid grid-cols-2 gap-3">
-                    {PLATES.map((plate) => {
+                    {PLATES.map((plate, index) => {
                         const isSelected = plate.id === currentPlateId;
                         const isLoading = selectedLoadingId === plate.id;
 
@@ -155,6 +156,7 @@ export default function PlateGalleryPanel({
                             <PlateCard
                                 key={plate.id}
                                 plate={plate}
+                                staggerIndex={index}
                                 isSelected={isSelected}
                                 isLoading={isLoading}
                                 onClick={() => {

@@ -143,6 +143,27 @@
   to { transform: rotate(360deg); }
 }
 
+/* Plate profile / picker cards — staggered entrance */
+@keyframes plate-card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.plate-card-animate {
+  animation: plate-card-rise 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--stagger, 0) * 55ms);
+}
+
+.plate-panel-enter {
+  animation: slide-in-right 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* =============================================================================
    Base Styles
    ============================================================================= */

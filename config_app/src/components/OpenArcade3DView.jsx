@@ -23,7 +23,6 @@ import {
 } from "../services/HIDManager.js";
 
 const PLATE_CATALOG = Object.fromEntries(plateCatalog.plates.map((p) => [p.id, p]));
-
 // Preload GLBs with texture generation
 useGLTF.preload("/OpenArcadeAssy_v2.glb");
 useGLTF.preload("/RevFinalJoystickModule_2026-03-15.glb");
@@ -723,7 +722,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
 
             <div className="flex flex-1 min-h-0">
                 {/* Left Sidebar Navigation — Refined styling */}
-                <div 
+                <div
                     className="w-[72px] bg-white flex flex-col items-center pt-5 gap-2 shrink-0"
                     style={{
                         borderRight: '1px solid rgba(0, 0, 0, 0.06)',
@@ -747,20 +746,20 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                             <item.Icon active={activeSection === item.id} />
                             {/* Active indicator bar */}
                             {activeSection === item.id && (
-                                <div 
+                                <div
                                     className="absolute -left-[1px] top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#7C3AED] rounded-r-full"
                                     style={{ boxShadow: '2px 0 8px rgba(124, 58, 237, 0.3)' }}
                                 />
                             )}
                         </button>
                     ))}
-                    
+
                     {/* Divider */}
                     <div className="w-8 h-px bg-[#E4E4E7] my-2" />
-                    
+
                     {/* Version indicator at bottom */}
                     <div className="mt-auto mb-4">
-                        <div 
+                        <div
                             className="text-[9px] text-[#A1A1AA] font-medium tracking-wider text-center leading-tight"
                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                         >
@@ -775,7 +774,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                         {/* Canvas Area with Blueprint grid */}
                         <div className="flex-1 relative animate-fade-in">
                             {/* Blueprint grid overlay */}
-                            <div 
+                            <div
                                 className="absolute inset-0 pointer-events-none z-0"
                                 style={{
                                     background: `
@@ -785,7 +784,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     backgroundSize: '24px 24px'
                                 }}
                             />
-                            
+
                             <Canvas
                                 key={viewMode}
                                 orthographic={viewMode === '2d'}
@@ -925,11 +924,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     <button
                                         onClick={navigatePrev}
                                         disabled={!hasPrev}
-                                        className={`absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${
-                                            !hasPrev
-                                                ? "opacity-30 cursor-default"
-                                                : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
-                                        }`}
+                                        className={`absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${!hasPrev
+                                            ? "opacity-30 cursor-default"
+                                            : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
+                                            }`}
                                         style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
                                     >
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#18181B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -941,11 +939,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     <button
                                         onClick={navigateNext}
                                         disabled={!hasNext}
-                                        className={`absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${
-                                            !hasNext
-                                                ? "opacity-30 cursor-default"
-                                                : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
-                                        }`}
+                                        className={`absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-xl bg-white/90 backdrop-blur-sm border border-[#E4E4E7] transition-all duration-200 cursor-pointer ${!hasNext
+                                            ? "opacity-30 cursor-default"
+                                            : "hover:bg-white hover:border-[#7C3AED]/30 hover:shadow-lg active:scale-95"
+                                            }`}
                                         style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}
                                     >
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#18181B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -954,7 +951,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     </button>
 
                                     {/* Module indicator pills */}
-                                    <div 
+                                    <div
                                         className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-[#E4E4E7]"
                                         style={{ boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
                                     >
@@ -964,25 +961,22 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                                 <button
                                                     key={mod.deviceId || mod.id}
                                                     onClick={() => handleModuleChange(globalIndex)}
-                                                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-none ${
-                                                        globalIndex === safeCurrentModuleIndex
-                                                            ? "bg-[#7C3AED]/10"
-                                                            : "bg-transparent hover:bg-[#F4F4F5]"
-                                                    }`}
+                                                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-none ${globalIndex === safeCurrentModuleIndex
+                                                        ? "bg-[#7C3AED]/10"
+                                                        : "bg-transparent hover:bg-[#F4F4F5]"
+                                                        }`}
                                                 >
-                                                    <div className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                                                        globalIndex === safeCurrentModuleIndex
-                                                            ? "bg-[#7C3AED] scale-110"
-                                                            : "bg-[#A1A1AA]"
-                                                    }`}
-                                                    style={globalIndex === safeCurrentModuleIndex ? {
-                                                        boxShadow: '0 0 8px rgba(124, 58, 237, 0.4)'
-                                                    } : {}}
+                                                    <div className={`w-2 h-2 rounded-full transition-all duration-200 ${globalIndex === safeCurrentModuleIndex
+                                                        ? "bg-[#7C3AED] scale-110"
+                                                        : "bg-[#A1A1AA]"
+                                                        }`}
+                                                        style={globalIndex === safeCurrentModuleIndex ? {
+                                                            boxShadow: '0 0 8px rgba(124, 58, 237, 0.4)'
+                                                        } : {}}
                                                     />
                                                     <span
-                                                        className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
-                                                            globalIndex === safeCurrentModuleIndex ? "text-[#18181B]" : "text-[#A1A1AA]"
-                                                        }`}
+                                                        className={`text-xs font-medium whitespace-nowrap transition-colors duration-200 ${globalIndex === safeCurrentModuleIndex ? "text-[#18181B]" : "text-[#A1A1AA]"
+                                                            }`}
                                                         style={{ fontFamily: "'DM Sans', sans-serif" }}
                                                     >
                                                         {mod.name}

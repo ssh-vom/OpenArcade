@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { HID_INPUT_TYPES } from "../services/HIDManager.js";
 
 // Use the new block logo from public folder
-const oaBlockLogo = "/oa_block.png";
+const oaBlockLogo = "/plates/oa_block.png";
 
 export default function ControllerHUD({
     controllerName,

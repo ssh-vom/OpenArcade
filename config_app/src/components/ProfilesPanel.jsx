@@ -136,6 +136,7 @@ export default function ProfilesPanel({
 
     if (view === "gallery") {
         return (
+            <div className="h-full flex-1 min-w-0 min-h-0 flex flex-col plate-panel-enter">
             <PlateGalleryPanel
                 deviceId={deviceId}
                 currentPlateId={editingProfile?.plate_id ?? null}
@@ -151,12 +152,13 @@ export default function ProfilesPanel({
                     onProfileChanged?.();
                 }}
             />
+            </div>
         );
     }
 
     return (
         <div
-            className="h-full flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden"
+            className="h-full flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden animate-fade-in"
             style={{ background: "linear-gradient(180deg, #FAFAF8 0%, #F4F4F2 100%)" }}
         >
             <div
@@ -208,7 +210,7 @@ export default function ProfilesPanel({
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {profiles.map((profile) => {
+                        {profiles.map((profile, index) => {
                             const isActive = profile.id === activeProfile?.id;
                             const plateName = plateNameById.get(profile.plate_id) || profile.plate_id;
                             const isSwitching = switchingId === profile.id;
@@ -217,8 +219,9 @@ export default function ProfilesPanel({
                             return (
                                 <div
                                     key={profile.id}
-                                    className="rounded-xl overflow-hidden flex flex-col"
+                                    className="rounded-xl overflow-hidden flex flex-col plate-card-animate card-interactive transition-[box-shadow,border-color] duration-300 ease-out"
                                     style={{
+                                        "--stagger": index,
                                         background: "#FFFFFF",
                                         border: `1px solid ${isActive ? "#7C3AED" : "#E4E4E7"}`,
                                         boxShadow: isActive

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // Use the new block logo from public folder
-const oaBlockLogo = "/oa_block.png";
+const oaBlockLogo = "/plates/oa_block.png";
 
 export default function DeviceConnectionScreen({ onConnect }) {
     const [scanning, setScanning] = useState(true);
