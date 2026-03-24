@@ -37,19 +37,19 @@ export default function D2ConfigPanel({
 
     const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#7C3AED';
-            case HID_INPUT_TYPES.KEYBOARD: return '#06B6D4';
-            case HID_INPUT_TYPES.ANALOG: return '#F97316';
-            default: return '#A1A1AA';
+            case HID_INPUT_TYPES.GAMEPAD: return '#5180C1';
+            case HID_INPUT_TYPES.KEYBOARD: return '#4A90A4';
+            case HID_INPUT_TYPES.ANALOG: return '#6B9BD1';
+            default: return '#707070';
         }
     };
 
     const getTypeBgClass = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return { bg: 'rgba(124, 58, 237, 0.08)', border: 'rgba(124, 58, 237, 0.2)', text: '#7C3AED' };
-            case HID_INPUT_TYPES.KEYBOARD: return { bg: 'rgba(6, 182, 212, 0.08)', border: 'rgba(6, 182, 212, 0.2)', text: '#06B6D4' };
-            case HID_INPUT_TYPES.ANALOG: return { bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.2)', text: '#F97316' };
-            default: return { bg: '#F4F4F5', border: '#E4E4E7', text: '#A1A1AA' };
+            case HID_INPUT_TYPES.GAMEPAD: return { bg: 'rgba(81, 128, 193, 0.12)', border: 'rgba(81, 128, 193, 0.25)', text: '#5180C1' };
+            case HID_INPUT_TYPES.KEYBOARD: return { bg: 'rgba(74, 144, 164, 0.12)', border: 'rgba(74, 144, 164, 0.25)', text: '#4A90A4' };
+            case HID_INPUT_TYPES.ANALOG: return { bg: 'rgba(107, 155, 209, 0.12)', border: 'rgba(107, 155, 209, 0.25)', text: '#6B9BD1' };
+            default: return { bg: '#B8B8B8', border: '#A0A0A0', text: '#707070' };
         }
     };
 
@@ -64,9 +64,9 @@ export default function D2ConfigPanel({
 
     return (
         <div 
-            className="w-[320px] h-full bg-white flex flex-col shrink-0 animate-slide-in-right"
+            className="w-[320px] h-full bg-[#D9D9D9] flex flex-col shrink-0 animate-slide-in-right"
             style={{
-                borderLeft: '1px solid #E4E4E7',
+                borderLeft: '1px solid #A0A0A0',
             }}
         >
             {/* Header Section */}
@@ -74,13 +74,13 @@ export default function D2ConfigPanel({
                 {/* Label + Title */}
                 <div className="mb-5">
                     <div 
-                        className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.12em] mb-1.5"
+                        className="text-[10px] font-semibold text-[#707070] uppercase tracking-[0.12em] mb-1.5"
                         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                     >
                         Configuration
                     </div>
                     <h3 
-                        className="m-0 text-xl font-semibold text-[#18181B] tracking-tight"
+                        className="m-0 text-xl font-semibold text-[#333333] tracking-tight"
                         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                     >
                         {moduleName}
@@ -115,7 +115,7 @@ export default function D2ConfigPanel({
             </div>
 
             {/* Divider */}
-            <div className="mx-6 h-px bg-[#F4F4F5]" />
+            <div className="mx-6 h-px bg-[#B8B8B8]" />
 
             {/* Mapping Mode Section */}
             <div className="p-6">
@@ -123,12 +123,12 @@ export default function D2ConfigPanel({
                     onClick={() => onToggleMappingMode && onToggleMappingMode()}
                     className={`w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide border-2 transition-all duration-200 cursor-pointer ${
                         isMappingMode
-                            ? 'bg-[#7C3AED] text-white border-[#7C3AED]'
-                            : 'bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#7C3AED] hover:text-[#7C3AED]'
+                            ? 'bg-[#5180C1] text-white border-[#5180C1]'
+                            : 'bg-[#CCCCCC] text-[#333333] border-[#A0A0A0] hover:border-[#5180C1] hover:text-[#5180C1]'
                     }`}
                     style={{ 
                         fontFamily: "'Space Grotesk', sans-serif",
-                        boxShadow: isMappingMode ? '0 4px 16px rgba(124, 58, 237, 0.3)' : 'none'
+                        boxShadow: isMappingMode ? '0 4px 16px rgba(81, 128, 193, 0.3)' : 'none'
                     }}
                 >
                     {isMappingMode ? 'Exit Mapping Mode' : 'Enter Mapping Mode'}
@@ -139,9 +139,9 @@ export default function D2ConfigPanel({
                     className="mt-5 rounded-xl px-5 py-4 text-sm leading-relaxed"
                     style={{
                         fontFamily: "'DM Sans', sans-serif",
-                        background: '#FAFAFA',
-                        border: '1px solid #F4F4F5',
-                        color: '#52525B'
+                        background: '#CCCCCC',
+                        border: '1px solid #B8B8B8',
+                        color: '#333333'
                     }}
                 >
                     {isMappingMode ? (
@@ -151,8 +151,8 @@ export default function D2ConfigPanel({
                                 <span 
                                     className="font-semibold px-2 py-1 rounded-md inline-block mt-1"
                                     style={{ 
-                                        background: 'rgba(124, 58, 237, 0.1)',
-                                        color: '#7C3AED',
+                                        background: 'rgba(81, 128, 193, 0.15)',
+                                        color: '#5180C1',
                                         fontFamily: "'IBM Plex Mono', monospace"
                                     }}
                                 >
@@ -177,19 +177,19 @@ export default function D2ConfigPanel({
                                 ? 'rgba(239, 68, 68, 0.08)'
                                 : mappingStatus.type === 'success'
                                     ? 'rgba(16, 185, 129, 0.08)'
-                                    : 'rgba(6, 182, 212, 0.08)',
+                                    : 'rgba(74, 144, 164, 0.08)',
                             border: `1px solid ${
                                 mappingStatus.type === 'error'
                                     ? 'rgba(239, 68, 68, 0.2)'
                                     : mappingStatus.type === 'success'
                                         ? 'rgba(16, 185, 129, 0.2)'
-                                        : 'rgba(6, 182, 212, 0.2)'
+                                        : 'rgba(74, 144, 164, 0.2)'
                             }`,
                             color: mappingStatus.type === 'error'
                                 ? '#EF4444'
                                 : mappingStatus.type === 'success'
                                     ? '#10B981'
-                                    : '#06B6D4'
+                                    : '#4A90A4'
                         }}
                     >
                         {mappingStatus.message}
@@ -198,7 +198,7 @@ export default function D2ConfigPanel({
             </div>
 
             {/* Divider */}
-            <div className="mx-6 h-px bg-[#F4F4F5]" />
+            <div className="mx-6 h-px bg-[#B8B8B8]" />
 
             {/* Mappings List */}
             <div className="flex-1 p-6 overflow-y-auto panel-scroll">
@@ -206,18 +206,18 @@ export default function D2ConfigPanel({
                     <div 
                         className="py-10 px-6 text-center rounded-2xl"
                         style={{
-                            background: '#FAFAFA',
-                            border: '2px dashed #E4E4E7'
+                            background: '#CCCCCC',
+                            border: '2px dashed #A0A0A0'
                         }}
                     >
                         <div 
-                            className="text-[10px] tracking-[0.15em] uppercase mb-2 font-semibold text-[#A1A1AA]"
+                            className="text-[10px] tracking-[0.15em] uppercase mb-2 font-semibold text-[#707070]"
                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                         >
                             No Mappings
                         </div>
                         <div 
-                            className="text-sm text-[#71717A] leading-relaxed"
+                            className="text-sm text-[#555555] leading-relaxed"
                             style={{ fontFamily: "'DM Sans', sans-serif" }}
                         >
                             Click a button in the 2D view<br />to configure HID input.
@@ -254,7 +254,7 @@ export default function D2ConfigPanel({
                                             {getTypeLabel(type)}
                                         </span>
                                         <span 
-                                            className="text-[10px] text-[#A1A1AA] bg-[#F4F4F5] px-2.5 py-1 rounded-full font-medium ml-auto"
+                                            className="text-[10px] text-[#707070] bg-[#B8B8B8] px-2.5 py-1 rounded-full font-medium ml-auto"
                                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                         >
                                             {typeMappings.length}
@@ -274,37 +274,37 @@ export default function D2ConfigPanel({
                                                     className="w-full text-left p-4 rounded-xl cursor-pointer transition-all duration-150 border-none"
                                                     style={{
                                                         background: isArmed
-                                                            ? 'rgba(6, 182, 212, 0.08)'
+                                                            ? 'rgba(74, 144, 164, 0.08)'
                                                             : isPressed
                                                                 ? 'rgba(16, 185, 129, 0.08)'
-                                                                : '#FAFAFA',
+                                                                : '#CCCCCC',
                                                         border: isArmed
-                                                            ? '2px solid rgba(6, 182, 212, 0.3)'
+                                                            ? '2px solid rgba(74, 144, 164, 0.3)'
                                                             : isPressed
                                                                 ? '2px solid rgba(16, 185, 129, 0.3)'
-                                                                : '1px solid #E4E4E7',
+                                                                : '1px solid #A0A0A0',
                                                         boxShadow: (isArmed || isPressed)
-                                                            ? `0 0 0 3px ${isArmed ? 'rgba(6, 182, 212, 0.1)' : 'rgba(16, 185, 129, 0.1)'}`
+                                                            ? `0 0 0 3px ${isArmed ? 'rgba(74, 144, 164, 0.1)' : 'rgba(16, 185, 129, 0.1)'}`
                                                             : 'none'
                                                     }}
                                                     onMouseEnter={(e) => {
                                                         if (!isArmed && !isPressed) {
-                                                            e.currentTarget.style.background = '#FFFFFF';
-                                                            e.currentTarget.style.borderColor = 'rgba(124, 58, 237, 0.3)';
+                                                            e.currentTarget.style.background = '#D9D9D9';
+                                                            e.currentTarget.style.borderColor = 'rgba(81, 128, 193, 0.3)';
                                                             e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
                                                         }
                                                     }}
                                                     onMouseLeave={(e) => {
                                                         if (!isArmed && !isPressed) {
-                                                            e.currentTarget.style.background = '#FAFAFA';
-                                                            e.currentTarget.style.borderColor = '#E4E4E7';
+                                                            e.currentTarget.style.background = '#CCCCCC';
+                                                            e.currentTarget.style.borderColor = '#A0A0A0';
                                                             e.currentTarget.style.boxShadow = 'none';
                                                         }
                                                     }}
                                                 >
                                                     <div className="flex items-center justify-between gap-2 mb-2">
                                                         <div 
-                                                            className="text-[11px] text-[#A1A1AA]"
+                                                            className="text-[11px] text-[#707070]"
                                                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                                         >
                                                             {buttonName}
@@ -314,8 +314,8 @@ export default function D2ConfigPanel({
                                                                 className="text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider"
                                                                 style={{
                                                                     fontFamily: "'IBM Plex Mono', monospace",
-                                                                    background: isArmed ? 'rgba(6, 182, 212, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                                                                    color: isArmed ? '#06B6D4' : '#10B981'
+                                                                    background: isArmed ? 'rgba(74, 144, 164, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                                                    color: isArmed ? '#4A90A4' : '#10B981'
                                                                 }}
                                                             >
                                                                 {isArmed ? 'ARMED' : 'LIVE'}
@@ -323,7 +323,7 @@ export default function D2ConfigPanel({
                                                         )}
                                                     </div>
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2.5 text-sm text-[#18181B]">
+                                                        <div className="flex items-center gap-2.5 text-sm text-[#333333]">
                                                             <span
                                                                 className="text-[9px] font-bold tracking-wider"
                                                                 style={{ 
@@ -341,7 +341,7 @@ export default function D2ConfigPanel({
                                                             </span>
                                                         </div>
                                                         <div 
-                                                            className="text-[10px] text-[#71717A] bg-[#F4F4F5] px-2.5 py-1 rounded-md"
+                                                            className="text-[10px] text-[#555555] bg-[#B8B8B8] px-2.5 py-1 rounded-md"
                                                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                                         >
                                                             {typeof config.action === "string"
@@ -364,15 +364,15 @@ export default function D2ConfigPanel({
             <div 
                 className="p-6 pt-5"
                 style={{ 
-                    borderTop: '1px solid #E4E4E7',
-                    background: '#FAFAFA'
+                    borderTop: '1px solid #A0A0A0',
+                    background: '#CCCCCC'
                 }}
             >
                 <div className="flex gap-3">
                     {Object.keys(mappings).length > 0 && (
                         <button
                             onClick={onClearAll}
-                            className="flex-1 py-3.5 bg-white border-2 border-[#FECACA] rounded-xl text-[#EF4444] text-sm font-semibold cursor-pointer transition-all duration-150 hover:bg-[#FEF2F2] hover:border-[#EF4444]"
+                            className="flex-1 py-3.5 bg-[#D9D9D9] border-2 border-[#FECACA] rounded-xl text-[#EF4444] text-sm font-semibold cursor-pointer transition-all duration-150 hover:bg-[#FEF2F2] hover:border-[#EF4444]"
                             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                         >
                             Clear All
@@ -380,10 +380,10 @@ export default function D2ConfigPanel({
                     )}
                     <button
                         onClick={() => onSaveToDevice && onSaveToDevice(moduleId)}
-                        className="flex-[2] py-3.5 bg-[#7C3AED] hover:bg-[#6D28D9] border-none rounded-xl text-white text-sm font-semibold cursor-pointer transition-all duration-150"
+                        className="flex-[2] py-3.5 bg-[#5180C1] hover:bg-[#4070B0] border-none rounded-xl text-white text-sm font-semibold cursor-pointer transition-all duration-150"
                         style={{ 
                             fontFamily: "'Space Grotesk', sans-serif",
-                            boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)'
+                            boxShadow: '0 4px 12px rgba(81, 128, 193, 0.25)'
                         }}
                     >
                         Save to Device

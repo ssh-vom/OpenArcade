@@ -13,16 +13,16 @@ function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) 
             className="relative text-left rounded-xl overflow-hidden plate-card-animate transition-shadow duration-300 ease-out hover:shadow-lg"
             style={{
                 "--stagger": staggerIndex,
-                border: `1.5px solid ${isSelected ? plate.accent_color : "#E4E4E7"}`,
-                background: "#FFFFFF",
+                border: `1.5px solid ${isSelected ? plate.accent_color : "#A0A0A0"}`,
+                background: "#CCCCCC",
                 boxShadow: isSelected
-                    ? `0 8px 24px color-mix(in srgb, ${plate.accent_color} 25%, transparent)`
-                    : "0 1px 3px rgba(0, 0, 0, 0.06)",
+                    ? `0 8px 24px color-mix(in srgb, ${plate.accent_color} 30%, transparent)`
+                    : "0 1px 3px rgba(0, 0, 0, 0.1)",
                 opacity: isLoading ? 0.9 : 1,
                 cursor: isLoading ? "wait" : "pointer",
             }}
         >
-            <div className="h-40 bg-[#F4F4F2] flex items-center justify-center p-2 border-b border-[#E4E4E7]">
+            <div className="h-40 bg-[#B8B8B8] flex items-center justify-center p-2 border-b border-[#A0A0A0]">
                 <PlateTopPreview
                     plateId={plate.id}
                     alt=""
@@ -32,13 +32,13 @@ function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) 
 
             <div className="px-3.5 pb-3.5 pt-3">
                 <div
-                    className="text-sm font-semibold text-[#18181B]"
+                    className="text-sm font-semibold text-[#333333]"
                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
                     {plate.name}
                 </div>
                 <div
-                    className="mt-1 text-xs text-[#71717A] leading-relaxed"
+                    className="mt-1 text-xs text-[#4A4A4A] leading-relaxed"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                     {plate.description}
@@ -59,9 +59,9 @@ function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) 
             </div>
 
             {isLoading && (
-                <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                <div className="absolute inset-0 bg-[#CCCCCC]/80 flex items-center justify-center">
                     <div
-                        className="w-5 h-5 rounded-full border-2 border-[#7C3AED] border-t-transparent animate-spin"
+                        className="w-5 h-5 rounded-full border-2 border-[#5180C1] border-t-transparent animate-spin"
                         aria-label="Saving plate"
                     />
                 </div>
@@ -104,25 +104,25 @@ export default function PlateGalleryPanel({
     return (
         <div
             className="h-full flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden"
-            style={{ background: "linear-gradient(180deg, #FAFAF8 0%, #F4F4F2 100%)" }}
+            style={{ background: "linear-gradient(180deg, #D9D9D9 0%, #CCCCCC 100%)" }}
         >
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
                     background: `
-                        linear-gradient(rgba(124, 58, 237, 0.02) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(124, 58, 237, 0.02) 1px, transparent 1px)
+                        linear-gradient(rgba(81, 128, 193, 0.04) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(81, 128, 193, 0.04) 1px, transparent 1px)
                     `,
                     backgroundSize: "32px 32px",
                 }}
             />
 
-            <div className="sticky top-0 z-10 px-4 pt-3 pb-2" style={{ background: "linear-gradient(180deg, #FAFAF8 0%, #F6F6F4 100%)" }}>
+            <div className="sticky top-0 z-10 px-4 pt-3 pb-2" style={{ background: "linear-gradient(180deg, #D9D9D9 0%, #D0D0D0 100%)" }}>
                 <div className="flex items-center gap-3 h-10">
                     <button
                         type="button"
                         onClick={onBack}
-                        className="w-8 h-8 rounded-lg border border-[#E4E4E7] bg-white flex items-center justify-center text-[#52525B] hover:text-[#18181B] transition-colors"
+                        className="w-8 h-8 rounded-lg border border-[#A0A0A0] bg-[#CCCCCC] flex items-center justify-center text-[#4A4A4A] hover:text-[#333333] transition-colors"
                         aria-label="Back"
                     >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -131,13 +131,13 @@ export default function PlateGalleryPanel({
                     </button>
                     <div>
                         <h2
-                            className="text-lg font-semibold text-[#18181B] leading-tight"
+                            className="text-lg font-semibold text-[#333333] leading-tight"
                             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                         >
                             Select Plate
                         </h2>
                         <p
-                            className="text-xs text-[#71717A]"
+                            className="text-xs text-[#4A4A4A]"
                             style={{ fontFamily: "'DM Sans', sans-serif" }}
                         >
                             Choose the physical controller layout

@@ -20,24 +20,24 @@
   --font-sans: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
 
-  /* Backgrounds — Warm ivory palette */
-  --color-bg-base: #FAFAF8;
-  --color-bg-panel: #FFFFFF;
-  --color-bg-elevated: #FFFFFF;
-  --color-bg-subtle: #F4F4F2;
-  --color-bg-muted: #EEEEEC;
-  --color-bg-canvas: linear-gradient(180deg, #FAFAF8 0%, #F0F0EE 100%);
+  /* Backgrounds — Clean grey palette */
+  --color-bg-base: #D9D9D9;
+  --color-bg-panel: #CCCCCC;
+  --color-bg-elevated: #CCCCCC;
+  --color-bg-subtle: #C4C4C4;
+  --color-bg-muted: #B8B8B8;
+  --color-bg-canvas: linear-gradient(180deg, #D9D9D9 0%, #CCCCCC 100%);
 
-  /* Primary Accent — Electric Violet */
-  --color-accent: #7C3AED;
-  --color-accent-hover: #6D28D9;
-  --color-accent-soft: oklch(0.55 0.2 285 / 0.08);
-  --color-accent-glow: oklch(0.55 0.2 285 / 0.15);
+  /* Primary Accent — OpenArcade Blue */
+  --color-accent: #5180C1;
+  --color-accent-hover: #4571B0;
+  --color-accent-soft: rgba(81, 128, 193, 0.12);
+  --color-accent-glow: rgba(81, 128, 193, 0.2);
 
-  /* Secondary Accent — Coral */
-  --color-secondary: #F97316;
-  --color-secondary-hover: #EA580C;
-  --color-secondary-soft: oklch(0.7 0.18 45 / 0.1);
+  /* Secondary Accent — Muted Blue */
+  --color-secondary: #6B9BD1;
+  --color-secondary-hover: #5A8AC0;
+  --color-secondary-soft: rgba(107, 155, 209, 0.15);
 
   /* Status Colors — Rich jewel tones */
   --color-success: #10B981;
@@ -50,28 +50,28 @@
   --color-info-soft: oklch(0.7 0.15 195 / 0.1);
 
   /* HID Type Colors */
-  --color-type-gamepad: #7C3AED;
-  --color-type-keyboard: #06B6D4;
-  --color-type-analog: #F97316;
+  --color-type-gamepad: #5180C1;
+  --color-type-keyboard: #4A90A4;
+  --color-type-analog: #6B9BD1;
 
   /* Text */
-  --color-text-primary: #18181B;
-  --color-text-secondary: #52525B;
-  --color-text-muted: #A1A1AA;
-  --color-text-dim: #D4D4D8;
+  --color-text-primary: #333333;
+  --color-text-secondary: #4A4A4A;
+  --color-text-muted: #707070;
+  --color-text-dim: #909090;
 
   /* Borders */
-  --color-border: #E4E4E7;
-  --color-border-subtle: #F4F4F5;
-  --color-border-focus: #7C3AED;
+  --color-border: #A0A0A0;
+  --color-border-subtle: #B8B8B8;
+  --color-border-focus: #5180C1;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.02);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
-  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.02);
-  --shadow-glow: 0 0 20px oklch(0.55 0.2 285 / 0.2);
-  --shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 16px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 20px rgba(81, 128, 193, 0.25);
+  --shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.08), 0 6px 16px rgba(0, 0, 0, 0.06);
 
   /* Animations */
   --animate-fade-in: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -260,7 +260,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 2px 8px rgba(81, 128, 193, 0.35);
 }
 
 input[type="range"]::-webkit-slider-thumb:active {
@@ -272,7 +272,7 @@ select {
 }
 
 select option {
-  background: white;
+  background: #CCCCCC;
   color: var(--color-text-primary);
   padding: 8px;
 }
@@ -305,9 +305,9 @@ select:focus-visible {
 /* Blueprint grid background for canvas */
 .bg-blueprint {
   background: 
-    linear-gradient(rgba(124, 58, 237, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.04) 1px, transparent 1px),
-    linear-gradient(180deg, #FAFAF8 0%, #F0F0EE 100%);
+    linear-gradient(rgba(81, 128, 193, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(81, 128, 193, 0.06) 1px, transparent 1px),
+    linear-gradient(180deg, #D9D9D9 0%, #CCCCCC 100%);
   background-size: 24px 24px, 24px 24px, 100% 100%;
 }
 
@@ -341,7 +341,7 @@ select:focus-visible {
 
 /* Glow effect for accent elements */
 .glow-accent {
-  box-shadow: 0 0 20px oklch(0.55 0.2 285 / 0.15);
+  box-shadow: 0 0 20px rgba(81, 128, 193, 0.2);
 }
 
 /* LED-style indicator */
@@ -362,12 +362,12 @@ select:focus-visible {
 
 /* Elevated panel style */
 .panel-elevated {
-  background: white;
+  background: #CCCCCC;
   border-radius: 16px;
   box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.04),
-    0 6px 16px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.02);
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 6px 16px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
 /* Card hover effect */
@@ -379,8 +379,8 @@ select:focus-visible {
 .card-interactive:hover {
   transform: translateY(-2px);
   box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(124, 58, 237, 0.1);
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(81, 128, 193, 0.15);
 }
 
 /* Status badge base */
@@ -398,23 +398,23 @@ select:focus-visible {
 /* HID Type specific styles */
 .type-gamepad {
   --type-color: var(--color-type-gamepad);
-  background: oklch(0.55 0.2 285 / 0.08);
+  background: rgba(81, 128, 193, 0.12);
   color: var(--color-type-gamepad);
-  border: 1px solid oklch(0.55 0.2 285 / 0.2);
+  border: 1px solid rgba(81, 128, 193, 0.25);
 }
 
 .type-keyboard {
   --type-color: var(--color-type-keyboard);
-  background: oklch(0.7 0.15 195 / 0.1);
+  background: rgba(74, 144, 164, 0.12);
   color: var(--color-type-keyboard);
-  border: 1px solid oklch(0.7 0.15 195 / 0.25);
+  border: 1px solid rgba(74, 144, 164, 0.25);
 }
 
 .type-analog {
   --type-color: var(--color-type-analog);
-  background: oklch(0.7 0.18 45 / 0.1);
+  background: rgba(107, 155, 209, 0.12);
   color: var(--color-type-analog);
-  border: 1px solid oklch(0.7 0.18 45 / 0.25);
+  border: 1px solid rgba(107, 155, 209, 0.25);
 }
 
 /* Button base styles */
@@ -434,7 +434,7 @@ select:focus-visible {
 .btn-primary:hover {
   background: var(--color-accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px oklch(0.55 0.2 285 / 0.3);
+  box-shadow: 0 4px 12px rgba(81, 128, 193, 0.35);
 }
 
 .btn-primary:active {

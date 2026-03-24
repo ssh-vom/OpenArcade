@@ -24,9 +24,9 @@ export default function ControllerHUD({
 
     const filterOptions = [
         { value: "all", label: "All", icon: null },
-        { value: HID_INPUT_TYPES.KEYBOARD, label: "KB", color: "#06B6D4" },
-        { value: HID_INPUT_TYPES.GAMEPAD, label: "GP", color: "#7C3AED" },
-        { value: HID_INPUT_TYPES.ANALOG, label: "AX", color: "#F97316" },
+        { value: HID_INPUT_TYPES.KEYBOARD, label: "KB", color: "#4A90A4" },
+        { value: HID_INPUT_TYPES.GAMEPAD, label: "GP", color: "#5180C1" },
+        { value: HID_INPUT_TYPES.ANALOG, label: "AX", color: "#6B9BD1" },
     ];
 
     const activeModule = modules[currentModule];
@@ -47,17 +47,17 @@ export default function ControllerHUD({
 
     return (
         <div
-            className="w-full h-[72px] bg-white/90 backdrop-blur-xl flex items-center justify-between px-6 z-10 shrink-0 relative"
+            className="w-full h-[72px] bg-[#D9D9D9]/90 backdrop-blur-xl flex items-center justify-between px-6 z-10 shrink-0 relative"
             style={{
-                borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)'
+                borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
             }}
         >
             {/* Left: Logo + Title */}
             <div className="flex items-center gap-4">
                 <div
-                    className="w-11 h-11 bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] rounded-xl flex items-center justify-center"
-                    style={{ boxShadow: '0 2px 8px rgba(124, 58, 237, 0.2)' }}
+                    className="w-11 h-11 bg-gradient-to-br from-[#5180C1] to-[#4070B0] rounded-xl flex items-center justify-center"
+                    style={{ boxShadow: '0 2px 8px rgba(81, 128, 193, 0.2)' }}
                 >
                     <img
                         src={oaBlockLogo}
@@ -67,13 +67,13 @@ export default function ControllerHUD({
                 </div>
                 <div>
                     <div
-                        className="text-[#18181B] font-semibold text-[15px] tracking-tight"
+                        className="text-[#333333] font-semibold text-[15px] tracking-tight"
                         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                     >
                         OpenArcade
                     </div>
                     <div
-                        className="text-[#A1A1AA] text-[11px] mt-0.5 tracking-wide"
+                        className="text-[#707070] text-[11px] mt-0.5 tracking-wide"
                         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                     >
                         {moduleCount} module{moduleCount === 1 ? "" : "s"} connected
@@ -85,7 +85,7 @@ export default function ControllerHUD({
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
                 <div className="flex flex-col items-start gap-1">
                     <span
-                        className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.12em]"
+                        className="text-[10px] font-semibold text-[#707070] uppercase tracking-[0.12em]"
                         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                     >
                         Active Module
@@ -93,10 +93,10 @@ export default function ControllerHUD({
                     <select
                         value={String(currentModule)}
                         onChange={(e) => onModuleChange(Number(e.target.value))}
-                        className="min-w-[240px] px-4 py-2 bg-[#F4F4F5] hover:bg-[#E4E4E7] border border-[#E4E4E7] rounded-xl text-[#18181B] text-sm outline-none appearance-none transition-all duration-150 cursor-pointer"
+                        className="min-w-[240px] px-4 py-2 bg-[#CCCCCC] hover:bg-[#C0C0C0] border border-[#A0A0A0] rounded-xl text-[#333333] text-sm outline-none appearance-none transition-all duration-150 cursor-pointer"
                         style={{
                             fontFamily: "'DM Sans', sans-serif",
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23A1A1AA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23707070' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
                             backgroundRepeat: 'no-repeat',
                             backgroundPosition: 'right 12px center',
                             paddingRight: '40px'
@@ -124,22 +124,22 @@ export default function ControllerHUD({
                                     if (e.key === "Enter") { handleConfirmRename(); }
                                     if (e.key === "Escape") { setEditingName(false); }
                                 }}
-                                className="text-xs px-2 py-1 rounded-lg border border-[#7C3AED]/40 outline-none focus:border-[#7C3AED] bg-white text-[#18181B]"
+                                className="text-xs px-2 py-1 rounded-lg border border-[#5180C1]/40 outline-none focus:border-[#5180C1] bg-[#D9D9D9] text-[#333333]"
                                 style={{ fontFamily: "'DM Sans', sans-serif", minWidth: 160 }}
                                 placeholder="Device nickname..."
                                 maxLength={32}
                             />
-                            <button onClick={handleConfirmRename} className="text-xs px-2 py-1 rounded-lg bg-[#7C3AED] text-white font-medium hover:bg-[#6D28D9] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <button onClick={handleConfirmRename} className="text-xs px-2 py-1 rounded-lg bg-[#5180C1] text-white font-medium hover:bg-[#4070B0] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                 Save
                             </button>
-                            <button onClick={() => setEditingName(false)} className="text-xs px-2 py-1 rounded-lg text-[#71717A] hover:text-[#18181B] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <button onClick={() => setEditingName(false)} className="text-xs px-2 py-1 rounded-lg text-[#555555] hover:text-[#333333] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                 Cancel
                             </button>
                         </div>
                     ) : (
                         <button
                             onClick={() => { setNameValue(activeModule?.name || ""); setEditingName(true); }}
-                            className="flex items-center gap-1 mt-1 text-[10px] text-[#A1A1AA] hover:text-[#7C3AED] transition-colors group"
+                            className="flex items-center gap-1 mt-1 text-[10px] text-[#707070] hover:text-[#5180C1] transition-colors group"
                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                         >
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -159,9 +159,9 @@ export default function ControllerHUD({
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-semibold transition-all duration-200"
                     style={{
                         fontFamily: "'IBM Plex Mono', monospace",
-                        background: showOnlyConnected ? "rgba(16,185,129,0.08)" : "#F4F4F5",
-                        borderColor: showOnlyConnected ? "rgba(16,185,129,0.3)" : "#E4E4E7",
-                        color: showOnlyConnected ? "#10B981" : "#71717A",
+                        background: showOnlyConnected ? "rgba(16,185,129,0.08)" : "#CCCCCC",
+                        borderColor: showOnlyConnected ? "rgba(16,185,129,0.3)" : "#A0A0A0",
+                        color: showOnlyConnected ? "#10B981" : "#555555",
                     }}
                     title={showOnlyConnected ? "Showing connected only — click to show all" : "Showing all devices — click to show connected only"}
                 >
@@ -191,7 +191,7 @@ export default function ControllerHUD({
                 {/* Mapping Filter (2D only) */}
                 {viewMode === "2d" && (
                     <div
-                        className="flex items-center gap-1 p-1 bg-[#F4F4F5] rounded-xl border border-[#E4E4E7]"
+                        className="flex items-center gap-1 p-1 bg-[#CCCCCC] rounded-xl border border-[#A0A0A0]"
                     >
                         {filterOptions.map((option) => {
                             const isActive = mappingFilter === option.value;
@@ -201,8 +201,8 @@ export default function ControllerHUD({
                                     onClick={() => onMappingFilterChange(option.value)}
                                     className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all duration-150 cursor-pointer border-none
                                         ${isActive
-                                            ? 'bg-white text-[#18181B] shadow-sm'
-                                            : 'bg-transparent text-[#A1A1AA] hover:text-[#52525B]'
+                                            ? 'bg-[#D9D9D9] text-[#333333] shadow-sm'
+                                            : 'bg-transparent text-[#707070] hover:text-[#333333]'
                                         }`}
                                     style={{
                                         fontFamily: "'IBM Plex Mono', monospace",
@@ -219,7 +219,7 @@ export default function ControllerHUD({
                 {/* View Toggle */}
                 <button
                     onClick={onToggleView}
-                    className="group flex items-center gap-2 px-4 py-2 bg-[#F4F4F5] hover:bg-[#E4E4E7] text-[#52525B] hover:text-[#18181B] border border-[#E4E4E7] rounded-xl text-[12px] font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer"
+                    className="group flex items-center gap-2 px-4 py-2 bg-[#CCCCCC] hover:bg-[#C0C0C0] text-[#333333] hover:text-[#333333] border border-[#A0A0A0] rounded-xl text-[12px] font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer"
                     style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                 >
                     {viewMode === "3d" ? (

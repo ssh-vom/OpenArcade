@@ -1,31 +1,31 @@
 export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButton }) {
     const getTypeColor = (type) => {
         switch (type) {
-            case 'gamepad': return '#7C3AED';
-            case 'keyboard': return '#06B6D4';
-            case 'analog': return '#F97316';
-            default: return '#A1A1AA';
+            case 'gamepad': return '#5180C1';
+            case 'keyboard': return '#4A90A4';
+            case 'analog': return '#6B9BD1';
+            default: return '#707070';
         }
     };
 
     return (
         <div 
-            className="w-[340px] h-full bg-white flex flex-col shrink-0 animate-slide-in-right"
+            className="w-[340px] h-full bg-[#D9D9D9] flex flex-col shrink-0 animate-slide-in-right"
             style={{
-                borderLeft: '1px solid rgba(0, 0, 0, 0.06)',
-                boxShadow: '-1px 0 3px rgba(0, 0, 0, 0.02)'
+                borderLeft: '1px solid #A0A0A0',
+                boxShadow: '-1px 0 3px rgba(0, 0, 0, 0.04)'
             }}
         >
             {/* Header */}
             <div className="p-5 pb-4">
                 <div 
-                    className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.12em] mb-2"
+                    className="text-[10px] font-semibold text-[#707070] uppercase tracking-[0.12em] mb-2"
                     style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                 >
                     Inspector
                 </div>
                 <h3 
-                    className="m-0 text-lg font-semibold text-[#18181B] tracking-tight"
+                    className="m-0 text-lg font-semibold text-[#333333] tracking-tight"
                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
                     {moduleName}
@@ -33,19 +33,19 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
             </div>
 
             {/* Divider */}
-            <div className="mx-5 h-px bg-gradient-to-r from-transparent via-[#E4E4E7] to-transparent" />
+            <div className="mx-5 h-px bg-gradient-to-r from-transparent via-[#A0A0A0] to-transparent" />
 
             {/* List */}
             <div className="flex-1 p-5 pt-4 overflow-y-auto panel-scroll">
                 <div className="flex justify-between items-center mb-4">
                     <span 
-                        className="text-xs text-[#52525B] font-medium"
+                        className="text-xs text-[#333333] font-medium"
                         style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
                         Button Mappings
                     </span>
                     <span 
-                        className="text-[10px] text-[#A1A1AA] bg-[#F4F4F5] px-2.5 py-1 rounded-full font-semibold"
+                        className="text-[10px] text-[#707070] bg-[#CCCCCC] px-2.5 py-1 rounded-full font-semibold"
                         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                     >
                         {Object.keys(mappings).length} Active
@@ -56,18 +56,18 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
                     <div 
                         className="py-12 text-center rounded-2xl"
                         style={{
-                            background: 'linear-gradient(135deg, #F9FAFB 0%, #F4F4F5 100%)',
-                            border: '1px dashed #E4E4E7'
+                            background: '#CCCCCC',
+                            border: '1px dashed #A0A0A0'
                         }}
                     >
                         <div 
-                            className="text-[10px] tracking-[0.15em] uppercase mb-3 font-semibold text-[#A1A1AA]"
+                            className="text-[10px] tracking-[0.15em] uppercase mb-3 font-semibold text-[#707070]"
                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                         >
                             No Mappings
                         </div>
                         <div 
-                            className="text-sm text-[#52525B] leading-relaxed"
+                            className="text-sm text-[#333333] leading-relaxed"
                             style={{ fontFamily: "'DM Sans', sans-serif" }}
                         >
                             Click a button in the 3D view
@@ -89,35 +89,35 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
                                     onClick={() => onSelectButton(buttonName, null)}
                                     className="w-full text-left p-3.5 rounded-xl cursor-pointer transition-all duration-150 border-none"
                                     style={{
-                                        background: '#F9FAFB',
-                                        border: '1px solid #E4E4E7'
+                                        background: '#CCCCCC',
+                                        border: '1px solid #A0A0A0'
                                     }}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = '#FFFFFF';
-                                        e.currentTarget.style.borderColor = 'rgba(124, 58, 237, 0.25)';
+                                        e.currentTarget.style.background = '#D9D9D9';
+                                        e.currentTarget.style.borderColor = 'rgba(81, 128, 193, 0.25)';
                                         e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = '#F9FAFB';
-                                        e.currentTarget.style.borderColor = '#E4E4E7';
+                                        e.currentTarget.style.background = '#CCCCCC';
+                                        e.currentTarget.style.borderColor = '#A0A0A0';
                                         e.currentTarget.style.boxShadow = 'none';
                                     }}
                                 >
                                     <div 
-                                        className="text-[10px] text-[#A1A1AA] mb-1.5"
+                                        className="text-[10px] text-[#707070] mb-1.5"
                                         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                     >
                                         {buttonName}
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span 
-                                            className="text-sm font-medium text-[#18181B]"
+                                            className="text-sm font-medium text-[#333333]"
                                             style={{ fontFamily: "'DM Sans', sans-serif" }}
                                         >
                                             {display}
                                         </span>
                                         <span 
-                                            className="text-[#7C3AED] text-xs font-semibold"
+                                            className="text-[#5180C1] text-xs font-semibold"
                                             style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                         >
                                             Edit
@@ -134,16 +134,16 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
             <div 
                 className="p-4"
                 style={{ 
-                    borderTop: '1px solid rgba(0, 0, 0, 0.06)',
-                    background: 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)'
+                    borderTop: '1px solid #A0A0A0',
+                    background: '#CCCCCC'
                 }}
             >
                 <div 
-                    className="text-[11px] text-[#A1A1AA] text-center py-3 px-4 rounded-xl"
+                    className="text-[11px] text-[#707070] text-center py-3 px-4 rounded-xl"
                     style={{ 
                         fontFamily: "'DM Sans', sans-serif",
-                        background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.04) 0%, rgba(124, 58, 237, 0.01) 100%)',
-                        border: '1px solid rgba(124, 58, 237, 0.1)'
+                        background: 'rgba(81, 128, 193, 0.08)',
+                        border: '1px solid rgba(81, 128, 193, 0.15)'
                     }}
                 >
                     Switch to 2D view for bulk actions

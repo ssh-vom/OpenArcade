@@ -50,7 +50,7 @@ function StickSubmenu({ side, onSelect, onClose, accentColor }) {
 
   return (
     <div 
-      className="absolute z-20 bg-white rounded-xl shadow-xl border border-[#E4E4E7] p-2 min-w-[140px] animate-scale-in"
+      className="absolute z-20 bg-[#CCCCCC] rounded-xl shadow-xl border border-[#A0A0A0] p-2 min-w-[140px] animate-scale-in"
       style={{ 
         top: '50%', 
         left: isLeft ? '100%' : 'auto',
@@ -62,7 +62,7 @@ function StickSubmenu({ side, onSelect, onClose, accentColor }) {
       onClick={(e) => e.stopPropagation()}
     >
       <div 
-        className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-wider px-2 py-1 mb-1"
+        className="text-[10px] font-semibold text-[#707070] uppercase tracking-wider px-2 py-1 mb-1"
         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
       >
         {isLeft ? 'Left' : 'Right'} Stick
@@ -74,7 +74,7 @@ function StickSubmenu({ side, onSelect, onClose, accentColor }) {
             onSelect(opt.id);
             onClose();
           }}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left cursor-pointer transition-all duration-150 border-none bg-transparent hover:bg-[#F4F4F5]"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left cursor-pointer transition-all duration-150 border-none bg-transparent hover:bg-[#D9D9D9]"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
           <span 
@@ -86,7 +86,7 @@ function StickSubmenu({ side, onSelect, onClose, accentColor }) {
           >
             {opt.icon}
           </span>
-          <span className="text-[#18181B] font-medium">{opt.label}</span>
+          <span className="text-[#333333] font-medium">{opt.label}</span>
         </button>
       ))}
     </div>
@@ -94,7 +94,7 @@ function StickSubmenu({ side, onSelect, onClose, accentColor }) {
 }
 
 // Main controller diagram component
-export default function ControllerDiagram({ selectedInput, onSelect, accentColor = '#7C3AED' }) {
+export default function ControllerDiagram({ selectedInput, onSelect, accentColor = '#5180C1' }) {
   const [activeStick, setActiveStick] = useState(null); // 'left' or 'right'
   const [hoveredInput, setHoveredInput] = useState(null);
 
@@ -102,25 +102,25 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
   const isHovered = (inputId) => hoveredInput === inputId;
 
   // Get style for a button based on state
-  const getButtonStyle = (inputId, baseColor = '#E4E4E7') => {
+  const getButtonStyle = (inputId, baseColor = '#A0A0A0') => {
     const inputInfo = CONTROLLER_INPUTS[inputId];
     if (isSelected(inputId)) {
       return {
         fill: `${accentColor}25`,
         stroke: accentColor,
         strokeWidth: 3,
-        filter: 'drop-shadow(0 0 8px rgba(124, 58, 237, 0.4))',
+        filter: 'drop-shadow(0 0 8px rgba(81, 128, 193, 0.4))',
       };
     }
     if (isHovered(inputId)) {
       return {
-        fill: '#F4F4F5',
-        stroke: '#A1A1AA',
+        fill: '#D9D9D9',
+        stroke: '#707070',
         strokeWidth: 2,
       };
     }
     return {
-      fill: inputInfo?.color ? `${inputInfo.color}20` : 'white',
+      fill: inputInfo?.color ? `${inputInfo.color}20` : '#D9D9D9',
       stroke: inputInfo?.color || baseColor,
       strokeWidth: 1.5,
     };
@@ -164,8 +164,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
              Q40 230, 70 180
              Q100 130, 145 120
              Z"
-          fill="#FAFAFA"
-          stroke="#D4D4D8"
+          fill="#CCCCCC"
+          stroke="#A0A0A0"
           strokeWidth="2"
         />
 
@@ -173,7 +173,7 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
         <path
           d="M160 85 Q160 65, 180 65 L400 65 Q420 65, 420 85"
           fill="none"
-          stroke="#E4E4E7"
+          stroke="#B8B8B8"
           strokeWidth="1.5"
         />
 
@@ -188,11 +188,11 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             x="150" y="30" width="70" height="25" rx="6"
             {...getButtonStyle('xb_left_trigger')}
           />
-          <text x="185" y="48" textAnchor="middle" fontSize="12" fontWeight="600" fill={isSelected('xb_left_trigger') ? accentColor : '#71717A'} style={{ fontFamily: 'IBM Plex Mono' }}>
+          <text x="185" y="48" textAnchor="middle" fontSize="12" fontWeight="600" fill={isSelected('xb_left_trigger') ? accentColor : '#555555'} style={{ fontFamily: 'IBM Plex Mono' }}>
             LT
           </text>
           {/* Analog indicator */}
-          <circle cx="205" cy="37" r="3" fill="#F97316" />
+          <circle cx="205" cy="37" r="3" fill="#6B9BD1" />
         </g>
 
         {/* Right Trigger (RT) */}
@@ -206,10 +206,10 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             x="360" y="30" width="70" height="25" rx="6"
             {...getButtonStyle('xb_right_trigger')}
           />
-          <text x="395" y="48" textAnchor="middle" fontSize="12" fontWeight="600" fill={isSelected('xb_right_trigger') ? accentColor : '#71717A'} style={{ fontFamily: 'IBM Plex Mono' }}>
+          <text x="395" y="48" textAnchor="middle" fontSize="12" fontWeight="600" fill={isSelected('xb_right_trigger') ? accentColor : '#555555'} style={{ fontFamily: 'IBM Plex Mono' }}>
             RT
           </text>
-          <circle cx="415" cy="37" r="3" fill="#F97316" />
+          <circle cx="415" cy="37" r="3" fill="#6B9BD1" />
         </g>
 
         {/* Left Bumper (LB) */}
@@ -223,7 +223,7 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             x="155" y="58" width="60" height="20" rx="4"
             {...getButtonStyle('xb_left_bumper')}
           />
-          <text x="185" y="73" textAnchor="middle" fontSize="11" fontWeight="600" fill={isSelected('xb_left_bumper') ? accentColor : '#71717A'} style={{ fontFamily: 'IBM Plex Mono' }}>
+          <text x="185" y="73" textAnchor="middle" fontSize="11" fontWeight="600" fill={isSelected('xb_left_bumper') ? accentColor : '#555555'} style={{ fontFamily: 'IBM Plex Mono' }}>
             LB
           </text>
         </g>
@@ -239,7 +239,7 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             x="365" y="58" width="60" height="20" rx="4"
             {...getButtonStyle('xb_right_bumper')}
           />
-          <text x="395" y="73" textAnchor="middle" fontSize="11" fontWeight="600" fill={isSelected('xb_right_bumper') ? accentColor : '#71717A'} style={{ fontFamily: 'IBM Plex Mono' }}>
+          <text x="395" y="73" textAnchor="middle" fontSize="11" fontWeight="600" fill={isSelected('xb_right_bumper') ? accentColor : '#555555'} style={{ fontFamily: 'IBM Plex Mono' }}>
             RB
           </text>
         </g>
@@ -249,8 +249,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
           <circle
             cx="200" cy="140"
             r="38"
-            fill="#F4F4F5"
-            stroke="#D4D4D8"
+            fill="#D9D9D9"
+            stroke="#A0A0A0"
             strokeWidth="2"
           />
           <circle
@@ -260,15 +260,15 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onClick={(e) => handleStickClick('left', e)}
             onMouseEnter={() => setHoveredInput('left_stick')}
             onMouseLeave={() => setHoveredInput(null)}
-            fill={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? `${accentColor}25` : 'white'}
-            stroke={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? accentColor : '#A1A1AA'}
+            fill={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
+            stroke={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
             strokeWidth={activeStick === 'left' ? 3 : 2}
           />
-          <text x="200" y="145" textAnchor="middle" fontSize="11" fontWeight="600" fill="#71717A" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
+          <text x="200" y="145" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
             L
           </text>
           {/* Analog indicator */}
-          <circle cx="218" cy="122" r="4" fill="#F97316" style={{ pointerEvents: 'none' }} />
+          <circle cx="218" cy="122" r="4" fill="#6B9BD1" style={{ pointerEvents: 'none' }} />
         </g>
 
         {/* Right Stick */}
@@ -276,8 +276,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
           <circle
             cx="340" cy="200"
             r="38"
-            fill="#F4F4F5"
-            stroke="#D4D4D8"
+            fill="#D9D9D9"
+            stroke="#A0A0A0"
             strokeWidth="2"
           />
           <circle
@@ -287,21 +287,21 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onClick={(e) => handleStickClick('right', e)}
             onMouseEnter={() => setHoveredInput('right_stick')}
             onMouseLeave={() => setHoveredInput(null)}
-            fill={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? `${accentColor}25` : 'white'}
-            stroke={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? accentColor : '#A1A1AA'}
+            fill={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
+            stroke={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
             strokeWidth={activeStick === 'right' ? 3 : 2}
           />
-          <text x="340" y="205" textAnchor="middle" fontSize="11" fontWeight="600" fill="#71717A" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
+          <text x="340" y="205" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
             R
           </text>
-          <circle cx="358" cy="182" r="4" fill="#F97316" style={{ pointerEvents: 'none' }} />
+          <circle cx="358" cy="182" r="4" fill="#6B9BD1" style={{ pointerEvents: 'none' }} />
         </g>
 
         {/* D-Pad */}
         <g>
           {/* D-Pad background */}
-          <rect x="225" y="175" width="30" height="70" rx="4" fill="#F4F4F5" stroke="#D4D4D8" strokeWidth="1" />
-          <rect x="210" y="195" width="60" height="30" rx="4" fill="#F4F4F5" stroke="#D4D4D8" strokeWidth="1" />
+          <rect x="225" y="175" width="30" height="70" rx="4" fill="#D9D9D9" stroke="#A0A0A0" strokeWidth="1" />
+          <rect x="210" y="195" width="60" height="30" rx="4" fill="#D9D9D9" stroke="#A0A0A0" strokeWidth="1" />
           
           {/* Up */}
           <g 
@@ -310,8 +310,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onMouseEnter={() => setHoveredInput('xb_dpad_up')}
             onMouseLeave={() => setHoveredInput(null)}
           >
-            <rect x="228" y="178" width="24" height="20" rx="3" {...getButtonStyle('xb_dpad_up', '#A1A1AA')} />
-            <text x="240" y="193" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_up') ? accentColor : '#71717A'}>↑</text>
+            <rect x="228" y="178" width="24" height="20" rx="3" {...getButtonStyle('xb_dpad_up', '#707070')} />
+            <text x="240" y="193" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_up') ? accentColor : '#555555'}>↑</text>
           </g>
           
           {/* Down */}
@@ -321,8 +321,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onMouseEnter={() => setHoveredInput('xb_dpad_down')}
             onMouseLeave={() => setHoveredInput(null)}
           >
-            <rect x="228" y="222" width="24" height="20" rx="3" {...getButtonStyle('xb_dpad_down', '#A1A1AA')} />
-            <text x="240" y="237" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_down') ? accentColor : '#71717A'}>↓</text>
+            <rect x="228" y="222" width="24" height="20" rx="3" {...getButtonStyle('xb_dpad_down', '#707070')} />
+            <text x="240" y="237" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_down') ? accentColor : '#555555'}>↓</text>
           </g>
           
           {/* Left */}
@@ -332,8 +332,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onMouseEnter={() => setHoveredInput('xb_dpad_left')}
             onMouseLeave={() => setHoveredInput(null)}
           >
-            <rect x="213" y="198" width="20" height="24" rx="3" {...getButtonStyle('xb_dpad_left', '#A1A1AA')} />
-            <text x="223" y="215" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_left') ? accentColor : '#71717A'}>←</text>
+            <rect x="213" y="198" width="20" height="24" rx="3" {...getButtonStyle('xb_dpad_left', '#707070')} />
+            <text x="223" y="215" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_left') ? accentColor : '#555555'}>←</text>
           </g>
           
           {/* Right */}
@@ -343,8 +343,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onMouseEnter={() => setHoveredInput('xb_dpad_right')}
             onMouseLeave={() => setHoveredInput(null)}
           >
-            <rect x="247" y="198" width="20" height="24" rx="3" {...getButtonStyle('xb_dpad_right', '#A1A1AA')} />
-            <text x="257" y="215" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_right') ? accentColor : '#71717A'}>→</text>
+            <rect x="247" y="198" width="20" height="24" rx="3" {...getButtonStyle('xb_dpad_right', '#707070')} />
+            <text x="257" y="215" textAnchor="middle" fontSize="14" fill={isSelected('xb_dpad_right') ? accentColor : '#555555'}>→</text>
           </g>
         </g>
 
@@ -405,7 +405,7 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onMouseLeave={() => setHoveredInput(null)}
           >
             <rect x="255" y="115" width="30" height="18" rx="4" {...getButtonStyle('xb_view')} />
-            <text x="270" y="128" textAnchor="middle" fontSize="8" fontWeight="600" fill={isSelected('xb_view') ? accentColor : '#71717A'} style={{ fontFamily: 'IBM Plex Mono' }}>VIEW</text>
+            <text x="270" y="128" textAnchor="middle" fontSize="8" fontWeight="600" fill={isSelected('xb_view') ? accentColor : '#555555'} style={{ fontFamily: 'IBM Plex Mono' }}>VIEW</text>
           </g>
           
           {/* Home */}
@@ -426,7 +426,7 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onMouseLeave={() => setHoveredInput(null)}
           >
             <rect x="295" y="115" width="30" height="18" rx="4" {...getButtonStyle('xb_menu')} />
-            <text x="310" y="128" textAnchor="middle" fontSize="8" fontWeight="600" fill={isSelected('xb_menu') ? accentColor : '#71717A'} style={{ fontFamily: 'IBM Plex Mono' }}>MENU</text>
+            <text x="310" y="128" textAnchor="middle" fontSize="8" fontWeight="600" fill={isSelected('xb_menu') ? accentColor : '#555555'} style={{ fontFamily: 'IBM Plex Mono' }}>MENU</text>
           </g>
         </g>
       </svg>
@@ -456,11 +456,11 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
 
       {/* Legend */}
       <div 
-        className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-6 text-sm text-[#A1A1AA]"
+        className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-6 text-sm text-[#707070]"
         style={{ fontFamily: "'DM Sans', sans-serif" }}
       >
         <span className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full bg-[#F97316]" />
+          <span className="w-3 h-3 rounded-full bg-[#6B9BD1]" />
           Analog input
         </span>
         <span>Click a button or stick to select</span>

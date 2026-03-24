@@ -95,22 +95,22 @@ function Key({ keyId, selected, onSelect, accentColor, width = 1 }) {
   };
 
   const selectedStyle = isSelected ? {
-    background: `${accentColor}15`,
+    background: `${accentColor}18`,
     border: `2px solid ${accentColor}`,
     color: accentColor,
-    boxShadow: `0 0 0 4px ${accentColor}20, 0 4px 12px ${accentColor}25`,
+    boxShadow: `0 0 0 4px ${accentColor}25, 0 4px 12px ${accentColor}30`,
     transform: 'translateY(-2px) scale(1.02)',
   } : {
-    background: 'white',
-    border: '1px solid #D4D4D8',
-    color: '#18181B',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+    background: '#CCCCCC',
+    border: '1px solid #909090',
+    color: '#333333',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
   };
 
   return (
     <button
       onClick={() => onSelect(keyId)}
-      className="rounded-xl flex items-center justify-center cursor-pointer transition-all duration-150 hover:border-[#A1A1AA] hover:shadow-lg hover:-translate-y-0.5 active:scale-95 shrink-0"
+      className="rounded-xl flex items-center justify-center cursor-pointer transition-all duration-150 hover:border-[#707070] hover:shadow-lg hover:-translate-y-0.5 active:scale-95 shrink-0"
       style={{ ...baseStyle, ...selectedStyle }}
       title={keyInfo.label}
     >
@@ -125,7 +125,7 @@ function Spacer({ size = 1 }) {
 }
 
 // Main keyboard layout component
-export default function KeyboardLayout({ selectedInput, onSelect, accentColor = '#06B6D4' }) {
+export default function KeyboardLayout({ selectedInput, onSelect, accentColor = '#4A90A4' }) {
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Function Row */}
@@ -228,7 +228,7 @@ export default function KeyboardLayout({ selectedInput, onSelect, accentColor = 
       
       {/* Legend */}
       <div 
-        className="mt-6 text-sm text-[#A1A1AA] text-center"
+        className="mt-6 text-sm text-[#707070] text-center"
         style={{ fontFamily: "'DM Sans', sans-serif" }}
       >
         Click a key to select it

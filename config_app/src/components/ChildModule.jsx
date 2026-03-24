@@ -80,7 +80,7 @@ const ChildModule = memo(function ChildModule({
     armedButton = null,
     isMappingMode = false,
 }) {
-    const gltf = useGLTF(path);
+    const gltf = useGLTF(path, true);
     const moduleScene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
     const groupRef = useRef();
     const glowRef = useRef();
@@ -260,7 +260,7 @@ const ChildModule = memo(function ChildModule({
                 opacity: 0,
                 depthWrite: false,
                 side: THREE.DoubleSide,
-                color: new THREE.Color("#7C3AED"),
+                color: new THREE.Color("#5180C1"),
             });
             // Store in material state so applyHighlight can reference it
             buttonMaterialState.current.set(hitboxMat.uuid, {
@@ -385,9 +385,9 @@ const ChildModule = memo(function ChildModule({
     }, [moduleScene]);
 
     useEffect(() => {
-        const hoverColor = new THREE.Color("#7C3AED");
-        const armedColor = new THREE.Color("#8B5CF6");
-        const pressedColor = new THREE.Color("#F97316");
+        const hoverColor = new THREE.Color("#5180C1");
+        const armedColor = new THREE.Color("#6B9BD1");
+        const pressedColor = new THREE.Color("#6B9BD1");
 
         buttonMeshes.current.forEach((mesh) => {
             const groupName = mesh.userData.buttonGroup;
@@ -433,7 +433,7 @@ const ChildModule = memo(function ChildModule({
         if (!isActive) return;
 
         if (pressedButtonSet.size > 0) {
-            const pressedColor = new THREE.Color("#F97316");
+            const pressedColor = new THREE.Color("#6B9BD1");
             const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 7) * 0.18;
             const pulseOpacity = 0.65 + Math.sin(state.clock.elapsedTime * 7) * 0.08;
 
@@ -469,7 +469,7 @@ const ChildModule = memo(function ChildModule({
         }
     });
 
-    // New color scheme: Violet (Gamepad), Cyan (Keyboard), Orange (Analog)
+    // New color scheme: Blue (Gamepad), Teal (Keyboard), Light Blue (Analog)
     const getTypeIcon = (type) => {
         switch (type) {
             case HID_INPUT_TYPES.GAMEPAD: return 'GP';
@@ -481,19 +481,19 @@ const ChildModule = memo(function ChildModule({
 
     const getTypeColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#7C3AED';   // Electric violet
-            case HID_INPUT_TYPES.KEYBOARD: return '#06B6D4'; // Cyan
-            case HID_INPUT_TYPES.ANALOG: return '#F97316';   // Coral/orange
-            default: return '#A1A1AA';
+            case HID_INPUT_TYPES.GAMEPAD: return '#5180C1';   // Blue accent
+            case HID_INPUT_TYPES.KEYBOARD: return '#4A90A4'; // Teal
+            case HID_INPUT_TYPES.ANALOG: return '#6B9BD1';   // Light blue
+            default: return '#707070';
         }
     };
 
     const getTypeBorderColor = (type) => {
         switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(124, 58, 237, 0.35)';
-            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(6, 182, 212, 0.35)';
-            case HID_INPUT_TYPES.ANALOG: return 'rgba(249, 115, 22, 0.35)';
-            default: return 'rgba(161, 161, 170, 0.3)';
+            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(81, 128, 193, 0.35)';
+            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(74, 144, 164, 0.35)';
+            case HID_INPUT_TYPES.ANALOG: return 'rgba(107, 155, 209, 0.35)';
+            default: return 'rgba(112, 112, 112, 0.3)';
         }
     };
 
@@ -541,9 +541,9 @@ const ChildModule = memo(function ChildModule({
                                 ? 'rgba(236, 253, 245, 0.98)'
                                 : isArmed
                                     ? 'rgba(236, 254, 255, 0.98)'
-                                    : 'rgba(255, 255, 255, 0.96)',
+                                    : 'rgba(204, 204, 204, 0.96)',
                             backdropFilter: 'blur(12px)',
-                            color: '#18181B',
+                            color: '#333333',
                             padding: '5px 12px',
                             borderRadius: '10px',
                             fontSize: '10px',
@@ -557,11 +557,11 @@ const ChildModule = memo(function ChildModule({
                             boxShadow: isPressed
                                 ? '0 0 0 2px rgba(16, 185, 129, 0.3), 0 8px 24px rgba(16, 185, 129, 0.2)'
                                 : isArmed
-                                    ? '0 0 0 2px rgba(6, 182, 212, 0.25), 0 8px 24px rgba(6, 182, 212, 0.15)'
+                                    ? '0 0 0 2px rgba(74, 144, 164, 0.25), 0 8px 24px rgba(74, 144, 164, 0.15)'
                                     : isHovered
                                  ? `0 0 0 2px ${borderColor}, 0 6px 16px rgba(0, 0, 0, 0.1)`
-                                 : '0 2px 8px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.03)',
-                            borderLeft: `3px solid ${isPressed ? '#10B981' : isArmed ? '#06B6D4' : typeColor}`,
+                                 : '0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+                            borderLeft: `3px solid ${isPressed ? '#10B981' : isArmed ? '#4A90A4' : typeColor}`,
                             transform: isPressed
                                 ? 'translateY(-4px) scale(1.08)'
                                 : isArmed || isHovered
@@ -583,7 +583,7 @@ const ChildModule = memo(function ChildModule({
                             </span>
                             <span style={{
                                 fontWeight: '500',
-                                color: '#18181B',
+                                color: '#333333',
                             }}>
                                 {label}
                             </span>
@@ -612,9 +612,9 @@ const ChildModule = memo(function ChildModule({
                         }}>
                             {showHoveredMapping && !mappings[hoveredButton] && (
                                 <div style={{
-                                    background: 'rgba(255, 253, 250, 0.95)',
+                                    background: 'rgba(204, 204, 204, 0.95)',
                                     backdropFilter: 'blur(8px)',
-                                    color: '#18181B',
+                                    color: '#333333',
                                     padding: '4px 10px',
                                     borderRadius: '6px',
                                     fontSize: '10px',
@@ -622,13 +622,13 @@ const ChildModule = memo(function ChildModule({
                                     fontWeight: '500',
                                     whiteSpace: 'nowrap',
                                     borderLeft: `3px solid ${getTypeColor(hoveredMapping?.type)}`,
-                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                                 }}>
                                     {hoveredMapping?.label}
                                 </div>
                             )}
                             <div style={{
-                                background: 'rgba(124, 58, 237, 0.9)',
+                                background: 'rgba(81, 128, 193, 0.9)',
                                 color: '#ffffff',
                                 fontSize: '8px',
                                 fontFamily: "'IBM Plex Mono', monospace",
@@ -637,7 +637,7 @@ const ChildModule = memo(function ChildModule({
                                 textTransform: 'uppercase',
                                 padding: '2px 8px',
                                 borderRadius: '4px',
-                                boxShadow: '0 1px 4px rgba(124, 58, 237, 0.25)',
+                                boxShadow: '0 1px 4px rgba(81, 128, 193, 0.25)',
                             }}>
                                 {isMappingMode
                                     ? armedButton === hoveredButton
@@ -672,7 +672,7 @@ function IndicatorRing({ buttonName, gltf }) {
         <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.04, 0.055, 32]} />
             <meshBasicMaterial
-                color="#7C3AED"
+                color="#5180C1"
                 transparent
                 opacity={0.9}
                 side={THREE.DoubleSide}

@@ -36,13 +36,13 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
   const getTypeConfig = (type) => {
     switch (type) {
       case HID_INPUT_TYPES.GAMEPAD:
-        return { color: '#7C3AED', icon: '🎮', label: 'Gamepad' };
+        return { color: '#5180C1', icon: '🎮', label: 'Gamepad' };
       case HID_INPUT_TYPES.KEYBOARD:
-        return { color: '#06B6D4', icon: '⌨️', label: 'Keyboard' };
+        return { color: '#4A90A4', icon: '⌨️', label: 'Keyboard' };
       case HID_INPUT_TYPES.ANALOG:
-        return { color: '#F97316', icon: '🕹️', label: 'Analog' };
+        return { color: '#6B9BD1', icon: '🕹️', label: 'Analog' };
       default:
-        return { color: '#A1A1AA', icon: '?', label: 'Unknown' };
+        return { color: '#707070', icon: '?', label: 'Unknown' };
     }
   };
 
@@ -106,32 +106,32 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in"
       onClick={onCancel}
     >
-      <div
-        className="bg-white rounded-3xl w-full max-w-[1280px] h-[min(90vh,800px)] overflow-hidden flex animate-scale-in"
-        style={{
-          boxShadow: '0 25px 80px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.03)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Left Column - Visual Selector */}
-        <div 
-          className="flex-1 flex flex-col items-center justify-center p-12 relative overflow-auto"
+        <div
+          className="bg-[#CCCCCC] rounded-3xl w-full max-w-[1280px] h-[min(90vh,800px)] overflow-hidden flex animate-scale-in"
           style={{
-            background: 'linear-gradient(135deg, #FAFAFA 0%, #F4F4F5 100%)',
-            borderRight: '1px solid #E4E4E7'
+            boxShadow: '0 25px 80px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.06)'
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Decorative grid pattern */}
+          {/* Left Column - Visual Selector */}
           <div 
-            className="absolute inset-0 opacity-30"
+            className="flex-1 flex flex-col items-center justify-center p-12 relative overflow-auto"
             style={{
-              backgroundImage: `
-                linear-gradient(#E4E4E7 1px, transparent 1px),
-                linear-gradient(90deg, #E4E4E7 1px, transparent 1px)
-              `,
-              backgroundSize: '24px 24px'
+              background: 'linear-gradient(135deg, #D9D9D9 0%, #C4C4C4 100%)',
+              borderRight: '1px solid #A0A0A0'
             }}
-          />
+          >
+            {/* Decorative grid pattern */}
+            <div 
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage: `
+                  linear-gradient(#A0A0A0 1px, transparent 1px),
+                  linear-gradient(90deg, #A0A0A0 1px, transparent 1px)
+                `,
+                backgroundSize: '24px 24px'
+              }}
+            />
           
           {/* Content */}
           <div className="relative z-10">
@@ -139,67 +139,67 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
           </div>
         </div>
 
-        {/* Right Column - Configuration */}
-        <div className="w-[380px] flex flex-col bg-white shrink-0">
-          {/* Header */}
-          <div className="px-7 pt-7 pb-5">
-            <div 
-              className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.12em] mb-2"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-            >
-              Configure Input
-            </div>
-            <h2 
-              className="m-0 text-2xl font-semibold text-[#18181B] tracking-tight"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-            >
+          {/* Right Column - Configuration */}
+          <div className="w-[380px] flex flex-col bg-[#CCCCCC] shrink-0">
+            {/* Header */}
+            <div className="px-7 pt-7 pb-5">
+              <div 
+                className="text-[10px] font-semibold text-[#707070] uppercase tracking-[0.12em] mb-2"
+                style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+              >
+                Configure Input
+              </div>
+              <h2 
+                className="m-0 text-2xl font-semibold text-[#333333] tracking-tight"
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              >
               {button.name}
             </h2>
           </div>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto panel-scroll px-7 pb-6">
-            {/* Input Type Selection */}
-            <div className="mb-6">
-              <label 
-                className="block mb-3 text-sm text-[#52525B] font-medium"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Input Type
-              </label>
-              <div className="flex gap-2">
-                {[
-                  { type: HID_INPUT_TYPES.GAMEPAD, ...getTypeConfig(HID_INPUT_TYPES.GAMEPAD) },
-                  { type: HID_INPUT_TYPES.KEYBOARD, ...getTypeConfig(HID_INPUT_TYPES.KEYBOARD) },
-                  { type: HID_INPUT_TYPES.ANALOG, ...getTypeConfig(HID_INPUT_TYPES.ANALOG) },
-                ].map(({ type, color, icon, label }) => {
-                  const isActive = inputType === type;
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => handleInputTypeChange(type)}
-                      className="flex-1 py-3 px-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150 flex flex-col items-center gap-1"
-                      style={{ 
-                        fontFamily: "'Space Grotesk', sans-serif",
-                        background: isActive ? `${color}12` : '#F9FAFB',
-                        border: isActive ? `2px solid ${color}` : '2px solid #E4E4E7',
-                        color: isActive ? color : '#71717A'
-                      }}
-                    >
-                      <span className="text-lg">{icon}</span>
-                      <span className="text-xs">{label}</span>
-                    </button>
-                  );
-                })}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto panel-scroll px-7 pb-6">
+              {/* Input Type Selection */}
+              <div className="mb-6">
+                <label 
+                  className="block mb-3 text-sm text-[#4A4A4A] font-medium"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Input Type
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { type: HID_INPUT_TYPES.GAMEPAD, ...getTypeConfig(HID_INPUT_TYPES.GAMEPAD) },
+                    { type: HID_INPUT_TYPES.KEYBOARD, ...getTypeConfig(HID_INPUT_TYPES.KEYBOARD) },
+                    { type: HID_INPUT_TYPES.ANALOG, ...getTypeConfig(HID_INPUT_TYPES.ANALOG) },
+                  ].map(({ type, color, icon, label }) => {
+                    const isActive = inputType === type;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => handleInputTypeChange(type)}
+                        className="flex-1 py-3 px-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150 flex flex-col items-center gap-1"
+                        style={{ 
+                          fontFamily: "'Space Grotesk', sans-serif",
+                          background: isActive ? `${color}18` : '#B8B8B8',
+                          border: isActive ? `2px solid ${color}` : '2px solid #A0A0A0',
+                          color: isActive ? color : '#4A4A4A'
+                        }}
+                      >
+                        <span className="text-lg">{icon}</span>
+                        <span className="text-xs">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Selected Input Display */}
-            <div className="mb-6">
-              <label 
-                className="block mb-3 text-sm text-[#52525B] font-medium"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
+              {/* Selected Input Display */}
+              <div className="mb-6">
+                <label 
+                  className="block mb-3 text-sm text-[#4A4A4A] font-medium"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
                 Selected Input
               </label>
               
@@ -220,212 +220,212 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                   >
                     {currentTypeConfig.label}
                   </div>
+                    <div 
+                      className="text-lg font-semibold text-[#333333]"
+                      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    >
+                      {getInputLabel(inputType, selectedInput)}
+                    </div>
+                    {isAnalogInput && (
+                      <div 
+                        className="mt-2 flex items-center gap-1.5 text-xs"
+                        style={{ color: '#6B9BD1' }}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-[#6B9BD1]" />
+                        <span style={{ fontFamily: "'DM Sans', sans-serif" }}>Analog input</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
                   <div 
-                    className="text-lg font-semibold text-[#18181B]"
+                    className="px-5 py-8 rounded-xl text-center"
+                    style={{
+                      background: '#B8B8B8',
+                      border: '2px dashed #A0A0A0'
+                    }}
+                  >
+                    <div 
+                      className="text-sm text-[#707070]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      Click an input on the left
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Analog Configuration */}
+              {isAnalogInput && (
+                <div 
+                  className="mb-6 p-5 rounded-xl"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(107, 155, 209, 0.08) 0%, rgba(107, 155, 209, 0.02) 100%)',
+                    border: '1px solid rgba(107, 155, 209, 0.2)'
+                  }}
+                >
+                  <label 
+                    className="block mb-4 text-sm text-[#5180C1] font-semibold"
                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                   >
-                    {getInputLabel(inputType, selectedInput)}
-                  </div>
-                  {isAnalogInput && (
-                    <div 
-                      className="mt-2 flex items-center gap-1.5 text-xs"
-                      style={{ color: '#F97316' }}
+                    Analog Settings
+                  </label>
+
+                  <div className="mb-4">
+                    <label 
+                      className="flex justify-between mb-2 text-xs text-[#4A4A4A]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
                     >
-                      <span className="w-2 h-2 rounded-full bg-[#F97316]" />
-                      <span style={{ fontFamily: "'DM Sans', sans-serif" }}>Analog input</span>
-                    </div>
-                  )}
+                      <span>Threshold</span>
+                      <span 
+                        className="text-[#5180C1] font-semibold"
+                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                      >
+                        {analogConfig.threshold.toFixed(2)}
+                      </span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0.05"
+                      max="0.5"
+                      step="0.05"
+                      value={analogConfig.threshold}
+                      onChange={(e) => setAnalogConfig({ ...analogConfig, threshold: parseFloat(e.target.value) })}
+                      className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                      style={{ 
+                        accentColor: '#5180C1',
+                        background: 'linear-gradient(to right, #5180C1 0%, #5180C150 100%)'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label 
+                      className="flex justify-between mb-2 text-xs text-[#4A4A4A]"
+                      style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    >
+                      <span>Sensitivity</span>
+                      <span 
+                        className="text-[#5180C1] font-semibold"
+                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                      >
+                        {analogConfig.sensitivity.toFixed(1)}x
+                      </span>
+                    </label>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="2.0"
+                      step="0.1"
+                      value={analogConfig.sensitivity}
+                      onChange={(e) => setAnalogConfig({ ...analogConfig, sensitivity: parseFloat(e.target.value) })}
+                      className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                      style={{ 
+                        accentColor: '#5180C1',
+                        background: 'linear-gradient(to right, #5180C1 0%, #5180C150 100%)'
+                      }}
+                    />
+                  </div>
                 </div>
-              ) : (
+              )}
+
+              {/* Action Assignment */}
+              <div className="mb-6">
+                <label 
+                  className="block mb-3 text-sm text-[#4A4A4A] font-medium"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Action Name <span className="text-[#707070] font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={action}
+                  onChange={(e) => setAction(e.target.value)}
+                  placeholder={selectedInput ? `Default: ${getInputLabel(inputType, selectedInput)}` : "e.g., Jump, Fire"}
+                  className="w-full px-4 py-3.5 bg-[#B8B8B8] hover:bg-[#C4C4C4] border-2 border-[#A0A0A0] rounded-xl text-sm text-[#333333] outline-none transition-all duration-150 focus:border-[#5180C1] focus:bg-[#C4C4C4]"
+                  style={{ 
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(81, 128, 193, 0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && selectedInput) handleSave() }}
+                />
+              </div>
+
+              {/* Current Mapping Display */}
+              {button.action && (
                 <div 
-                  className="px-5 py-8 rounded-xl text-center"
+                  className="p-4 rounded-xl mb-2"
                   style={{
-                    background: '#F9FAFB',
-                    border: '2px dashed #E4E4E7'
+                    background: '#B8B8B8',
+                    border: '1px solid #A0A0A0'
                   }}
                 >
                   <div 
-                    className="text-sm text-[#A1A1AA]"
+                    className="text-[10px] text-[#707070] mb-1.5 font-semibold uppercase tracking-wider"
+                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                  >
+                    Current Mapping
+                  </div>
+                  <div 
+                    className="text-sm text-[#4A4A4A]"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
-                    Click an input on the left
+                    {button.label || button.input} → {button.action}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Analog Configuration */}
-            {isAnalogInput && (
-              <div 
-                className="mb-6 p-5 rounded-xl"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.04) 0%, rgba(249, 115, 22, 0.01) 100%)',
-                  border: '1px solid rgba(249, 115, 22, 0.15)'
-                }}
-              >
-                <label 
-                  className="block mb-4 text-sm text-[#F97316] font-semibold"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+            {/* Footer Actions */}
+            <div 
+              className="px-7 py-5 border-t border-[#B8B8B8] flex flex-col gap-3"
+              style={{ background: '#C4C4C4' }}
+            >
+              {/* Primary actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSave}
+                  disabled={!selectedInput}
+                  className={`flex-1 py-3.5 border-none rounded-xl text-sm font-semibold transition-all duration-150
+                    ${selectedInput
+                      ? 'bg-[#5180C1] hover:bg-[#4571B0] text-white cursor-pointer'
+                      : 'bg-[#A0A0A0] text-[#707070] cursor-not-allowed'
+                    }`}
+                  style={{ 
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    boxShadow: selectedInput ? '0 4px 12px rgba(81, 128, 193, 0.3)' : 'none'
+                  }}
                 >
-                  Analog Settings
-                </label>
-
-                <div className="mb-4">
-                  <label 
-                    className="flex justify-between mb-2 text-xs text-[#52525B]"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    <span>Threshold</span>
-                    <span 
-                      className="text-[#F97316] font-semibold"
-                      style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                    >
-                      {analogConfig.threshold.toFixed(2)}
-                    </span>
-                  </label>
-                  <input
-                    type="range"
-                    min="0.05"
-                    max="0.5"
-                    step="0.05"
-                    value={analogConfig.threshold}
-                    onChange={(e) => setAnalogConfig({ ...analogConfig, threshold: parseFloat(e.target.value) })}
-                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                    style={{ 
-                      accentColor: '#F97316',
-                      background: 'linear-gradient(to right, #F97316 0%, #F9731640 100%)'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label 
-                    className="flex justify-between mb-2 text-xs text-[#52525B]"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                  >
-                    <span>Sensitivity</span>
-                    <span 
-                      className="text-[#F97316] font-semibold"
-                      style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                    >
-                      {analogConfig.sensitivity.toFixed(1)}x
-                    </span>
-                  </label>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="2.0"
-                    step="0.1"
-                    value={analogConfig.sensitivity}
-                    onChange={(e) => setAnalogConfig({ ...analogConfig, sensitivity: parseFloat(e.target.value) })}
-                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                    style={{ 
-                      accentColor: '#F97316',
-                      background: 'linear-gradient(to right, #F97316 0%, #F9731640 100%)'
-                    }}
-                  />
-                </div>
+                  Save Mapping
+                </button>
               </div>
-            )}
-
-            {/* Action Assignment */}
-            <div className="mb-6">
-              <label 
-                className="block mb-3 text-sm text-[#52525B] font-medium"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Action Name <span className="text-[#A1A1AA] font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={action}
-                onChange={(e) => setAction(e.target.value)}
-                placeholder={selectedInput ? `Default: ${getInputLabel(inputType, selectedInput)}` : "e.g., Jump, Fire"}
-                className="w-full px-4 py-3.5 bg-[#F9FAFB] hover:bg-white border-2 border-[#E4E4E7] rounded-xl text-sm text-[#18181B] outline-none transition-all duration-150 focus:border-[#7C3AED] focus:bg-white"
-                style={{ 
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124, 58, 237, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-                onKeyDown={(e) => { if (e.key === 'Enter' && selectedInput) handleSave() }}
-              />
-            </div>
-
-            {/* Current Mapping Display */}
-            {button.action && (
-              <div 
-                className="p-4 rounded-xl mb-2"
-                style={{
-                  background: '#F9FAFB',
-                  border: '1px solid #E4E4E7'
-                }}
-              >
-                <div 
-                  className="text-[10px] text-[#A1A1AA] mb-1.5 font-semibold uppercase tracking-wider"
-                  style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                >
-                  Current Mapping
-                </div>
-                <div 
-                  className="text-sm text-[#52525B]"
+              
+              {/* Secondary actions */}
+              <div className="flex gap-3 justify-between">
+                {button.action && (
+                  <button
+                    onClick={() => onClear(button.name)}
+                    className="px-4 py-2 bg-[#CCCCCC] text-[#EF4444] border border-[#FECACA] rounded-lg text-xs font-semibold cursor-pointer hover:bg-[#FEE2E2] transition-all duration-150"
+                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                  >
+                    Clear Mapping
+                  </button>
+                )}
+                <button
+                  onClick={onCancel}
+                  className="px-4 py-2 bg-transparent text-[#4A4A4A] border-none text-xs font-medium cursor-pointer hover:text-[#333333] transition-colors ml-auto"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  {button.label || button.input} → {button.action}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer Actions */}
-          <div 
-            className="px-7 py-5 border-t border-[#F4F4F5] flex flex-col gap-3"
-            style={{ background: '#FAFAFA' }}
-          >
-            {/* Primary actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleSave}
-                disabled={!selectedInput}
-                className={`flex-1 py-3.5 border-none rounded-xl text-sm font-semibold transition-all duration-150
-                  ${selectedInput
-                    ? 'bg-[#7C3AED] hover:bg-[#6D28D9] text-white cursor-pointer'
-                    : 'bg-[#E4E4E7] text-[#A1A1AA] cursor-not-allowed'
-                  }`}
-                style={{ 
-                  fontFamily: "'Space Grotesk', sans-serif",
-                  boxShadow: selectedInput ? '0 4px 12px rgba(124, 58, 237, 0.25)' : 'none'
-                }}
-              >
-                Save Mapping
-              </button>
-            </div>
-            
-            {/* Secondary actions */}
-            <div className="flex gap-3 justify-between">
-              {button.action && (
-                <button
-                  onClick={() => onClear(button.name)}
-                  className="px-4 py-2 bg-white text-[#EF4444] border border-[#FECACA] rounded-lg text-xs font-semibold cursor-pointer hover:bg-[#FEF2F2] transition-all duration-150"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                >
-                  Clear Mapping
+                  Cancel
                 </button>
-              )}
-              <button
-                onClick={onCancel}
-                className="px-4 py-2 bg-transparent text-[#71717A] border-none text-xs font-medium cursor-pointer hover:text-[#18181B] transition-colors ml-auto"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
-                Cancel
-              </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

@@ -24,7 +24,7 @@ function StickVisual({ side, selectedAxis, onSelectX, onSelectY, accentColor }) 
     <div className="flex flex-col items-center gap-5">
       {/* Label */}
       <div 
-        className="text-base font-semibold text-[#18181B]"
+        className="text-base font-semibold text-[#333333]"
         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
       >
         {isLeft ? 'Left' : 'Right'} Stick
@@ -36,16 +36,16 @@ function StickVisual({ side, selectedAxis, onSelectX, onSelectY, accentColor }) 
           {/* Outer ring */}
           <circle
             cx="80" cy="80" r="70"
-            fill="#F9FAFB"
-            stroke="#E4E4E7"
+            fill="#CCCCCC"
+            stroke="#A0A0A0"
             strokeWidth="2"
           />
           
           {/* Inner area */}
           <circle
             cx="80" cy="80" r="55"
-            fill="white"
-            stroke="#E4E4E7"
+            fill="#D9D9D9"
+            stroke="#A0A0A0"
             strokeWidth="1"
           />
 
@@ -56,18 +56,18 @@ function StickVisual({ side, selectedAxis, onSelectX, onSelectY, accentColor }) 
           >
             <line
               x1="25" y1="80" x2="135" y2="80"
-              stroke={isXSelected ? accentColor : '#D4D4D8'}
+              stroke={isXSelected ? accentColor : '#A0A0A0'}
               strokeWidth={isXSelected ? 4 : 2}
               strokeLinecap="round"
             />
             {/* X arrows */}
             <polygon
               points="20,80 35,72 35,88"
-              fill={isXSelected ? accentColor : '#A1A1AA'}
+              fill={isXSelected ? accentColor : '#707070'}
             />
             <polygon
               points="140,80 125,72 125,88"
-              fill={isXSelected ? accentColor : '#A1A1AA'}
+              fill={isXSelected ? accentColor : '#707070'}
             />
             {/* Hit area */}
             <rect x="20" y="65" width="120" height="30" fill="transparent" />
@@ -80,18 +80,18 @@ function StickVisual({ side, selectedAxis, onSelectX, onSelectY, accentColor }) 
           >
             <line
               x1="80" y1="25" x2="80" y2="135"
-              stroke={isYSelected ? accentColor : '#D4D4D8'}
+              stroke={isYSelected ? accentColor : '#A0A0A0'}
               strokeWidth={isYSelected ? 4 : 2}
               strokeLinecap="round"
             />
             {/* Y arrows */}
             <polygon
               points="80,20 72,35 88,35"
-              fill={isYSelected ? accentColor : '#A1A1AA'}
+              fill={isYSelected ? accentColor : '#707070'}
             />
             <polygon
               points="80,140 72,125 88,125"
-              fill={isYSelected ? accentColor : '#A1A1AA'}
+              fill={isYSelected ? accentColor : '#707070'}
             />
             {/* Hit area */}
             <rect x="65" y="20" width="30" height="120" fill="transparent" />
@@ -100,8 +100,8 @@ function StickVisual({ side, selectedAxis, onSelectX, onSelectY, accentColor }) 
           {/* Center dot */}
           <circle
             cx="80" cy="80" r="12"
-            fill="#F4F4F5"
-            stroke="#D4D4D8"
+            fill="#D9D9D9"
+            stroke="#A0A0A0"
             strokeWidth="2"
           />
         </svg>
@@ -114,9 +114,9 @@ function StickVisual({ side, selectedAxis, onSelectX, onSelectY, accentColor }) 
           className={`px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-150 border-2`}
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            background: isXSelected ? `${accentColor}15` : 'white',
-            borderColor: isXSelected ? accentColor : '#E4E4E7',
-            color: isXSelected ? accentColor : '#71717A',
+            background: isXSelected ? `${accentColor}15` : '#D9D9D9',
+            borderColor: isXSelected ? accentColor : '#A0A0A0',
+            color: isXSelected ? accentColor : '#555555',
           }}
         >
           X Axis ↔
@@ -126,9 +126,9 @@ function StickVisual({ side, selectedAxis, onSelectX, onSelectY, accentColor }) 
           className={`px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-150 border-2`}
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            background: isYSelected ? `${accentColor}15` : 'white',
-            borderColor: isYSelected ? accentColor : '#E4E4E7',
-            color: isYSelected ? accentColor : '#71717A',
+            background: isYSelected ? `${accentColor}15` : '#D9D9D9',
+            borderColor: isYSelected ? accentColor : '#A0A0A0',
+            color: isYSelected ? accentColor : '#555555',
           }}
         >
           Y Axis ↕
@@ -145,7 +145,7 @@ function TriggerVisual({ side, isSelected, onSelect, accentColor }) {
     <div className="flex flex-col items-center gap-4">
       {/* Label */}
       <div 
-        className="text-sm font-semibold text-[#18181B]"
+        className="text-sm font-semibold text-[#333333]"
         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
       >
         {isLeft ? 'Left' : 'Right'} Trigger
@@ -167,8 +167,8 @@ function TriggerVisual({ side, isSelected, onSelect, accentColor }) {
                Q80 110, 50 115
                Q20 110, 20 90
                Z"
-            fill={isSelected ? `${accentColor}15` : '#F9FAFB'}
-            stroke={isSelected ? accentColor : '#D4D4D8'}
+            fill={isSelected ? `${accentColor}15` : '#CCCCCC'}
+            stroke={isSelected ? accentColor : '#A0A0A0'}
             strokeWidth={isSelected ? 3 : 2}
           />
           
@@ -176,7 +176,7 @@ function TriggerVisual({ side, isSelected, onSelect, accentColor }) {
           <path
             d="M50 30 L50 80 M40 70 L50 85 L60 70"
             fill="none"
-            stroke={isSelected ? accentColor : '#A1A1AA'}
+            stroke={isSelected ? accentColor : '#707070'}
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -188,7 +188,7 @@ function TriggerVisual({ side, isSelected, onSelect, accentColor }) {
             textAnchor="middle"
             fontSize="12"
             fontWeight="600"
-            fill={isSelected ? accentColor : '#71717A'}
+            fill={isSelected ? accentColor : '#555555'}
             style={{ fontFamily: 'IBM Plex Mono' }}
           >
             {isLeft ? 'LT' : 'RT'}
@@ -198,7 +198,7 @@ function TriggerVisual({ side, isSelected, onSelect, accentColor }) {
 
       {/* Type indicator */}
       <div 
-        className="text-xs text-[#A1A1AA]"
+        className="text-xs text-[#707070]"
         style={{ fontFamily: "'DM Sans', sans-serif" }}
       >
         Unidirectional
@@ -207,7 +207,7 @@ function TriggerVisual({ side, isSelected, onSelect, accentColor }) {
   );
 }
 
-export default function AnalogPicker({ selectedInput, onSelect, accentColor = '#F97316' }) {
+export default function AnalogPicker({ selectedInput, onSelect, accentColor = '#6B9BD1' }) {
   return (
     <div className="flex flex-col items-center gap-8">
       {/* Sticks Row */}
@@ -229,7 +229,7 @@ export default function AnalogPicker({ selectedInput, onSelect, accentColor = '#
       </div>
 
       {/* Divider */}
-      <div className="w-full max-w-md h-px bg-gradient-to-r from-transparent via-[#E4E4E7] to-transparent" />
+      <div className="w-full max-w-md h-px bg-gradient-to-r from-transparent via-[#A0A0A0] to-transparent" />
 
       {/* Triggers Row */}
       <div className="flex gap-16">
@@ -249,7 +249,7 @@ export default function AnalogPicker({ selectedInput, onSelect, accentColor = '#
 
       {/* Legend */}
       <div 
-        className="text-xs text-[#A1A1AA] text-center mt-4"
+        className="text-xs text-[#707070] text-center mt-4"
         style={{ fontFamily: "'DM Sans', sans-serif" }}
       >
         Click an axis or trigger to select
