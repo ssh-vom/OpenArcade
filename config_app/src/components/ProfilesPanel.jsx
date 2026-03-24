@@ -1,5 +1,6 @@
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PlateGalleryPanel from "./PlateGalleryPanel.jsx";
+import PlateTopPreview from "./PlateTopPreview.jsx";
 import plateCatalog from "@shared/plate_catalog.json";
 
 const PLATES = plateCatalog.plates;
@@ -26,6 +27,7 @@ export default function ProfilesPanel({
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [view, setView] = useState("list");
+    const [editingProfileId, setEditingProfileId] = useState(null);
     const [renamingId, setRenamingId] = useState(null);
     const [renameValue, setRenameValue] = useState("");
     const [switchingId, setSwitchingId] = useState(null);
@@ -130,27 +132,31 @@ export default function ProfilesPanel({
         }
     };
 
+    const editingProfile = profiles.find((p) => p.id === editingProfileId);
+
     if (view === "gallery") {
         return (
-            <Suspense fallback={null}>
-                <PlateGalleryPanel
-                    deviceId={deviceId}
-                    currentPlateId={activeProfile?.plate_id || null}
-                    currentProfileId={activeProfile?.id || null}
-                    configClient={configClient}
-                    onBack={() => setView("list")}
-                    onPlateSelected={() => {
-                        setView("list");
-                        onProfileChanged?.();
-                    }}
-                />
-            </Suspense>
+            <PlateGalleryPanel
+                deviceId={deviceId}
+                currentPlateId={editingProfile?.plate_id ?? null}
+                currentProfileId={editingProfileId}
+                configClient={configClient}
+                onBack={() => {
+                    setEditingProfileId(null);
+                    setView("list");
+                }}
+                onPlateSelected={() => {
+                    setEditingProfileId(null);
+                    setView("list");
+                    onProfileChanged?.();
+                }}
+            />
         );
     }
 
     return (
         <div
-            className="h-full flex flex-col relative overflow-hidden"
+            className="h-full flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden"
             style={{ background: "linear-gradient(180deg, #FAFAF8 0%, #F4F4F2 100%)" }}
         >
             <div
@@ -177,7 +183,7 @@ export default function ProfilesPanel({
                     </h2>
                     <div
                         className="text-xs text-[#A1A1AA] truncate mt-1"
-                        style={{ fontFamily: "'IBM Plex Mono', monospace", maxWidth: 120 }}
+                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                         title={deviceId || "No device selected"}
                     >
                         {deviceId || "No device"}
@@ -195,130 +201,142 @@ export default function ProfilesPanel({
                 </button>
             </div>
 
-            <div className="relative z-[1] flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
+            <div className="relative z-[1] flex-1 min-h-0 overflow-y-auto px-4 py-4">
                 {loading ? (
-                    <div className="flex-1 flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center min-h-[200px]">
                         <div className="w-5 h-5 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : (
-                    profiles.map((profile) => {
-                        const isActive = profile.id === activeProfile?.id;
-                        const plateName = plateNameById.get(profile.plate_id) || profile.plate_id;
-                        const isSwitching = switchingId === profile.id;
-                        const isDeleting = deletingId === profile.id;
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {profiles.map((profile) => {
+                            const isActive = profile.id === activeProfile?.id;
+                            const plateName = plateNameById.get(profile.plate_id) || profile.plate_id;
+                            const isSwitching = switchingId === profile.id;
+                            const isDeleting = deletingId === profile.id;
 
-                        return (
-                            <div
-                                key={profile.id}
-                                className="rounded-xl p-3"
-                                style={{
-                                    background: "#FFFFFF",
-                                    border: `1px solid ${isActive ? "#7C3AED" : "#E4E4E7"}`,
-                                    boxShadow: isActive
-                                        ? "0 6px 18px rgba(124, 58, 237, 0.14)"
-                                        : "0 1px 3px rgba(0, 0, 0, 0.06)",
-                                }}
-                            >
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center min-w-0">
-                                        {isActive && <span className="w-2 h-2 rounded-full bg-[#7C3AED] inline-block mr-2 shrink-0" />}
+                            return (
+                                <div
+                                    key={profile.id}
+                                    className="rounded-xl overflow-hidden flex flex-col"
+                                    style={{
+                                        background: "#FFFFFF",
+                                        border: `1px solid ${isActive ? "#7C3AED" : "#E4E4E7"}`,
+                                        boxShadow: isActive
+                                            ? "0 6px 18px rgba(124, 58, 237, 0.14)"
+                                            : "0 1px 3px rgba(0, 0, 0, 0.06)",
+                                    }}
+                                >
+                                    <div className="aspect-[4/3] bg-[#F4F4F2] flex items-center justify-center p-3 border-b border-[#E4E4E7] shrink-0">
+                                        <PlateTopPreview
+                                            plateId={profile.plate_id}
+                                            alt=""
+                                            className="max-h-full max-w-full object-contain"
+                                        />
+                                    </div>
 
-                                        {renamingId === profile.id ? (
-                                            <input
-                                                autoFocus
-                                                value={renameValue}
-                                                onChange={(event) => setRenameValue(event.target.value)}
-                                                onBlur={() => handleRenameProfile(profile.id, renameValue)}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === "Enter") {
-                                                        event.preventDefault();
-                                                        event.currentTarget.blur();
-                                                    }
-                                                    if (event.key === "Escape") {
-                                                        event.preventDefault();
-                                                        setRenamingId(null);
-                                                    }
-                                                }}
-                                                className="text-sm font-semibold text-[#18181B] bg-transparent border border-[#D4D4D8] rounded-md px-1.5 py-0.5 outline-none focus:border-[#7C3AED] min-w-0"
-                                                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                            />
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onDoubleClick={() => {
-                                                    setRenamingId(profile.id);
-                                                    setRenameValue(profile.name || "");
-                                                }}
-                                                className="text-sm font-semibold text-[#18181B] truncate text-left"
-                                                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                                title="Double-click to rename"
-                                            >
-                                                {profile.name}
-                                            </button>
-                                        )}
+                                    <div className="p-3 flex flex-col gap-2 flex-1">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-center min-w-0 flex-1">
+                                                {isActive && <span className="w-2 h-2 rounded-full bg-[#7C3AED] inline-block mr-2 shrink-0 mt-1.5" />}
 
-                                        {isActive && (
+                                                {renamingId === profile.id ? (
+                                                    <input
+                                                        autoFocus
+                                                        value={renameValue}
+                                                        onChange={(event) => setRenameValue(event.target.value)}
+                                                        onBlur={() => handleRenameProfile(profile.id, renameValue)}
+                                                        onKeyDown={(event) => {
+                                                            if (event.key === "Enter") {
+                                                                event.preventDefault();
+                                                                event.currentTarget.blur();
+                                                            }
+                                                            if (event.key === "Escape") {
+                                                                event.preventDefault();
+                                                                setRenamingId(null);
+                                                            }
+                                                        }}
+                                                        className="text-sm font-semibold text-[#18181B] bg-transparent border border-[#D4D4D8] rounded-md px-1.5 py-0.5 outline-none focus:border-[#7C3AED] min-w-0 w-full"
+                                                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                    />
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onDoubleClick={() => {
+                                                            setRenamingId(profile.id);
+                                                            setRenameValue(profile.name || "");
+                                                        }}
+                                                        className="text-sm font-semibold text-[#18181B] truncate text-left"
+                                                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                        title="Double-click to rename"
+                                                    >
+                                                        {profile.name}
+                                                    </button>
+                                                )}
+
+                                                {isActive && (
+                                                    <span
+                                                        className="ml-2 shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED]"
+                                                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                    >
+                                                        Active
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                {!isActive && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSwitch(profile.id)}
+                                                        disabled={isSwitching || isDeleting}
+                                                        className="text-xs font-medium text-[#7C3AED] px-2 py-1 rounded-lg hover:bg-[#7C3AED]/5 border border-[#7C3AED]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                    >
+                                                        {isSwitching ? "Switching…" : "Switch"}
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDelete(profile.id)}
+                                                    disabled={profiles.length <= 1 || isDeleting || isSwitching}
+                                                    className="text-[#A1A1AA] hover:text-[#EF4444] p-1 rounded-lg hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                    aria-label="Delete profile"
+                                                >
+                                                    {isDeleting ? (
+                                                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                    ) : (
+                                                        <TrashIcon />
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 flex-wrap mt-auto">
                                             <span
-                                                className="ml-2 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[#7C3AED]/10 text-[#7C3AED]"
+                                                className="inline-flex items-center rounded-full bg-[#F4F4F2] text-[#52525B] text-[11px] px-2 py-0.5"
                                                 style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                             >
-                                                Active
+                                                {plateName}
                                             </span>
-                                        )}
-                                    </div>
 
-                                    <div className="flex items-center gap-1">
-                                        {!isActive && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleSwitch(profile.id)}
-                                                disabled={isSwitching || isDeleting}
-                                                className="text-xs font-medium text-[#7C3AED] px-2 py-1 rounded-lg hover:bg-[#7C3AED]/5 border border-[#7C3AED]/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                onClick={() => {
+                                                    setEditingProfileId(profile.id);
+                                                    setView("gallery");
+                                                }}
+                                                className="text-[11px] text-[#7C3AED] ml-auto underline-offset-2 hover:underline"
+                                                style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                             >
-                                                {isSwitching ? "Switching…" : "Switch"}
+                                                Change plate →
                                             </button>
-                                        )}
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDelete(profile.id)}
-                                            disabled={profiles.length <= 1 || isDeleting || isSwitching}
-                                            className="text-[#A1A1AA] hover:text-[#EF4444] p-1 rounded-lg hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                            aria-label="Delete profile"
-                                        >
-                                            {isDeleting ? (
-                                                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <TrashIcon />
-                                            )}
-                                        </button>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div className="mt-2 flex items-center gap-2">
-                                    <div
-                                        className="inline-flex items-center gap-1.5 rounded-full bg-[#F4F4F2] text-[#52525B] text-[11px] px-2 py-0.5"
-                                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                    >
-                                        <span className="w-3 h-3 rounded-[2px] bg-[#D4D4D8] inline-block" />
-                                        <span>{plateName}</span>
-                                    </div>
-
-                                    {isActive && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setView("gallery")}
-                                            className="text-[11px] text-[#7C3AED] ml-auto underline-offset-2 hover:underline"
-                                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                        >
-                                            Change Plate →
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })
+                            );
+                        })}
+                    </div>
                 )}
             </div>
         </div>

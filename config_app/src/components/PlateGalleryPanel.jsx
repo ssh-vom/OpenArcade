@@ -1,34 +1,8 @@
-import { Suspense, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Bounds, useGLTF } from "@react-three/drei";
+import { useState } from "react";
 import plateCatalog from "@shared/plate_catalog.json";
+import PlateTopPreview from "./PlateTopPreview.jsx";
 
 const PLATES = plateCatalog.plates;
-
-PLATES.forEach((plate) => {
-    useGLTF.preload(plate.plate_model);
-});
-
-function PlatePreview3D({ modelPath }) {
-    const { scene } = useGLTF(modelPath);
-    const rootRef = useRef(null);
-
-    const clonedScene = useMemo(() => scene.clone(), [scene]);
-
-    useFrame((_, delta) => {
-        if (rootRef.current) {
-            rootRef.current.rotation.y += delta * 0.35;
-        }
-    });
-
-    return (
-        <group ref={rootRef}>
-            <Bounds fit clip observe margin={1.2}>
-                <primitive object={clonedScene} />
-            </Bounds>
-        </group>
-    );
-}
 
 function PlateCard({ plate, isSelected, isLoading, onClick }) {
     return (
@@ -47,14 +21,12 @@ function PlateCard({ plate, isSelected, isLoading, onClick }) {
                 cursor: isLoading ? "wait" : "pointer",
             }}
         >
-            <div className="h-40">
-                <Canvas flat camera={{ position: [0, 0, 3], fov: 45 }}>
-                    <ambientLight intensity={0.8} />
-                    <directionalLight position={[2, 2, 2]} />
-                    <Suspense fallback={null}>
-                        <PlatePreview3D modelPath={plate.plate_model} />
-                    </Suspense>
-                </Canvas>
+            <div className="h-40 bg-[#F4F4F2] flex items-center justify-center p-2 border-b border-[#E4E4E7]">
+                <PlateTopPreview
+                    plateId={plate.id}
+                    alt=""
+                    className="max-h-full max-w-full object-contain"
+                />
             </div>
 
             <div className="px-3.5 pb-3.5 pt-3">

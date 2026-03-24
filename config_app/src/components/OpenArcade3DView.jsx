@@ -1024,16 +1024,18 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                         </div>
                     </>
                 ) : activeSection === "profiles" ? (
-                    <ProfilesPanel
-                        deviceId={currentModule?.deviceId || null}
-                        configClient={activeClient}
-                        activeProfile={activeProfile}
-                        refreshKey={profilesRefreshKey}
-                        onProfileChanged={() => {
-                            triggerProfileRefresh();
-                            refreshDevices();
-                        }}
-                    />
+                    <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+                        <ProfilesPanel
+                            deviceId={currentModule?.deviceId || null}
+                            configClient={activeClient}
+                            activeProfile={activeProfile}
+                            refreshKey={profilesRefreshKey}
+                            onProfileChanged={() => {
+                                triggerProfileRefresh();
+                                refreshDevices();
+                            }}
+                        />
+                    </div>
                 ) : (
                     <LiveInputPanel />
                 )}
