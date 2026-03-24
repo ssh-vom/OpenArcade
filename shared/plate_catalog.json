@@ -2,49 +2,13 @@
   "version": 1,
   "plates": [
     {
-      "id": "8button-left-v1",
-      "name": "8-Button Left Panel",
-      "description": "Left-side 8-button top plate",
-      "top_plate_preview": "/oa_block.png",
-      "plate_model": "/TP_L_8ButtonA1.glb",
-      "controller_model": "/RevFinalButtonModule_2026-03-15.glb",
-      "accent_color": "#7C3AED"
-    },
-    {
       "id": "8button-right-v1",
       "name": "8-Button Right Panel",
       "description": "Right-side 8-button top plate",
-      "top_plate_preview": "/TP_R_8_Buttons.png",
+      "top_plate_preview": "/plates/TP_R_8_Buttons.png",
       "plate_model": "/TP_R_8ButtonA1.glb",
       "controller_model": "/RevFinalButtonModule_2026-03-15.glb",
       "accent_color": "#6D28D9"
-    },
-    {
-      "id": "button-module-v1",
-      "name": "Button Module",
-      "description": "Standard 8-button arcade module",
-      "top_plate_preview": "/oa_block.png",
-      "plate_model": "/OAColouredButtons.glb",
-      "controller_model": "/OpenArcadeAssy_v2.glb",
-      "accent_color": "#7C3AED"
-    },
-    {
-      "id": "button-module-v2",
-      "name": "Button Module Pro",
-      "description": "Detailed button module with full keycap detail",
-      "top_plate_preview": "/oa_block.png",
-      "plate_model": "/OAColouredButtons.glb",
-      "controller_model": "/RevFinalButtonModule_2026-03-15.glb",
-      "accent_color": "#6D28D9"
-    },
-    {
-      "id": "joystick-module-v1",
-      "name": "Joystick Module",
-      "description": "Arcade joystick with 4-button layout",
-      "top_plate_preview": "/oa_block.png",
-      "plate_model": "/RevFinalJoystickModule_2026-03-15.glb",
-      "controller_model": "/RevFinalJoystickModule_2026-03-15.glb",
-      "accent_color": "#0EA5E9"
     }
   ]
 }
