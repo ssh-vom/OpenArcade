@@ -1,0 +1,111 @@
+---
+title: System Overview
+description: High-level architecture of the OpenArcade system
+head: []
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# System Overview
+
+OpenArcade consists of three main layers: child modules (ESP32), the parent hub (Raspberry Pi), and the configuration app.
+
+## High-Level Architecture
+
+```
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    ESP32 CONTROLLER (Firmware)                                         │
+│                                                                                                        │
+│  ┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐     ┌───────────┐               │
+│  │  Buttons  │────►│ Debounce  │────►│ Aggregate │────►│   GATT    │────►│    BLE    │               │
+│  │  (GPIO)   │     │  Filter   │     │  State    │     │  Service  │     │   Radio   │               │
+│  └───────────┘     └───────────┘     └───────────┘     └───────────┘     └─────┬─────┘               │
+│                                                                                 │                      │
+└─────────────────────────────────────────────────────────────────────────────────┼──────────────────────┘
+                                                                                  │
+                                                    BLE GATT Notifications (4 bytes @ 100Hz)
+                                                                                  │
+                                                                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       RASPBERRY PI (Server)                                              │
+│                                                                                                         │
+│  ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐   │
+│  │                              MAIN PROCESS (Async Runtime)                                       │   │
+│  │                                                                                                 │   │
+│  │  ┌─────────────┐    ┌─────────────┐   ┌─────────────┐  ┌─────────────┐   ┌─────────────┐       │   │
+│  │  │  Discovery  │───►│   Session   │──►│   Device    │─►│    State    │──►│   Report    │       │   │
+│  │  │   Service   │    │ Supervisor  │   │Session (xN) │  │   Reducer   │   │   Builder   │       │   │
+│  │  │(BleakScanner│    │ (Lifecycle) │   │(Per-device) │  │ (Aggregate) │   │ (8-byte HID)│       │   │
+│  │  └─────────────┘    └─────────────┘   └─────────────┘  └─────────────┘   └──────┬──────┘       │   │
+│  └─────────────────────────────────────────────────────────────────────────────────┼───────────────┘   │
+│                                                                                    │                    │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┼───────────────┐   │
+│  │                              HID OUTPUT WORKER PROCESS                          │               │   │
+│  │                                                                                 ▼               │   │
+│  │                  Queue.get() ──────────────────────────► Write to /dev/hidg0                   │   │
+│  └─────────────────────────────────────────────────────────────────────────────────────────────────┘   │
+│                                                                   │                                     │
+└───────────────────────────────────────────────────────────────────┼─────────────────────────────────────┘
+                                                                    │
+                                                            USB HID Protocol
+                                                                    ▼
+                                                          ┌───────────────────┐
+                                                          │     Host PC       │
+                                                          │  (USB Keyboard)   │
+                                                          └───────────────────┘
+```
+
+## Component Summary
+
+### ESP32 Child Modules
+
+Each child module is an independent input unit containing:
+
+- **8 action buttons** – Configurable GPIO inputs
+- **4-way joystick** – Digital directional input
+- **System buttons** – Select, Start, Pair
+- **OLED display** – Status information
+- **Battery monitoring** – ADC-based level sensing
+
+The module runs FreeRTOS with tasks for:
+- GPIO polling and debouncing (10ms loop)
+- NimBLE host for BLE communication
+- Battery monitoring (2s interval)
+
+### Raspberry Pi Parent Hub
+
+The parent hub aggregates all connected modules and presents them as a unified USB HID device:
+
+| Component | Purpose |
+|-----------|---------|
+| **DiscoveryService** | BLE scanning for "NimBLE_GATT" devices |
+| **SessionSupervisor** | Device connection lifecycle management |
+| **DeviceSession** | Per-device BLE connection handling |
+| **StateReducer** | Aggregate states from all devices |
+| **ReportBuilder** | Build 8-byte USB HID keyboard reports |
+| **HID Worker** | Blocking writes to `/dev/hidg0` |
+
+<Aside type="tip">
+The HID worker runs in a separate process to prevent blocking the async event loop during USB writes.
+</Aside>
+
+### Configuration Layer
+
+- **React Config App** – 3D layout designer with Three.js
+- **WebSerial API** – Browser-based serial communication
+- **USB Serial Device** – `/dev/ttyGS0` on the Pi
+
+## Communication Protocols
+
+| Protocol | Direction | Data Format |
+|----------|-----------|-------------|
+| **BLE GATT** | ESP32 → RPi | 4-byte state notifications |
+| **USB Serial** | Config App → RPi | JSON-lines commands |
+| **Unix Socket** | Config Service → Runtime | IPC updates |
+| **USB HID** | RPi → PC | 8-byte keyboard reports |
+
+## Next Steps
+
+- [Data Flow](/architecture/data-flow) – See how data moves through the system
+- [Firmware Overview](/firmware/overview) – Deep dive into ESP32 code
+- [Server Overview](/server/overview) – Understand the parent hub

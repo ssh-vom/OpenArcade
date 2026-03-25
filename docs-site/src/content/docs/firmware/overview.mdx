@@ -1,0 +1,146 @@
+---
+title: Firmware Overview
+description: ESP32 child module firmware architecture
+head: []
+---
+
+import { Aside, FileTree } from '@astrojs/starlight/components';
+
+# Firmware Overview
+
+The ESP32 firmware handles input capture, debouncing, and BLE communication for each child module.
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    ESP32 CONTROLLER FIRMWARE                              │
+│                                                                                          │
+│   ┌───────────────────────────────────────────────────────────────────────────────────┐  │
+│   │                                    FreeRTOS Tasks                                 │  │
+│   │                                                                                   │  │
+│   │   ┌─────────────────────────────────────────────────────────────┐                 │  │
+│   │   │                Controller Task (Priority 5, 10ms loop)      │                 │  │
+│   │   │                                                             │                 │  │
+│   │   │  GPIO Read ──► Debounce ──► Aggregate ──► BLE Notify        │                 │  │
+│   │   └─────────────────────────────────────────────────────────────┘                 │  │
+│   │                                                                                   │  │
+│   │   ┌─────────────────────┐    ┌─────────────────────┐                              │  │
+│   │   │  NimBLE Host (P6)   │    │  Battery Task (P4)  │                              │  │
+│   │   │  BLE stack          │    │  ADC read (2s)      │                              │  │
+│   │   └─────────────────────┘    └─────────────────────┘                              │  │
+│   └───────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                          │
+│   ┌───────────────────────────────────────────────────────────────────────────────────┐  │
+│   │                                   Hardware Layer                                   │  │
+│   │                                                                                   │  │
+│   │   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐       │  │
+│   │   │ 8 Action │   │  4-Way   │   │  System  │   │  OLED    │   │ Battery  │       │  │
+│   │   │ Buttons  │   │ Joystick │   │ Buttons  │   │ Display  │   │   ADC    │       │  │
+│   │   └──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────────┘       │  │
+│   └───────────────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Project Structure
+
+<FileTree>
+- firmware/esp32/
+  - main/
+    - main.c               Entry point, task creation
+    - src/
+      - controller_input.c GPIO config, state aggregation
+      - debounce.c         Button debounce state machine
+      - gatt_svc.c         BLE GATT service
+      - gap.c              BLE advertising, connection
+      - display.c          SSD1306 OLED driver
+      - battery.c          ADC battery monitoring
+    - include/             Header files
+  - CMakeLists.txt
+  - sdkconfig.defaults
+</FileTree>
+
+## Components
+
+### Controller Input
+
+Handles GPIO configuration and state aggregation:
+
+| GPIO | Function |
+|------|----------|
+| 15, 4, 16, 17, 5, 18, 19, 23 | Action buttons (1-8) |
+| 25, 32, 33, 26 | Joystick (L, R, U, D) |
+| 27, 14, 12 | Select, Start, Pair |
+| 21, 22 | I2C (Display) |
+| 34 | Battery ADC |
+
+### Debounce Module
+
+Software debouncing with configurable timing:
+
+- **Debounce delay:** 20-50ms
+- **Algorithm:** State machine with counter
+- **Purpose:** Filter electrical noise and bounce
+
+<Aside type="note">
+Debouncing is critical for arcade buttons which can have significant mechanical bounce.
+</Aside>
+
+### GATT Service
+
+BLE GATT server for input state notifications:
+
+```
+Service UUID: 666f7065-6e41-7263-6164-65000000000
+├── Characteristic: Input State
+│   ├── UUID: 666f7065-6e41-7263-6164-65000000001
+│   ├── Properties: Read, Notify
+│   └── Value: 4-byte state packet
+```
+
+### GAP (Generic Access Profile)
+
+Handles BLE advertising and connection management:
+
+- **Device name:** "NimBLE_GATT" (or configured name)
+- **Advertising interval:** 20-40ms
+- **Connection parameters:** 7.5-15ms interval for low latency
+
+## Button State Packet
+
+4-byte packet sent via BLE notification:
+
+```
+Byte 0: [b1][b2][b3][b4][b5][b6][b7][b8]  Action buttons
+Byte 1: [jL][jR][jU][jD][--][--][--][--]  Joystick
+Byte 2: [SE][ST][PA][--][--][--][--][--]  System buttons
+Byte 3: [reserved]
+```
+
+## Building and Flashing
+
+```bash
+cd firmware/esp32
+idf.py set-target esp32
+idf.py build
+idf.py -p /dev/ttyUSB0 flash monitor
+```
+
+## Configuration
+
+Key settings in `sdkconfig.defaults`:
+
+```ini
+# BLE Configuration
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+
+# FreeRTOS
+CONFIG_FREERTOS_HZ=1000
+```
+
+## Next Steps
+
+- [BLE Protocol](/firmware/ble-protocol) – Detailed BLE specification
+- [Server Overview](/server/overview) – How the parent hub connects

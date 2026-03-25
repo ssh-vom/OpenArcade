@@ -1,0 +1,178 @@
+---
+title: BLE Protocol
+description: Bluetooth Low Energy communication protocol specification
+head: []
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# BLE Protocol
+
+This document specifies the Bluetooth Low Energy (BLE) communication between ESP32 child modules and the Raspberry Pi parent hub.
+
+## Overview
+
+Each ESP32 child module runs a BLE GATT server that:
+1. Advertises its presence
+2. Accepts connections from the parent hub
+3. Sends button state updates via notifications
+
+## GATT Service Structure
+
+```
+OpenArcade Input Service
+├── UUID: 666f7065-6e41-7263-6164-65000000000
+│
+├── Input State Characteristic
+│   ├── UUID: 666f7065-6e41-7263-6164-65000000001
+│   ├── Properties: Read, Notify
+│   └── Value: 4-byte state packet
+│
+└── Device Info Characteristic (optional)
+    ├── UUID: 666f7065-6e41-7263-6164-65000000002
+    ├── Properties: Read
+    └── Value: Device metadata
+```
+
+## Connection Parameters
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Advertising interval | 20-40ms | Fast discovery |
+| Connection interval | 7.5-15ms | Low latency |
+| Slave latency | 0 | No skipped events |
+| Supervision timeout | 2000ms | Reasonable disconnect detection |
+
+<Aside type="tip">
+These parameters prioritize low latency over power efficiency, which is appropriate for a mains-powered or frequently-used gaming device.
+</Aside>
+
+## Button State Packet Format
+
+The ESP32 sends a 4-byte packet on every state change:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Byte 0          │  Byte 1          │  Byte 2          │  Byte 3           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  [b8][b7][b6][b5]│  [jD][jU][jR][jL]│  [--][--][PA][ST]│  [reserved]       │
+│  [b4][b3][b2][b1]│  [--][--][--][--]│  [--][--][--][SE]│                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Byte 0: Action Buttons
+| Bit | Button |
+|-----|--------|
+| 0 | Button 1 |
+| 1 | Button 2 |
+| 2 | Button 3 |
+| 3 | Button 4 |
+| 4 | Button 5 |
+| 5 | Button 6 |
+| 6 | Button 7 |
+| 7 | Button 8 |
+
+### Byte 1: Joystick Directions
+| Bit | Direction |
+|-----|-----------|
+| 0 | Left |
+| 1 | Right |
+| 2 | Up |
+| 3 | Down |
+
+### Byte 2: System Buttons
+| Bit | Button |
+|-----|--------|
+| 0 | Select |
+| 1 | Start |
+| 2 | Pair |
+
+### Byte 3
+Reserved for future use (always 0x00).
+
+## Communication Flow
+
+### Discovery Phase
+
+```
+┌──────────┐                              ┌──────────┐
+│  ESP32   │                              │   RPi    │
+└────┬─────┘                              └────┬─────┘
+     │                                         │
+     │──── BLE Advertisement ────────────────►│
+     │     "NimBLE_GATT"                      │
+     │                                         │
+     │◄──────── Connection Request ───────────│
+     │                                         │
+     │──── Connection Established ───────────►│
+     │                                         │
+     │◄──────── GATT Discovery ───────────────│
+     │                                         │
+     │──── Service/Char UUIDs ───────────────►│
+     │                                         │
+     │◄──────── Subscribe to Notifications ───│
+     │                                         │
+```
+
+### Input Phase
+
+```
+┌──────────┐                              ┌──────────┐
+│  ESP32   │                              │   RPi    │
+└────┬─────┘                              └────┬─────┘
+     │                                         │
+     │ [Button Press Detected]                 │
+     │                                         │
+     │──── GATT Notification (4 bytes) ──────►│
+     │                                         │
+     │                      [Update State Map] │
+     │                                         │
+     │ [Button Release Detected]               │
+     │                                         │
+     │──── GATT Notification (4 bytes) ──────►│
+     │                                         │
+```
+
+## High-Level Protocol (Future)
+
+The protocol also defines higher-level packet types for future features:
+
+| Value | Name | Direction | Purpose |
+|------:|------|-----------|---------|
+| 0x01 | HELLO | Child→Parent | Announce capabilities on boot |
+| 0x02 | CONFIG | Parent→Child | Assign offset, debounce, rate |
+| 0x03 | CONFIG_ACK | Child→Parent | Accept/reject config |
+| 0x04 | INPUT | Child→Parent | Regular bitfield packet |
+| 0x05 | HEARTBEAT | Child→Parent | Keepalive if no INPUT sent |
+| 0x06 | INFO | Bidirectional | Diagnostics, version info |
+
+### HELLO Payload (Future)
+
+```c
+struct hello_payload {
+    uint8_t version;          // Protocol minor version
+    uint8_t reserved;         // Alignment
+    uint8_t num_buttons;      // Local button count (1-64)
+    uint8_t capability_flags; // ANALOG(1), ENCODER(2), etc
+    uint32_t unique_id;       // Hardware ID (0 if not present)
+    uint16_t fw_ver;          // Firmware version
+};
+```
+
+## Error Handling
+
+| Event | Behavior |
+|-------|----------|
+| Disconnection | Reconnect with exponential backoff |
+| No notifications for 5s | Send heartbeat |
+| Invalid packet | Log and ignore |
+| CRC mismatch | Drop packet, continue |
+
+<Aside type="note">
+The current implementation uses a simpler model without CRC validation, relying on BLE's built-in error detection.
+</Aside>
+
+## Next Steps
+
+- [Server Overview](/server/overview) – How the parent hub processes these packets
+- [Reference: BLE GATT](/reference/ble-gatt) – Complete GATT service reference

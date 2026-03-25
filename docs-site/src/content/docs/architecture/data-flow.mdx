@@ -1,0 +1,129 @@
+---
+title: Data Flow
+description: How data moves through the OpenArcade system
+head: []
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Data Flow
+
+This document traces how a button press travels from the physical input to the gaming device.
+
+## Button Press Sequence
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│  User    │───►│  ESP32   │───►│  RPi     │───►│  HID     │───►│  Gaming  │
+│  Press   │    │  Module  │    │  Server  │    │  Worker  │    │  Device  │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
+     │               │               │               │               │
+     │  Physical     │   BLE GATT    │   Aggregate   │   USB HID     │
+     │  GPIO         │   Notify      │   + Map       │   Report      │
+     │               │   (4 bytes)   │               │   (8 bytes)   │
+```
+
+## Data Transformation Stages
+
+| Stage | Component | Data | Format |
+|-------|-----------|------|--------|
+| 1 | ESP32 GPIO | Button states | Digital HIGH/LOW |
+| 2 | Debounce filter | Filtered states | Boolean per button |
+| 3 | Aggregate | Combined state | 32-bit bitmask (4 bytes) |
+| 4 | BLE Notify | GATT notification | 4 bytes @ 100Hz max |
+| 5 | RPi DeviceSession | Parsed state | Python dict |
+| 6 | StateReducer | Aggregated (N devices) | Keycodes list |
+| 7 | ReportBuilder | HID report | 8 bytes (modifier + 6 keys) |
+| 8 | HID Worker | USB packet | Written to /dev/hidg0 |
+| 9 | Host PC | Keyboard input | OS keyboard events |
+
+## Button State Packet Format
+
+The ESP32 sends a 4-byte packet over BLE:
+
+```
+┌─────────────┬─────────────┬─────────────────────┬───────────┐
+│  Byte 0     │  Byte 1     │  Byte 2             │  Byte 3   │
+├─────────────┼─────────────┼─────────────────────┼───────────┤
+│  b1-b8      │  joy_l,r,   │  select,start,pair  │  reserved │
+│  (buttons)  │  u,d        │  (system)           │           │
+└─────────────┴─────────────┴─────────────────────┴───────────┘
+```
+
+Each bit represents a button state: `1` = pressed, `0` = released.
+
+## HID Report Format
+
+The RPi builds an 8-byte USB HID keyboard report:
+
+```
+┌─────────┬──────────┬─────────────────────────────────────────┐
+│ Byte 0  │  Byte 1  │  Bytes 2-7                              │
+├─────────┼──────────┼─────────────────────────────────────────┤
+│Modifier │ Reserved │  Up to 6 simultaneous keycodes          │
+│ flags   │   (0)    │                                         │
+└─────────┴──────────┴─────────────────────────────────────────┘
+```
+
+<Aside type="note">
+USB HID keyboards support a maximum of 6 simultaneous key presses (6KRO - 6-Key Rollover).
+</Aside>
+
+## Configuration Update Flow
+
+When the user updates button mappings in the config app:
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│  Config  │───►│WebSerial │───►│  Serial  │───►│  Config  │───►│  Runtime │
+│  App     │    │  API     │    │  Device  │    │  Store   │    │  Server  │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘    └──────────┘
+     │               │               │               │               │
+     │  JSON cmd     │   USB data    │   Persist     │   IPC         │
+     │               │               │   config.json │   update      │
+```
+
+1. User changes button mapping in React app
+2. App sends JSON command via WebSerial
+3. Serial config service receives and validates
+4. Config persisted to `/var/lib/openarcade/config.json`
+5. IPC event sent to runtime via Unix socket
+6. StateReducer refreshes mappings (no restart needed)
+
+## Latency Considerations
+
+| Hop | Typical Latency |
+|-----|-----------------|
+| GPIO read + debounce | 10ms loop |
+| BLE notification | 7.5-15ms interval |
+| Async processing | < 1ms |
+| HID queue + write | < 1ms |
+| USB polling | 1-8ms (host dependent) |
+| **Total** | **~20-35ms** |
+
+<Aside type="tip">
+BLE connection parameters are tuned for low latency (7.5-15ms connection interval) at the cost of slightly higher power consumption.
+</Aside>
+
+## Multi-Device Aggregation
+
+When multiple modules are connected, the StateReducer merges their states:
+
+```
+┌─────────────┐
+│  Module A   │──┐
+│  State      │  │
+└─────────────┘  │    ┌─────────────┐    ┌─────────────┐
+                 ├───►│   State     │───►│   Report    │
+┌─────────────┐  │    │   Reducer   │    │   Builder   │
+│  Module B   │──┤    └─────────────┘    └─────────────┘
+│  State      │  │
+└─────────────┘  │
+                 │
+┌─────────────┐  │
+│  Module N   │──┘
+│  State      │
+└─────────────┘
+```
+
+Each module's buttons are mapped according to their configured roles in `config.json`.

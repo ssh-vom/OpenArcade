@@ -1,0 +1,23 @@
+{
+  "name": "openarcade-docs",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.32.0",
+    "astro": "^5.0.0",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@fontsource/jetbrains-mono": "^5.0.0",
+    "@fontsource/newsreader": "^5.0.0",
+    "patch-package": "^8.0.1"
+  }
+}

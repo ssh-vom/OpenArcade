@@ -1,0 +1,199 @@
+---
+title: Configuration
+description: Server configuration options and file format
+head: []
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+# Configuration
+
+The OpenArcade server configuration controls device mappings, button assignments, and system behavior.
+
+## Config File Location
+
+| Environment | Path |
+|-------------|------|
+| Production | `/var/lib/openarcade/config.json` |
+| Development | `./config.json` (working directory) |
+
+## Config File Structure
+
+```json
+{
+  "devices": {
+    "AA:BB:CC:DD:EE:FF": {
+      "name": "Left Buttons",
+      "descriptor": {
+        "type": "button_panel",
+        "num_buttons": 8
+      },
+      "active_mode": "keyboard",
+      "modes": {
+        "keyboard": {
+          "1": { "keycode": "HID_KEY_Z" },
+          "2": { "keycode": "HID_KEY_X" },
+          "3": { "keycode": "HID_KEY_C" }
+        }
+      },
+      "ui_bindings": {
+        "button_1": "1",
+        "button_2": "2"
+      },
+      "last_seen": "2024-03-15T10:30:00Z"
+    }
+  },
+  "global": {
+    "default_mode": "keyboard",
+    "scan_interval_ms": 100
+  }
+}
+```
+
+## Device Configuration
+
+### Basic Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Human-readable device name |
+| `descriptor` | object | Device capabilities |
+| `active_mode` | string | Currently active mapping mode |
+| `last_seen` | ISO 8601 | Last connection timestamp |
+
+### Descriptor
+
+Describes the device's physical capabilities:
+
+```json
+{
+  "descriptor": {
+    "type": "button_panel",
+    "num_buttons": 8,
+    "has_joystick": false,
+    "has_display": true
+  }
+}
+```
+
+### Modes
+
+Multiple mapping profiles per device:
+
+```json
+{
+  "modes": {
+    "keyboard": {
+      "1": { "keycode": "HID_KEY_Z" },
+      "2": { "keycode": "HID_KEY_X" }
+    },
+    "fighting": {
+      "1": { "keycode": "HID_KEY_A" },
+      "2": { "keycode": "HID_KEY_S" }
+    }
+  }
+}
+```
+
+<Aside type="tip">
+Use modes to quickly switch between different game profiles without reconfiguring each button.
+</Aside>
+
+### UI Bindings
+
+Maps visual UI buttons to physical controls:
+
+```json
+{
+  "ui_bindings": {
+    "button_1": "1",
+    "button_2": "2",
+    "joystick_up": "joy_u"
+  }
+}
+```
+
+## Keycode Reference
+
+Standard USB HID keycodes are supported:
+
+### Letters
+`HID_KEY_A` through `HID_KEY_Z`
+
+### Numbers
+`HID_KEY_0` through `HID_KEY_9`
+
+### Function Keys
+`HID_KEY_F1` through `HID_KEY_F12`
+
+### Special Keys
+| Keycode | Key |
+|---------|-----|
+| `HID_KEY_ENTER` | Enter |
+| `HID_KEY_ESCAPE` | Escape |
+| `HID_KEY_BACKSPACE` | Backspace |
+| `HID_KEY_TAB` | Tab |
+| `HID_KEY_SPACE` | Space |
+
+### Arrows
+| Keycode | Key |
+|---------|-----|
+| `HID_KEY_RIGHT_ARROW` | → |
+| `HID_KEY_LEFT_ARROW` | ← |
+| `HID_KEY_DOWN_ARROW` | ↓ |
+| `HID_KEY_UP_ARROW` | ↑ |
+
+### Modifiers
+| Keycode | Key |
+|---------|-----|
+| `HID_KEY_LEFT_CTRL` | Left Control |
+| `HID_KEY_LEFT_SHIFT` | Left Shift |
+| `HID_KEY_LEFT_ALT` | Left Alt |
+
+## Global Configuration
+
+```json
+{
+  "global": {
+    "default_mode": "keyboard",
+    "scan_interval_ms": 100,
+    "reconnect_delay_ms": 1000,
+    "max_reconnect_attempts": 5
+  }
+}
+```
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `default_mode` | `"keyboard"` | Default mapping mode for new devices |
+| `scan_interval_ms` | `100` | BLE scan interval |
+| `reconnect_delay_ms` | `1000` | Initial reconnect delay |
+| `max_reconnect_attempts` | `5` | Max reconnect attempts |
+
+## Live Configuration Updates
+
+Configuration changes take effect immediately:
+
+1. Config app sends update via WebSerial
+2. SerialConfigService writes to config.json
+3. IPC event sent to RuntimeControlServer
+4. StateReducer reloads mappings
+5. New mappings applied to next input
+
+<Aside type="note">
+No service restart required for mapping changes.
+</Aside>
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENARCADE_CONFIG_PATH` | `/var/lib/openarcade/config.json` | Config file location |
+| `OPENARCADE_HID_DEVICE` | `/dev/hidg0` | HID gadget device |
+| `OPENARCADE_SERIAL_DEVICE` | `/dev/ttyGS0` | Serial gadget device |
+| `OPENARCADE_LOG_LEVEL` | `INFO` | Logging verbosity |
+
+## Next Steps
+
+- [Serial Protocol](/reference/serial-protocol) – Commands for config updates
+- [Server Overview](/server/overview) – Architecture details

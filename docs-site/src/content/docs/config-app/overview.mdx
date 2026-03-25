@@ -1,0 +1,143 @@
+---
+title: Config App Overview
+description: 3D controller layout designer and button mapper
+head: []
+---
+
+import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+# Config App Overview
+
+The OpenArcade Config App is a browser-based 3D configurator for designing controller layouts and mapping buttons.
+
+## Features
+
+<CardGrid>
+  <Card title="3D Layout Designer" icon="setting">
+    Visualize and arrange your controller modules in 3D space.
+  </Card>
+  <Card title="Button Mapping" icon="pencil">
+    Assign keyboard keys or gamepad buttons to each physical input.
+  </Card>
+  <Card title="Live Preview" icon="approve-check">
+    See real-time button presses reflected in the 3D view.
+  </Card>
+  <Card title="WebSerial" icon="seti:shell">
+    Direct connection to the Pi via USB serial.
+  </Card>
+</CardGrid>
+
+## Technology Stack
+
+| Layer | Technology |
+|-------|------------|
+| 3D Rendering | Three.js |
+| Framework | React |
+| Styling | Tailwind CSS |
+| Communication | WebSerial API |
+
+## How It Works
+
+```
+┌──────────────┐         WebSerial         ┌──────────────┐
+│  Config App  │◄─────────────────────────►│  RPi Serial  │
+│  (Browser)   │    /dev/ttyGS0            │  Service     │
+└──────┬───────┘                           └──────────────┘
+       │
+       │  JSON-lines protocol
+       │
+       ▼
+┌──────────────────────────────────────────────────────────┐
+│  Commands:                                                │
+│  - list_devices     Get all connected modules            │
+│  - get_device       Get device config                    │
+│  - set_mapping      Update button mapping                │
+│  - set_ui_binding   Bind UI element to physical control  │
+│  - get_live_state   Stream real-time button states       │
+└──────────────────────────────────────────────────────────┘
+```
+
+## Connecting to the Pi
+
+1. **Connect via USB** – Plug your Pi into your computer
+2. **Open Config App** – Navigate to the app in Chrome/Edge
+3. **Select Serial Port** – Click "Connect" and choose the OpenArcade serial port
+4. **Start Configuring** – Devices appear automatically
+
+<Aside type="note">
+WebSerial is only available in Chromium-based browsers (Chrome, Edge, Brave). Firefox and Safari are not supported.
+</Aside>
+
+## Interface Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  OpenArcade Configurator                          [Connect] [Save]  │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────────────────────────────┐  ┌──────────────────────┐  │
+│  │                                     │  │  Device List         │  │
+│  │                                     │  │                      │  │
+│  │        3D Controller View           │  │  ○ Left Module       │  │
+│  │                                     │  │  ● Right Module      │  │
+│  │        [Interactive Three.js]       │  │  ○ D-Pad Module      │  │
+│  │                                     │  │                      │  │
+│  │                                     │  ├──────────────────────┤  │
+│  └─────────────────────────────────────┘  │  Button Mapping      │  │
+│                                           │                      │  │
+│                                           │  Button 1: [Z    ▼]  │  │
+│                                           │  Button 2: [X    ▼]  │  │
+│                                           │  Button 3: [C    ▼]  │  │
+│                                           │                      │  │
+│                                           └──────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## 3D Model Integration
+
+The config app loads 3D models representing each module type:
+
+- **Button panels** – Individual plate with button cutouts
+- **Joystick modules** – Balltop or battop style
+- **D-pad modules** – Classic directional pad
+
+Models are loaded from `/public/plates/` in the config app.
+
+## Running the Config App
+
+### Development
+
+```bash
+cd config_app
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173 in a Chromium browser.
+
+### Production Build
+
+```bash
+npm run build
+# Output in dist/
+```
+
+## Live State Streaming
+
+The app can stream real-time button states for visual feedback:
+
+```json
+{ "cmd": "get_live_state", "device_id": "AA:BB:CC:DD:EE:FF" }
+```
+
+Response (repeating):
+```json
+{ "device_id": "AA:BB:CC:DD:EE:FF", "state": { "1": true, "2": false, ... } }
+```
+
+Pressed buttons light up in the 3D view.
+
+## Next Steps
+
+- [Serial Protocol](/reference/serial-protocol) – Full command reference
+- [Server Configuration](/server/configuration) – Understanding config.json

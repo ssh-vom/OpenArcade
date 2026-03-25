@@ -1,0 +1,77 @@
+---
+title: Quick Start
+description: Get OpenArcade running in minutes
+head: []
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Quick Start
+
+Get your OpenArcade controller running from scratch.
+
+## Hardware Requirements
+
+- **Parent hub:** Raspberry Pi Zero 2 W
+- **Child modules:** ESP32 development boards
+- **Inputs:** Arcade buttons, joysticks (Sanwa/Seimitsu compatible)
+- **Power:** USB-C or battery pack
+- **Housing:** 3D printed (see CAD files in documentation)
+
+## Setup
+
+<Steps>
+1. **Flash the child modules**
+
+   Connect your ESP32 board and flash the firmware:
+
+   ```bash
+   cd firmware/esp32
+   idf.py set-target esp32
+   idf.py -p /dev/ttyUSB0 flash monitor
+   ```
+
+   The module will start advertising as "OpenArcade-XX" over BLE.
+
+2. **Set up the parent hub**
+
+   On your Raspberry Pi Zero 2 W, run the parent hub service:
+
+   ```bash
+   cd server
+   uv run runtime_main.py
+   ```
+
+   The Pi will discover nearby modules and subscribe to their input notifications.
+
+3. **Install as boot services (optional)**
+
+   For persistent installation that starts on boot:
+
+   ```bash
+   sudo ./packaging/rpi/install-rpi.sh
+   ```
+
+   This installs:
+   - OpenArcade under `/opt/openarcade`
+   - Config stored in `/var/lib/openarcade/config.json`
+   - Three systemd services for USB gadget, BLE/HID runtime, and serial config
+
+4. **Configure your layout**
+
+   Open the 3D configurator app to design and customize your controller layout, button mappings, and module arrangements.
+</Steps>
+
+## Verify Connection
+
+Once running, you should see:
+
+1. ESP32 modules advertising over BLE
+2. Parent hub discovering and connecting to modules
+3. Your computer/console recognizing a new HID keyboard device
+
+## Next Steps
+
+- [Architecture Overview](/architecture/overview) – Understand how the system works
+- [Firmware Guide](/firmware/overview) – Deep dive into ESP32 firmware
+- [Server Guide](/server/overview) – Configure the parent hub

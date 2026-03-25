@@ -1,0 +1,73 @@
+---
+title: Introduction
+description: What is OpenArcade and why it exists
+head: []
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# OpenArcade
+
+**Made how you play.**
+
+OpenArcade is a modular game controller designed for accessibility. Build your own layout from separate modules or snap them together—play from your lap, a table, or wherever works for you.
+
+Standard controllers assume one-size-fits-all. OpenArcade doesn't.
+
+## How it works
+
+OpenArcade breaks a controller into pieces:
+
+- **Child modules** – Buttons, joysticks, D-pads in their own housings (ESP32)
+- **Parent hub** – Central hub that connects to your PC or console (Raspberry Pi Zero 2 W)
+
+Wire the modules together or use them independently. Arrange them however's comfortable for you—spread out on a table, held in different hands, mounted wherever works.
+
+```
+┌─────────────┐     BLE      ┌──────────────┐     USB HID     ┌──────────┐
+│  Child      │ ◄──────────► │  Parent Hub  │ ◄─────────────► │  Gaming  │
+│  Module(s)  │  (ESP32)     │  (RPi Zero)  │                 │  Device  │
+└─────────────┘              └──────────────┘                 └──────────┘
+```
+
+## Key Features
+
+<CardGrid>
+  <Card title="Modular Design" icon="puzzle">
+    Each input module is independent. Mix and match buttons, joysticks, and D-pads.
+  </Card>
+  <Card title="Accessibility First" icon="heart">
+    Position modules wherever is comfortable. No fixed layout required.
+  </Card>
+  <Card title="3D Configurator" icon="setting">
+    Visual layout designer with real-time 3D preview.
+  </Card>
+  <Card title="Open Source" icon="github">
+    Full firmware, server, and hardware designs available.
+  </Card>
+</CardGrid>
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Child firmware | ESP-IDF, NimBLE, C |
+| Parent hub | Python, asyncio, bleak |
+| Config app | Three.js, React |
+| PCB design | KiCad |
+| CAD | Autodesk Inventor |
+| 3D printing | Bambu Studio / PrusaSlicer |
+
+## Project Structure
+
+```
+openarcade/
+├── firmware/esp32/          # Child module firmware (NimBLE GATT server)
+├── server/                  # Parent hub BLE client (Python + bleak)
+├── config_app/              # 3D controller layout designer
+└── docs/                    # System design documentation
+```
+
+## Next Steps
+
+Ready to get started? Head to the [Quick Start](/quick-start) guide to set up your first OpenArcade controller.

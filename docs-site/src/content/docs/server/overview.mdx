@@ -1,0 +1,209 @@
+---
+title: Server Overview
+description: Raspberry Pi parent hub architecture and components
+head: []
+---
+
+import { Aside, FileTree } from '@astrojs/starlight/components';
+
+# Server Overview
+
+The server runs on a Raspberry Pi Zero 2 W and handles BLE communication with child modules, state aggregation, and USB HID output.
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                                     RASPBERRY PI SERVER                                   │
+│                                                                                          │
+│   ┌───────────────────────────────────────────────────────────────────────────────────┐  │
+│   │                            MAIN PROCESS (asyncio event loop)                      │  │
+│   │                                                                                   │  │
+│   │   ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐    │  │
+│   │   │  Discovery  │────►│   Session   │────►│   Device    │────►│    State    │    │  │
+│   │   │   Service   │     │ Supervisor  │     │Session (xN) │     │   Reducer   │    │  │
+│   │   │ BleakScanner│     │  Lifecycle  │     │ BleakClient │     │  Aggregate  │    │  │
+│   │   └─────────────┘     └─────────────┘     └─────────────┘     └──────┬──────┘    │  │
+│   │                                                                      │           │  │
+│   │   ┌─────────────────────────────────────────────────────────────────┐│           │  │
+│   │   │           RuntimeControlServer (Unix Socket IPC)                ││           │  │
+│   │   │                                                                 ││           │  │
+│   │   │  Commands: config_updated | get_connected_devices | get_states ─┘│           │  │
+│   │   └─────────────────────────────────────────────────────────────────┘            │  │
+│   └───────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                          │
+│   ┌───────────────────────────────────────────────────────────────────────────────────┐  │
+│   │                            HID OUTPUT WORKER PROCESS                              │  │
+│   │                                                                                   │  │
+│   │              Queue.get() ──────────────────────► Write to /dev/hidg0             │  │
+│   └───────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                          │
+│   ┌───────────────────────────────────────────────────────────────────────────────────┐  │
+│   │                            CONFIG SERVICE PROCESS                                 │  │
+│   │                                                                                   │  │
+│   │   SerialConfigService ──► DeviceConfigStore ──► /var/lib/openarcade/config.json  │  │
+│   └───────────────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Project Structure
+
+<FileTree>
+- server/
+  - runtime/
+    - app.py               Main application
+    - discovery.py         BLE device scanning
+    - sessions.py          Connection lifecycle
+    - device_session.py    Per-device handler
+    - state_reducer.py     State aggregation
+    - report_builder.py    HID report generation
+    - control_server.py    Unix socket IPC
+  - serial_config_service.py  WebSerial handler
+  - device_config_store.py    Config persistence
+  - hid_output_worker.py      USB HID writer
+  - runtime_main.py           Entry point
+</FileTree>
+
+## Components
+
+### DiscoveryService
+
+Continuously scans for BLE devices advertising the OpenArcade service:
+
+```python
+# Scans for devices with name prefix "NimBLE_GATT"
+# Emits events when devices appear/disappear
+```
+
+- Uses `bleak.BleakScanner` for async BLE scanning
+- Filters by device name pattern
+- Notifies SessionSupervisor of new devices
+
+### SessionSupervisor
+
+Manages the lifecycle of device connections:
+
+- Spawns DeviceSession for each discovered device
+- Handles reconnection with exponential backoff
+- Tracks connection state for all devices
+
+### DeviceSession
+
+Per-device BLE client handling:
+
+```python
+# Connects to ESP32 module
+# Subscribes to input state notifications
+# Forwards state updates to StateReducer
+```
+
+- Uses `bleak.BleakClient` for GATT operations
+- Parses 4-byte state packets
+- Handles disconnection gracefully
+
+### StateReducer
+
+Aggregates button states from all connected devices:
+
+```python
+# Combines states from N devices
+# Applies button-to-keycode mappings
+# Outputs list of pressed keycodes
+```
+
+- Reads mappings from config store
+- Supports multiple simultaneous key presses
+- Refreshes mappings on config update
+
+### ReportBuilder
+
+Builds USB HID keyboard reports:
+
+```
+8-byte report: [modifier, reserved, key1, key2, key3, key4, key5, key6]
+```
+
+- Converts keycodes to HID scan codes
+- Handles modifier keys (Shift, Ctrl, Alt)
+- Limits to 6 simultaneous keys (USB HID limitation)
+
+### HID Output Worker
+
+Separate process for blocking USB writes:
+
+```python
+# Runs in separate process to avoid blocking async loop
+# Reads from multiprocessing.Queue
+# Writes 8-byte reports to /dev/hidg0
+```
+
+<Aside type="note">
+The HID worker is isolated in a separate process because writes to `/dev/hidg0` are blocking and could stall the async event loop.
+</Aside>
+
+### RuntimeControlServer
+
+Unix socket server for IPC:
+
+| Command | Response | Purpose |
+|---------|----------|---------|
+| `config_updated` | `{"ok": true}` | Trigger config reload |
+| `get_connected_devices` | Device list | Query connections |
+| `get_states` | Current states | Debug inspection |
+
+### SerialConfigService
+
+Handles WebSerial communication with the config app:
+
+- Reads JSON-lines from `/dev/ttyGS0`
+- Processes config commands
+- Persists changes to config store
+- Notifies runtime of updates
+
+## Running the Server
+
+### Development
+
+```bash
+cd server
+uv run runtime_main.py
+```
+
+### Production (systemd)
+
+Three services work together:
+
+1. **openarcade-gadget** – Sets up USB composite gadget
+2. **openarcade-subscriber** – Main BLE/HID runtime
+3. **openarcade-configd** – Serial config service
+
+```bash
+# Install all services
+sudo ./packaging/rpi/install-rpi.sh
+
+# Check status
+sudo systemctl status openarcade-subscriber
+```
+
+## Configuration
+
+Config file location: `/var/lib/openarcade/config.json`
+
+```json
+{
+  "devices": {
+    "AA:BB:CC:DD:EE:FF": {
+      "name": "Left Module",
+      "mappings": {
+        "1": {"keycode": "HID_KEY_Z"},
+        "2": {"keycode": "HID_KEY_X"}
+      }
+    }
+  }
+}
+```
+
+## Next Steps
+
+- [Configuration Reference](/server/configuration) – Full config options
+- [Serial Protocol](/reference/serial-protocol) – WebSerial command reference

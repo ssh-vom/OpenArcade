@@ -1,0 +1,15 @@
+diff --git a/node_modules/@astrojs/starlight/utils/routing/index.ts b/node_modules/@astrojs/starlight/utils/routing/index.ts
+index 460d15a..4639d33 100644
+--- a/node_modules/@astrojs/starlight/utils/routing/index.ts
++++ b/node_modules/@astrojs/starlight/utils/routing/index.ts
+@@ -41,8 +41,8 @@ export function normalizeCollectionEntry(entry: StarlightDocsCollectionEntry): S
+ /** All entries in the docs content collection. */
+ const docs: StarlightDocsEntry[] = (
+ 	(await getCollection('docs', ({ data }) => {
+-		// In production, filter out drafts.
+-		return import.meta.env.MODE !== 'production' || data.draft === false;
++		// In production, filter out drafts. Treat missing draft as published (draft defaults false in schema).
++		return import.meta.env.MODE !== 'production' || !data.draft;
+ 	})) ?? []
+ ).map(normalizeCollectionEntry);
+ 
