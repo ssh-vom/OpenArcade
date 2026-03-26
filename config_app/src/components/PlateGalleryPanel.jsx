@@ -1,8 +1,6 @@
 import { useState } from "react";
-import plateCatalog from "@shared/plate_catalog.json";
+import { PLATES, getPlateId } from "../lib/plateCatalog.js";
 import PlateTopPreview from "./PlateTopPreview.jsx";
-
-const PLATES = plateCatalog.plates;
 
 function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) {
     return (
@@ -79,9 +77,10 @@ export default function PlateGalleryPanel({
     onPlateSelected,
 }) {
     const [selectedLoadingId, setSelectedLoadingId] = useState(null);
+    const selectedPlateId = getPlateId(currentPlateId);
 
     const handleSelect = async (plate) => {
-        if (plate.id === currentPlateId || selectedLoadingId) {
+        if (plate.id === selectedPlateId || selectedLoadingId) {
             return;
         }
 
@@ -149,7 +148,7 @@ export default function PlateGalleryPanel({
             <div className="relative z-[1] flex-1 overflow-y-auto panel-scroll px-4 pb-4">
                 <div className="grid grid-cols-2 gap-3">
                     {PLATES.map((plate, index) => {
-                        const isSelected = plate.id === currentPlateId;
+                        const isSelected = plate.id === selectedPlateId;
                         const isLoading = selectedLoadingId === plate.id;
 
                         return (

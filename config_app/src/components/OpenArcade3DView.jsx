@@ -12,7 +12,7 @@ import ProfilesPanel from "./ProfilesPanel.jsx";
 import LiveInputPanel from "./LiveInputPanel.jsx";
 import MockConfigClient from "../services/MockConfigClient.js";
 import ControllerHUD from "./ControllerHUD.jsx";
-import plateCatalog from "@shared/plate_catalog.json";
+import { DEFAULT_PLATE_ID, getPlateControllerModel } from "../lib/plateCatalog.js";
 import * as THREE from "three";
 import {
     DEFAULT_LAYOUT,
@@ -22,7 +22,6 @@ import {
     getKeycodeForInput,
 } from "../services/HIDManager.js";
 
-const PLATE_CATALOG = Object.fromEntries(plateCatalog.plates.map((p) => [p.id, p]));
 // Preload GLBs with Draco decoding enabled
 useGLTF.preload("/OpenArcadeAssy_v2.glb", true);
 useGLTF.preload("/RevFinalJoystickModule_2026-03-15.glb", true);
@@ -269,9 +268,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             };
             const mode = deviceActiveProfile?.active_mode || "keyboard";
             const mappingConfig = deviceActiveProfile?.modes?.[mode]?.mapping || {};
-            const plateId = deviceActiveProfile?.plate_id || "button-module-v1";
-            const plateEntry = PLATE_CATALOG[plateId];
-            const resolvedPath = plateEntry?.controller_model || "/OpenArcadeAssy_v2.glb";
+            const plateId = deviceActiveProfile?.plate_id || DEFAULT_PLATE_ID;
+            const resolvedPath = getPlateControllerModel(plateId);
             const reverseLayout = Object.entries(layout).reduce((acc, [buttonName, controlId]) => {
                 if (controlId == null || controlId === "") {
                     return acc;

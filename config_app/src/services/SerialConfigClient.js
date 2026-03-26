@@ -1,3 +1,5 @@
+import { DEFAULT_PLATE_ID } from "../lib/plateCatalog.js";
+
 export default class SerialConfigClient {
     constructor() {
         this.port = null;
@@ -163,7 +165,7 @@ export default class SerialConfigClient {
         return response.profiles || [];
     }
 
-    async createProfile(deviceId, name, plateId = "button-module-v1") {
+    async createProfile(deviceId, name, plateId = DEFAULT_PLATE_ID) {
         const response = await this.sendCommand({
             cmd: "create_profile",
             device_id: deviceId,

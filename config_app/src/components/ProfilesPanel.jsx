@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import PlateGalleryPanel from "./PlateGalleryPanel.jsx";
 import PlateTopPreview from "./PlateTopPreview.jsx";
-import plateCatalog from "@shared/plate_catalog.json";
-
-const PLATES = plateCatalog.plates;
+import { DEFAULT_PLATE_ID, PLATES, getPlateId, getPlateName } from "../lib/plateCatalog.js";
 
 function TrashIcon() {
     return (
@@ -35,7 +33,10 @@ export default function ProfilesPanel({
 
     const plateNameById = useMemo(() => {
         const map = new Map();
-        PLATES.forEach((plate) => map.set(plate.id, plate.name));
+        PLATES.forEach((plate) => {
+            map.set(plate.id, plate.name);
+            (plate.legacy_ids || []).forEach((legacyId) => map.set(legacyId, plate.name));
+        });
         return map;
     }, []);
 
@@ -72,7 +73,7 @@ export default function ProfilesPanel({
             await configClient.createProfile(
                 deviceId,
                 name,
-                activeProfile?.plate_id || "button-module-v1",
+                getPlateId(activeProfile?.plate_id || DEFAULT_PLATE_ID),
             );
             await loadProfiles();
             onProfileChanged?.();
@@ -212,7 +213,7 @@ export default function ProfilesPanel({
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                         {profiles.map((profile, index) => {
                             const isActive = profile.id === activeProfile?.id;
-                            const plateName = plateNameById.get(profile.plate_id) || profile.plate_id;
+                            const plateName = plateNameById.get(profile.plate_id) || getPlateName(profile.plate_id);
                             const isSwitching = switchingId === profile.id;
                             const isDeleting = deletingId === profile.id;
 

@@ -1,4 +1,5 @@
 import { DEFAULT_LAYOUT } from "./HIDManager.js";
+import { DEFAULT_PLATE_ID } from "../lib/plateCatalog.js";
 
 const STORAGE_KEY = "openarcade_config";
 const DEFAULT_DEVICE_ID = "OA-001";
@@ -175,7 +176,7 @@ class MockConfigClient {
         return deepClone(Object.values(device.profiles || {}));
     }
 
-    async createProfile(deviceId, name, plateId = "button-module-v1") {
+    async createProfile(deviceId, name, plateId = DEFAULT_PLATE_ID) {
         const device = this._ensureDevice(deviceId);
         const id = `profile-${Date.now()}`;
         const activeProfile = this._getActiveProfile(device) || {};
@@ -270,7 +271,7 @@ class MockConfigClient {
                 "default-profile": {
                     id: "default-profile",
                     name: "Default",
-                    plate_id: "button-module-v1",
+                    plate_id: DEFAULT_PLATE_ID,
                     active_mode: "keyboard",
                     modes: {
                         keyboard: { output: "hid_keyboard", mapping: {} },
@@ -312,7 +313,7 @@ class MockConfigClient {
                 const profile = {
                     id: profileId,
                     name: "Default",
-                    plate_id: "button-module-v1",
+                    plate_id: DEFAULT_PLATE_ID,
                     active_mode: device.active_mode || "keyboard",
                     modes:
                         device.modes || {
