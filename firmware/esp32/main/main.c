@@ -76,21 +76,26 @@ static const controller_button_config_t controller_buttons[] = {
 };
 
 static controller_input_t input;
+static controller_state_t prev_state;
 
 static void controller_task(void *param) {
   ESP_LOGI(TAG, "Controller Task has been started!");
 
   while (1) {
     uint32_t now_ms = esp_timer_get_time() / 1000;
-    // ESP_LOGI(TAG, "%d", bp);
 
     controller_input_update(&input, now_ms);
     controller_state_t st = controller_input_get_state(&input);
+
+    if (ble_ready && st.pair && !prev_state.pair) {
+      gap_request_pair();
+    }
 
     if (ble_ready) {
       send_button_state_notification(&st);
     }
 
+    prev_state = st;
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
@@ -160,10 +165,6 @@ void app_main(void) {
   if (rc != 0) {
     ESP_LOGE(TAG, "failed to initialize GATT server, error code: %d", rc);
     return;
-  }
-
-  if (ble_ready) {
-    display_set_state(DISPLAY_STATE_IDLE);
   }
 
   /* NimBLE host configuration initialization */
