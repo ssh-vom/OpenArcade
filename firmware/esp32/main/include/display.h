@@ -15,6 +15,7 @@ typedef enum {
 } display_state_t;
 
 esp_err_t display_init(void);
+void display_play_boot_animation(void);
 void display_set_state(display_state_t state);
 void display_refresh(void);
 void display_set_battery(uint8_t percent);

@@ -128,6 +128,7 @@ void app_main(void) {
   }
 
   ESP_ERROR_CHECK(display_init());
+  display_play_boot_animation();
   display_set_state(DISPLAY_STATE_BOOT);
 
   /*
