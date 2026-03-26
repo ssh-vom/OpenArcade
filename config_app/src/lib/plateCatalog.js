@@ -1,7 +1,7 @@
 import plateCatalog from "@shared/plate_catalog.json";
 
 export const PLATES = plateCatalog.plates;
-export const FALLBACK_PLATE_PREVIEW = "/plates/oa_block.png";
+export const FALLBACK_PLATE_PREVIEW = "/logos/oa_block.png";
 export const DEFAULT_PLATE_ID = PLATES[0]?.id || "button-module-v1";
 
 const entries = [];
@@ -41,7 +41,7 @@ export function getPlateName(plateId) {
 }
 
 export function getPlateControllerModel(plateId) {
-  return getPlate(plateId)?.controller_model || "/OpenArcadeAssy_v2.glb";
+  return getPlate(plateId)?.controller_model || PLATES[0]?.controller_model || "/TP1_B_0_BUTTON.glb";
 }
 
 export function getPlatePreview(plateId) {

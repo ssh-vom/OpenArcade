@@ -23,10 +23,9 @@ import {
 } from "../services/HIDManager.js";
 
 // Preload GLBs with Draco decoding enabled
-useGLTF.preload("/OpenArcadeAssy_v2.glb", true);
-useGLTF.preload("/RevFinalJoystickModule_2026-03-15.glb", true);
-useGLTF.preload("/TP_L_8ButtonA1.glb", true);
-useGLTF.preload("/TP_R_8ButtonA1.glb", true);
+useGLTF.preload("/TP1_B_0_BUTTON.glb", true);
+useGLTF.preload("/TP1_A_0_JOYSTICK.glb", true);
+useGLTF.preload("/TP1_A_0_BUTTON.glb", true);
 
 // Camera Setter Component
 function CameraSetter({ viewMode, currentModulePosition }) {
@@ -146,8 +145,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const [selectedButton, setSelectedButton] = useState(null);
     const [activeSection, setActiveSection] = useState("mappings");
     const defaultModules = useMemo(() => ([
-        { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/OpenArcadeAssy_v2.glb", mappings: {}, position: [-1.5, 0, 0] },
-        { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/RevFinalJoystickModule_2026-03-15.glb", mappings: {}, position: [0, 0, 0] },
+        { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/TP1_B_0_BUTTON.glb", mappings: {}, position: [-1.5, 0, 0] },
+        { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/TP1_A_0_JOYSTICK.glb", mappings: {}, position: [0, 0, 0] },
     ]), []);
     const [modules, setModules] = useState(defaultModules);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
