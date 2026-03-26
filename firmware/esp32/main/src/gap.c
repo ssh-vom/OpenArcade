@@ -1,62 +1,61 @@
 #include "gap.h"
 #include "common.h"
 #include "display.h"
-#include "esp_timer.h"
 #include "gatt_svc.h"
+
+#include <string.h>
 
 /* Low-latency controller-friendly params */
 #define CONN_ITVL_MIN 6 // 7.5 ms
 #define CONN_ITVL_MAX 12
 #define SLAVE_LATENCY 0
 #define SUP_TIMEOUT 100 // 1s
-#define ADV_RESTART_DELAY_MS 2000
+#define ADV_DURATION_MS 30000
 
 static uint8_t own_addr_type;
-static esp_timer_handle_t adv_restart_timer;
+static gap_state_t gap_state = GAP_STATE_IDLE;
 
-/* Forward declarations */
 static void start_advertising(void);
+static void set_gap_state(gap_state_t new_state);
 static int gap_event_handler(struct ble_gap_event *event, void *arg);
-static void schedule_advertising_restart(void);
 
-static void adv_restart_cb(void *arg) {
-  display_set_state(DISPLAY_STATE_PAIRING);
-  start_advertising();
-}
-
-static void schedule_advertising_restart(void) {
-  if (adv_restart_timer == NULL) {
-    esp_timer_create_args_t timer_args = {
-        .callback = adv_restart_cb,
-        .arg = NULL,
-        .dispatch_method = ESP_TIMER_TASK,
-        .name = "adv_restart",
-    };
-
-    int rc = esp_timer_create(&timer_args, &adv_restart_timer);
-    if (rc != ESP_OK) {
-      ESP_LOGE(TAG, "Failed to create adv restart timer rc=%d", rc);
-      return;
-    }
+static void set_gap_state(gap_state_t new_state) {
+  if (gap_state == new_state) {
+    return;
   }
 
-  esp_timer_stop(adv_restart_timer);
-  esp_timer_start_once(adv_restart_timer, ADV_RESTART_DELAY_MS * 1000);
-}
+  gap_state = new_state;
 
-/* ================================
- * Advertising
- * ================================ */
+  switch (gap_state) {
+  case GAP_STATE_IDLE:
+    display_set_state(DISPLAY_STATE_IDLE);
+    break;
+  case GAP_STATE_ADVERTISING:
+    display_set_state(DISPLAY_STATE_PAIRING);
+    break;
+  case GAP_STATE_CONNECTED:
+    display_set_state(DISPLAY_STATE_CONNECTED);
+    break;
+  }
+}
 
 static void start_advertising(void) {
   struct ble_gap_adv_params adv_params = {0};
   struct ble_hs_adv_fields fields = {0};
   int rc;
 
-  /* Flags */
+  if (gap_state == GAP_STATE_CONNECTED) {
+    ESP_LOGI(TAG, "Ignoring advertising request while connected");
+    return;
+  }
+
+  if (gap_state == GAP_STATE_ADVERTISING) {
+    ESP_LOGI(TAG, "Ignoring advertising request while already advertising");
+    return;
+  }
+
   fields.flags = BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP;
 
-  /* Device name */
   const char *name = ble_svc_gap_device_name();
   fields.name = (uint8_t *)name;
   fields.name_len = strlen(name);
@@ -65,6 +64,7 @@ static void start_advertising(void) {
   rc = ble_gap_adv_set_fields(&fields);
   if (rc != 0) {
     ESP_LOGE(TAG, "adv_set_fields failed rc=%d", rc);
+    set_gap_state(GAP_STATE_IDLE);
     return;
   }
 
@@ -73,39 +73,34 @@ static void start_advertising(void) {
   adv_params.itvl_min = BLE_GAP_ADV_ITVL_MS(20);
   adv_params.itvl_max = BLE_GAP_ADV_ITVL_MS(30);
 
-  rc = ble_gap_adv_start(own_addr_type, NULL, BLE_HS_FOREVER, &adv_params,
+  rc = ble_gap_adv_start(own_addr_type, NULL, ADV_DURATION_MS, &adv_params,
                          gap_event_handler, NULL);
-
   if (rc != 0) {
     ESP_LOGE(TAG, "adv_start failed rc=%d", rc);
+    set_gap_state(GAP_STATE_IDLE);
     return;
   }
 
-  ESP_LOGI(TAG, "Advertising started");
+  ESP_LOGI(TAG, "Advertising started for %d ms", ADV_DURATION_MS);
+  set_gap_state(GAP_STATE_ADVERTISING);
 }
-
-/* ================================
- * GAP Events
- * ================================ */
 
 static int gap_event_handler(struct ble_gap_event *event, void *arg) {
   struct ble_gap_conn_desc desc;
   int rc;
 
   switch (event->type) {
-
   case BLE_GAP_EVENT_CONNECT:
     ESP_LOGI(TAG, "Connection %s",
              event->connect.status == 0 ? "established" : "failed");
 
     if (event->connect.status != 0) {
+      set_gap_state(GAP_STATE_IDLE);
       start_advertising();
       return 0;
     }
 
-    if (adv_restart_timer != NULL) {
-      esp_timer_stop(adv_restart_timer);
-    }
+    set_gap_state(GAP_STATE_CONNECTED);
 
     rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
     if (rc == 0) {
@@ -122,12 +117,11 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
   case BLE_GAP_EVENT_DISCONNECT:
     ESP_LOGI(TAG, "Disconnected");
     gatt_svc_reset_connection_state();
-    display_set_state(DISPLAY_STATE_IDLE);
-    schedule_advertising_restart();
+    set_gap_state(GAP_STATE_IDLE);
+    start_advertising();
     return 0;
 
   case BLE_GAP_EVENT_SUBSCRIBE:
-    display_set_state(DISPLAY_STATE_CONNECTED);
     gatt_svr_subscribe_cb(event);
     return 0;
 
@@ -135,25 +129,21 @@ static int gap_event_handler(struct ble_gap_event *event, void *arg) {
     if (event->notify_tx.status != 0) {
       ESP_LOGW(TAG, "Notify failed, status=%d", event->notify_tx.status);
       gatt_svc_reset_connection_state();
-      display_set_state(DISPLAY_STATE_IDLE);
       ble_gap_terminate(event->notify_tx.conn_handle,
                         BLE_ERR_REM_USER_CONN_TERM);
-      schedule_advertising_restart();
     }
     return 0;
 
   case BLE_GAP_EVENT_ADV_COMPLETE:
-    start_advertising();
+    ESP_LOGI(TAG, "Advertising complete, reason=%d",
+             event->adv_complete.reason);
+    set_gap_state(GAP_STATE_IDLE);
     return 0;
 
   default:
     return 0;
   }
 }
-
-/* ================================
- * Public API
- * ================================ */
 
 void adv_init(void) {
   int rc;
@@ -172,6 +162,24 @@ void adv_init(void) {
 
   start_advertising();
 }
+
+void gap_request_pair(void) {
+  if (gap_state == GAP_STATE_CONNECTED) {
+    ESP_LOGI(TAG, "Ignoring pair request while connected");
+    return;
+  }
+
+  if (gap_state == GAP_STATE_ADVERTISING) {
+    ESP_LOGI(TAG, "Ignoring pair request while already advertising");
+    return;
+  }
+
+  start_advertising();
+}
+
+bool gap_is_connected(void) { return gap_state == GAP_STATE_CONNECTED; }
+
+gap_state_t gap_get_state(void) { return gap_state; }
 
 int gap_init(void) {
   int rc;

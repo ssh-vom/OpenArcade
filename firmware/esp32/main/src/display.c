@@ -1,10 +1,21 @@
 #include "display.h"
+#include "boot_logo.h"
+#include "common.h"
 #include "driver/i2c_master.h"
 #include "esp_log.h"
 #include "pins.h"
 #include "ssd1306.h"
 
 #define TAG "display"
+#define BOOT_LOGO_WIDTH 128
+#define BOOT_LOGO_HEIGHT 64
+#define BOOT_LOGO_Y_OFFSET 8
+#define BOOT_ANIMATION_STEP_PX 8
+#define BOOT_ANIMATION_FRAME_MS 40
+#define BOOT_ANIMATION_HOLD_MS 5000
+
+#define BOOT_LOGO_ROW_BYTES (BOOT_LOGO_WIDTH / 8)
+#define BOOT_LOGO_BUFFER_SIZE (BOOT_LOGO_ROW_BYTES * BOOT_LOGO_HEIGHT)
 
 static i2c_master_bus_handle_t i2c_bus;
 static ssd1306_handle_t screen;
@@ -49,6 +60,15 @@ static void display_draw_battery(void) {
   ssd1306_display_text(screen, 7, buf, false);
 }
 
+static void display_prepare_boot_logo(uint8_t *buffer) {
+  memset(buffer, 0, BOOT_LOGO_BUFFER_SIZE);
+
+  for (uint8_t row = 0; row < BOOT_LOGO_HEIGHT - BOOT_LOGO_Y_OFFSET; row++) {
+    memcpy(&buffer[(row + BOOT_LOGO_Y_OFFSET) * BOOT_LOGO_ROW_BYTES],
+           &oa_white[row * BOOT_LOGO_ROW_BYTES], BOOT_LOGO_ROW_BYTES);
+  }
+}
+
 esp_err_t display_init(void) {
   /* Create I2C master bus (ESP-IDF v5) */
   i2c_master_bus_config_t bus_cfg = {
@@ -77,6 +97,27 @@ esp_err_t display_init(void) {
 
   ESP_LOGI(TAG, "Display initialized");
   return ESP_OK;
+}
+
+void display_play_boot_animation(void) {
+  uint8_t shifted_logo[BOOT_LOGO_BUFFER_SIZE];
+
+  if (!screen) {
+    return;
+  }
+
+  display_prepare_boot_logo(shifted_logo);
+  display_clear();
+
+  for (uint8_t height = BOOT_ANIMATION_STEP_PX; height <= BOOT_LOGO_HEIGHT;
+       height += BOOT_ANIMATION_STEP_PX) {
+    ssd1306_display_bitmap(screen, 0, 0, shifted_logo, BOOT_LOGO_WIDTH, height,
+                           false);
+    vTaskDelay(pdMS_TO_TICKS(BOOT_ANIMATION_FRAME_MS));
+  }
+
+  vTaskDelay(pdMS_TO_TICKS(BOOT_ANIMATION_HOLD_MS));
+  current_state = -1;
 }
 
 void display_set_state(display_state_t state) {
