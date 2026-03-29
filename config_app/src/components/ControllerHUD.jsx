@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { HID_INPUT_TYPES } from "../services/HIDManager.js";
 
 const oaBlockLogo = "/logos/oa_block.png";
 
 export default function ControllerHUD({
-    controllerName,
     moduleCount,
     currentModule,
     modules,
@@ -40,7 +39,8 @@ export default function ControllerHUD({
         setEditingName(false);
     };
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- useLayoutEffect is correct for synchronous UI reset
         setEditingName(false);
     }, [currentModule]);
 

@@ -1,13 +1,4 @@
 export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButton }) {
-    const getTypeColor = (type) => {
-        switch (type) {
-            case 'gamepad': return '#5180C1';
-            case 'keyboard': return '#4A90A4';
-            case 'analog': return '#6B9BD1';
-            default: return '#707070';
-        }
-    };
-
     return (
         <div 
             className="w-[340px] h-full bg-[#D9D9D9] flex flex-col shrink-0 animate-slide-in-right"
@@ -80,8 +71,6 @@ export default function ButtonMappingsPanel({ mappings, moduleName, onSelectButt
                             const display = typeof action === "string"
                                 ? action
                                 : action?.action || action?.label || action?.input || "Unmapped";
-                            const type = typeof action === "object" ? action?.type : null;
-                            const typeColor = getTypeColor(type);
                             
                             return (
                                 <button

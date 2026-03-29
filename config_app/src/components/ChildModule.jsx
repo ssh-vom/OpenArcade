@@ -1,8 +1,25 @@
 import { useGLTF, Html } from "@react-three/drei";
-import { useRef, memo, useEffect, useState, useCallback, useMemo } from "react";
+import { useRef, memo, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ANALOG_INPUTS, GAMEPAD_INPUTS, HID_INPUT_TYPES, KEYBOARD_INPUTS, getInputLabel } from "../services/HIDManager.js";
+
+// Shallow equality helpers for performant comparisons
+const shallowEqualArrays = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+};
+
+const shallowEqualObjects = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every(key => a[key] === b[key]);
+};
 
 const GAMEPAD_INPUT_KEYS = new Set(Object.keys(GAMEPAD_INPUTS));
 const KEYBOARD_INPUT_KEYS = new Set(Object.keys(KEYBOARD_INPUTS));
@@ -77,6 +94,7 @@ const ChildModule = memo(function ChildModule({
     mappings = {},
     mappingFilter = "all",
     pressedButtons = [],
+    pressedButtonsRef = null, // For immediate visual feedback (60fps, no React lag)
     armedButton = null,
     isMappingMode = false,
 }) {
@@ -125,6 +143,12 @@ const ChildModule = memo(function ChildModule({
     }
 
     const pressedButtonSet = useMemo(() => new Set(pressedButtons), [pressedButtons]);
+    
+    // Ref for immediate visual feedback (bypasses React render cycle)
+    const immediatePressedRef = useRef(new Set(pressedButtons));
+    useEffect(() => {
+        immediatePressedRef.current = new Set(pressedButtons);
+    }, [pressedButtons]);
 
     function applyHighlight(mesh, options = null) {
         const isJoystickHitbox = mesh.userData.isJoystickHitbox;
@@ -289,7 +313,7 @@ const ChildModule = memo(function ChildModule({
         }
     }
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (moduleScene) {
             buttonMeshes.current.clear();
             buttonNameByMesh.current.clear();
@@ -382,7 +406,8 @@ const ChildModule = memo(function ChildModule({
             setButtonLabelPositions(labelPositions);
             console.log('Total button meshes found:', buttonMeshes.current.size);
         }
-    }, [moduleScene]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- isJoystickModule is derived from path
+    }, [moduleScene, path]);
 
     useEffect(() => {
         const hoverColor = new THREE.Color("#5180C1");
@@ -428,18 +453,21 @@ const ChildModule = memo(function ChildModule({
         };
     }, [gl, handleMouseClick, handleMouseMove, handleMouseLeave]);
 
-    // Animation loop
+    // Animation loop - runs at 60fps, reads from ref for immediate feedback
     useFrame((state) => {
         if (!isActive) return;
 
-        if (pressedButtonSet.size > 0) {
+        // Use ref for immediate visual feedback (no React lag)
+        const currentPressed = pressedButtonsRef?.current || immediatePressedRef.current;
+        
+        if (currentPressed.size > 0) {
             const pressedColor = new THREE.Color("#6B9BD1");
             const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 7) * 0.18;
             const pulseOpacity = 0.65 + Math.sin(state.clock.elapsedTime * 7) * 0.08;
 
             buttonMeshes.current.forEach((mesh) => {
                 const groupName = mesh.userData.buttonGroup;
-                if (!pressedButtonSet.has(groupName)) {
+                if (!currentPressed.has(groupName)) {
                     return;
                 }
                 applyHighlight(mesh, {
@@ -690,9 +718,9 @@ const MemoizedChildModule = memo(ChildModule, (prevProps, nextProps) => {
         prevProps.armedButton === nextProps.armedButton &&
         prevProps.isMappingMode === nextProps.isMappingMode &&
         prevProps.mappingFilter === nextProps.mappingFilter &&
-        JSON.stringify(prevProps.position) === JSON.stringify(nextProps.position) &&
-        JSON.stringify(prevProps.mappings) === JSON.stringify(nextProps.mappings) &&
-        JSON.stringify(prevProps.pressedButtons) === JSON.stringify(nextProps.pressedButtons)
+        shallowEqualArrays(prevProps.position, nextProps.position) &&
+        shallowEqualObjects(prevProps.mappings, nextProps.mappings) &&
+        shallowEqualArrays(prevProps.pressedButtons, nextProps.pressedButtons)
     );
 });
 

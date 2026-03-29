@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 
 const oaBlockLogo = "/logos/oa_block.png";
 
-export default function DeviceConnectionScreen({ onConnect }) {
+export default function DeviceConnectionScreen({ onConnect, connectionError, setConnectionError }) {
     const [scanning, setScanning] = useState(true);
     const [deviceFound, setDeviceFound] = useState(false);
-    const [error, setError] = useState("");
+    const [localError, setLocalError] = useState("");
     const [scanProgress, setScanProgress] = useState(0);
+    
+    // Use external error prop if provided, otherwise use local state
+    const error = connectionError || localError;
+    const setError = setConnectionError || setLocalError;
 
     useEffect(() => {
         const timer = setTimeout(() => {

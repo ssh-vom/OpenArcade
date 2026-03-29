@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useLayoutEffect, useState } from "react";
 import * as THREE from "three";
 
 export function useCameraController({
@@ -10,7 +10,7 @@ export function useCameraController({
     const cameraPositionRef = useRef(new THREE.Vector3(0, 2, 5));
     const [animationStart, setAnimationStart] = useState(0);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (enabled && currentModuleIndex >= 0 && modules[currentModuleIndex]) {
             const targetModule = modules[currentModuleIndex];
             const targetPosition = new THREE.Vector3(...targetModule.position);
@@ -23,6 +23,7 @@ export function useCameraController({
             );
             
             // Always trigger animation with timestamp for uniqueness
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- useLayoutEffect is correct for synchronous animation trigger
             setAnimationStart(Date.now());
         }
     }, [currentModuleIndex, modules, enabled]);

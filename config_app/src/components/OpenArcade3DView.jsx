@@ -2,7 +2,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { MemoizedChildModule } from "./ChildModule.jsx";
 import { CameraController } from "./CameraController.jsx";
 import { useCameraController } from "../hooks/useCameraController.jsx";
-import { useState, useEffect, memo, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, memo, useRef, useCallback, useMemo } from "react";
 import { useGLTF, Bounds } from "@react-three/drei";
 import ButtonMappingModal from "./ButtonMappingModal.jsx";
 import ButtonMappingsPanel from "./ButtonMappingsPanel.jsx";
@@ -22,6 +22,14 @@ import {
     getKeycodeForInput,
 } from "../services/HIDManager.js";
 
+// Shallow equality helper - avoids expensive JSON.stringify
+const shallowEqualArrays = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+};
+
 // Preload GLBs with Draco decoding enabled
 useGLTF.preload("/TP1_B_0_BUTTON.glb", true);
 useGLTF.preload("/TP1_A_0_JOYSTICK.glb", true);
@@ -32,11 +40,12 @@ function CameraSetter({ viewMode, currentModulePosition }) {
     const { camera } = useThree();
     const orthoZoom = 1000;
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (viewMode === '2d') {
             // Position camera above the current module in 2D mode
             camera.position.set(currentModulePosition[0], 5, currentModulePosition[2]);
             camera.rotation.set(-Math.PI / 2, 0, 0);
+            // eslint-disable-next-line react-hooks/immutability -- R3F camera manipulation in useLayoutEffect is the standard pattern
             camera.zoom = orthoZoom;
             camera.updateProjectionMatrix();
         } else {
@@ -51,20 +60,27 @@ function CameraSetter({ viewMode, currentModulePosition }) {
     return null;
 }
 
+// Seeded random generator for stable particle positions
+const seededRandom = (seed) => {
+    const x = Math.sin(seed * 9999) * 10000;
+    return x - Math.floor(x);
+};
+
 // Minimal Particle System Component — subtle warm particles for light theme
 function Particles() {
     const particlesRef = useRef();
     const count = 30;
 
-    const positions = useMemo(() => {
+    // Use lazy state initialization to generate positions once (avoids Math.random during render)
+    const [positions] = useState(() => {
         const pos = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-            pos[i * 3] = (Math.random() - 0.5) * 20;
-            pos[i * 3 + 1] = Math.random() * 10 - 2;
-            pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+            pos[i * 3] = (seededRandom(i * 3) - 0.5) * 20;
+            pos[i * 3 + 1] = seededRandom(i * 3 + 1) * 10 - 2;
+            pos[i * 3 + 2] = (seededRandom(i * 3 + 2) - 0.5) * 20;
         }
         return pos;
-    }, []);
+    });
 
     useFrame((state) => {
         if (particlesRef.current) {
@@ -141,7 +157,7 @@ function LiveInputIcon({ active }) {
 
 const LIVE_STATE_POLL_INTERVAL_MS = 120;
 
-const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
+const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDisconnect /* eslint-disable-line no-unused-vars */ }) {
     const [selectedButton, setSelectedButton] = useState(null);
     const [activeSection, setActiveSection] = useState("mappings");
     const defaultModules = useMemo(() => ([
@@ -173,6 +189,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
     const livePollInFlightRef = useRef(false);
     const sourceBindingInFlightRef = useRef(false);
     const hasLoadedRef = useRef(false);
+    
+    // Ref for immediate visual feedback to 3D scene (bypasses React render cycle)
+    const pressedButtonsForVisualsRef = useRef([]);
     // Preload textures to eliminate WebGL warnings
     useEffect(() => {
         // Force texture generation to prevent lazy initialization warnings
@@ -184,14 +203,28 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         modules.forEach(module => {
             useGLTF.preload(module.path, true);
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- Only preload once on mount, modules is stable
     }, []);
+
+    // Comprehensive cleanup when component unmounts or configClient changes
+    useEffect(() => {
+        return () => {
+            // Clear all intervals and timeouts
+            setPressedControlIds([]);
+            setPressedButtons([]);
+            pressedButtonsForVisualsRef.current = [];
+            previousPressedControlIdsRef.current = new Set();
+            livePollInFlightRef.current = false;
+            sourceBindingInFlightRef.current = false;
+        };
+    }, [configClient]);
 
     const safeCurrentModuleIndex = currentModuleIndex < modules.length ? currentModuleIndex : 0;
     const visibleModules = showOnlyConnected
         ? modules.filter((m) => m.connected !== false)
         : modules;
     const currentModule = modules[safeCurrentModuleIndex] || defaultModules[0];
-    const currentMappings = currentModule?.mappings || {};
+    const currentMappings = useMemo(() => currentModule?.mappings || {}, [currentModule?.mappings]);
     const cameraControl = useCameraController({ currentModuleIndex: safeCurrentModuleIndex, modules, enabled: viewMode === '3d' });
 
     useEffect(() => {
@@ -234,6 +267,16 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         mockClientRef.current = new MockConfigClient();
     }
     const activeClient = configClient || mockClientRef.current;
+    
+    // Track page visibility to pause polling when tab is hidden (saves battery/CPU)
+    const isVisibleRef = useRef(true);
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            isVisibleRef.current = !document.hidden;
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
 
     const applyDeviceConfigs = useCallback((devices) => {
         const deviceEntries = Object.entries(devices || {});
@@ -327,7 +370,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         const fallbackIndex = defaultModules.findIndex((module) => module.deviceId === selectedDeviceId);
         setCurrentModuleIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
         setActiveProfile(null);
-    }, [defaultLayout, getInputForKeycode, getInputLabel]);
+    }, [defaultLayout, defaultModules, getInputForKeycode, getInputLabel]);
     const refreshDevices = useCallback(async () => {
         const devices = await activeClient.listDevices();
         applyDeviceConfigs(devices);
@@ -543,7 +586,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         let cancelled = false;
 
         const syncLiveState = async () => {
-            if (livePollInFlightRef.current) {
+            if (livePollInFlightRef.current || !isVisibleRef.current) {
                 return;
             }
 
@@ -559,8 +602,14 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                     .map((controlId) => getButtonNameForControlId(currentLayout, controlId))
                     .filter(Boolean);
 
-                setPressedControlIds(nextPressedControlIds);
-                setPressedButtons(nextPressedButtons);
+                // IMMEDIATE: Update ref for 3D visual feedback (no React lag, 60fps)
+                pressedButtonsForVisualsRef.current = nextPressedButtons;
+
+                // THROTTLED: Only update React state if actually changed (prevents unnecessary re-renders)
+                if (!shallowEqualArrays(pressedControlIds, nextPressedControlIds)) {
+                    setPressedControlIds(nextPressedControlIds);
+                    setPressedButtons(nextPressedButtons);
+                }
 
                 const previousPressed = previousPressedControlIdsRef.current;
                 const newlyPressedControlIds = nextPressedControlIds.filter((controlId) => !previousPressed.has(controlId));
@@ -628,6 +677,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
             window.clearInterval(intervalId);
             livePollInFlightRef.current = false;
             previousPressedControlIdsRef.current = new Set();
+            pressedButtonsForVisualsRef.current = [];
         };
     }, [
         activeClient,
@@ -639,6 +689,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
         getButtonNameForControlId,
         isMappingMode,
         refreshDevices,
+        pressedControlIds, // Needed for shallowEqual comparison
     ]);
 
     const clearAllMappings = () => {
@@ -886,20 +937,22 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient }) {
                                     <CameraSetter viewMode={viewMode} currentModulePosition={currentModule.position} />
                                     {visibleModules.map((module) => {
                                         const globalIndex = modules.indexOf(module);
+                                        const isCurrentModule = globalIndex === safeCurrentModuleIndex;
                                         return (
                                             <MemoizedChildModule
                                                 path={module.path}
                                                 onButtonClick={handleButtonClick}
                                                 onModuleClick={() => handleModuleClick(globalIndex)}
-                                                isEditable={globalIndex === safeCurrentModuleIndex}
+                                                isEditable={isCurrentModule}
                                                 position={module.position}
                                                 viewMode={viewMode}
-                                                isActive={globalIndex === safeCurrentModuleIndex}
+                                                isActive={isCurrentModule}
                                                 mappings={module.mappings}
                                                 mappingFilter={mappingFilter}
-                                                pressedButtons={globalIndex === safeCurrentModuleIndex ? pressedButtons : []}
-                                                armedButton={globalIndex === safeCurrentModuleIndex ? armedButton : null}
-                                                isMappingMode={globalIndex === safeCurrentModuleIndex ? isMappingMode : false}
+                                                pressedButtons={isCurrentModule ? pressedButtons : []}
+                                                pressedButtonsRef={isCurrentModule ? pressedButtonsForVisualsRef : null}
+                                                armedButton={isCurrentModule ? armedButton : null}
+                                                isMappingMode={isCurrentModule ? isMappingMode : false}
                                                 key={module.deviceId || module.id}
                                             />
                                         );

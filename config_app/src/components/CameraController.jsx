@@ -1,4 +1,4 @@
-import { useRef, useEffect, memo, useState } from "react";
+import { useRef, useLayoutEffect, memo, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -17,7 +17,7 @@ const CameraController = memo(function CameraController({
     const [isAnimating, setIsAnimating] = useState(false);
     const lastAnimationStart = useRef(0);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         // Only trigger if this is a new animation request
         if (animationStart > 0 && animationStart !== lastAnimationStart.current) {
             lastAnimationStart.current = animationStart;
@@ -29,6 +29,7 @@ const CameraController = memo(function CameraController({
                 targetTo: targetRef.current
             });
             
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- useLayoutEffect is correct for synchronous animation start
             setIsAnimating(true);
             startPositionRef.current.copy(camera.position);
             if (orbitControlsRef.current) {

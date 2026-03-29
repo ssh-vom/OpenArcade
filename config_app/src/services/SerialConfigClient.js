@@ -17,8 +17,39 @@ export default class SerialConfigClient {
             throw new Error("WebSerial not supported in this browser");
         }
 
-        this.port = await navigator.serial.requestPort();
-        await this.port.open({ baudRate: 115200 });
+        try {
+            this.port = await navigator.serial.requestPort();
+            await this.port.open({ baudRate: 115200 });
+        } catch (err) {
+            // Detect if port is already in use by another tab/window
+            const errorMessage = err?.message || "";
+            const isPortInUse = 
+                err?.name === "InvalidStateError" ||
+                errorMessage.includes("already open") ||
+                errorMessage.includes("in use") ||
+                errorMessage.includes("Access denied") ||
+                errorMessage.includes("exclusive lock") ||
+                errorMessage.includes("Failed to open serial port") ||
+                // Chrome-specific error messages
+                errorMessage.includes("The port is already open") ||
+                errorMessage.includes("The device is already in use");
+            
+            if (isPortInUse) {
+                const inUseError = new Error("Serial port already open in another tab");
+                inUseError.name = "PortInUseError";
+                inUseError.originalError = err;
+                throw inUseError;
+            }
+            
+            // Check if user cancelled the port selection
+            if (err?.name === "NotFoundError" || errorMessage.includes("No port selected")) {
+                const cancelledError = new Error("No device selected");
+                cancelledError.name = "UserCancelledError";
+                throw cancelledError;
+            }
+            
+            throw err;
+        }
 
         const decoder = new TextDecoderStream();
         this.port.readable.pipeTo(decoder.writable);
