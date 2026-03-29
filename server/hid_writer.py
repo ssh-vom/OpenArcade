@@ -49,6 +49,11 @@ def hid_writer_process(
     while not stop_event.is_set():
         try:
             report = hid_queue.get(timeout=1.0)
+            while True:
+                try:
+                    report = hid_queue.get_nowait()
+                except queue.Empty:
+                    break
         except queue.Empty:
             continue
         except Exception as exc:

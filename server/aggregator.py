@@ -18,6 +18,9 @@ from runtime.state_reducer import StateReducer
 
 logger = logging.getLogger("OpenArcade")
 TARGET_DEVICE_NAME = "NimBLE_GATT"
+CONNECTED_SCAN_SETTLE_SECONDS = 5.0
+BACKGROUND_SCAN_INTERVAL_SECONDS = 15.0
+BACKGROUND_SCAN_DURATION_SECONDS = 1.0
 
 
 def set_cpu_affinity(core_id: int) -> None:
@@ -37,9 +40,8 @@ def aggregator_process(
 ):
     """
     Dedicated BLE transport process pinned to a specific CPU core.
-    
-    Pure transport: scan, connect, notify, aggregate, queue.
-    No control server, no socket handling in this process.
+
+    BLE transport, aggregation, HID report publication, and runtime control IPC.
     """
     
     # Pin to specific CPU core immediately
@@ -55,6 +57,8 @@ def aggregator_process(
     device_states: dict[str, int] = {}
     live_states: dict[str, dict[str, Any]] = {}
     state_sequence = 0
+    scan_until = time.monotonic() + CONNECTED_SCAN_SETTLE_SECONDS
+    next_background_scan_at = scan_until + BACKGROUND_SCAN_INTERVAL_SECONDS
 
     config_store = DeviceConfigStore(path=config_path)
     reducer = StateReducer(build_mapping_cache(config_store.load()))
@@ -89,6 +93,12 @@ def aggregator_process(
             "updated_at": time.time(),
         }
 
+    def extend_scan_window(duration: float = CONNECTED_SCAN_SETTLE_SECONDS) -> None:
+        nonlocal scan_until, next_background_scan_at
+        now = time.monotonic()
+        scan_until = max(scan_until, now + duration)
+        next_background_scan_at = scan_until + BACKGROUND_SCAN_INTERVAL_SECONDS
+
     def make_notification_handler(address: str):
         def handler(_sender: Any, data: bytearray) -> None:
             if len(data) < 4:
@@ -117,6 +127,7 @@ def aggregator_process(
             return
 
         pending_connects.add(address)
+        extend_scan_window()
         logger.info("Discovered Target Device: %s (%s)", address, name)
 
     async def run() -> None:
@@ -141,6 +152,21 @@ def aggregator_process(
             get_connected_devices=get_connected_devices,
             get_device_states=get_device_states,
         )
+
+        def should_scan() -> bool:
+            nonlocal next_background_scan_at
+
+            now = time.monotonic()
+            if not connected_clients:
+                return True
+            if pending_connects or connecting_addresses:
+                return True
+            if now < scan_until:
+                return True
+            if now >= next_background_scan_at:
+                extend_scan_window(BACKGROUND_SCAN_DURATION_SECONDS)
+                return True
+            return False
 
         async def ensure_scanner_running() -> None:
             nonlocal scanner, scanner_running
@@ -186,6 +212,7 @@ def aggregator_process(
                     connected_clients.pop(disconnected_address, None)
                     device_states.pop(disconnected_address, None)
                     live_states.pop(disconnected_address, None)
+                    extend_scan_window()
                     publish_report(reducer.remove_device_state(disconnected_address))
 
                 client = BleakClient(
@@ -203,6 +230,7 @@ def aggregator_process(
                     await client.start_notify(CHAR_UUID, make_notification_handler(address))
                     device_states[address] = 0
                     update_live_state(address, 0)
+                    extend_scan_window()
                     publish_report(reducer.update_device_state(address, 0))
 
                 except Exception as exc:
@@ -218,7 +246,10 @@ def aggregator_process(
                 finally:
                     connecting_addresses.discard(address)
                     if not stop_event.is_set():
-                        await ensure_scanner_running()
+                        if should_scan():
+                            await ensure_scanner_running()
+                        else:
+                            await stop_scanner()
 
         # Initial setup
         refresh_mapping_cache()
@@ -243,9 +274,12 @@ def aggregator_process(
                 # Periodic cache refresh (non-blocking)
                 refresh_mapping_cache()
                 
-                # Ensure scanner is always running if we have slots
+                # Keep scanning only while actively discovering/connecting or shortly after activity.
                 if not stop_event.is_set():
-                    await ensure_scanner_running()
+                    if should_scan():
+                        await ensure_scanner_running()
+                    else:
+                        await stop_scanner()
                 
                 await asyncio.sleep(0.5)
 
