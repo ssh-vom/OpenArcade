@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import argparse
-import asyncio
 import logging
+import multiprocessing
 import signal
-import threading
+import time
 
-from hid_output_worker import HIDOutputWorker, LatestReportMailbox
-from runtime import RuntimeApplication
+from aggregator import aggregator_process
+from hid_writer import hid_writer_process
 
 
 logging.basicConfig(
@@ -18,57 +18,73 @@ logging.basicConfig(
 logger = logging.getLogger("OpenArcade")
 
 
-async def run_runtime(
-    report_mailbox: LatestReportMailbox,
-    config_path: str | None = None,
-) -> None:
-    shutdown_signal = asyncio.Event()
-    loop = asyncio.get_running_loop()
-
-    for signum in (signal.SIGINT, signal.SIGTERM):
-        try:
-            loop.add_signal_handler(signum, shutdown_signal.set)
-        except NotImplementedError:
-            pass
-
-    app = RuntimeApplication(report_sink=report_mailbox, config_path=config_path)
-    await app.run(shutdown_signal)
-
-
 def main() -> int:
-    parser = argparse.ArgumentParser(description="OpenArcade BLE runtime")
+    parser = argparse.ArgumentParser(description="OpenArcade BLE/HID subscriber")
     parser.add_argument(
         "--config",
         help="Path to the persistent config store JSON file",
     )
     args = parser.parse_args()
 
-    logger.info("Initializing OpenArcade runtime")
+    logger.info("Initializing OpenArcade Subscriber...")
 
-    report_mailbox = LatestReportMailbox()
-    worker_stop_event = threading.Event()
-    worker = HIDOutputWorker(report_mailbox, worker_stop_event)
-    worker.start()
+    hid_queue = multiprocessing.Queue()
+    stop_event = multiprocessing.Event()
+    shutdown_requested = False
+
+    def request_shutdown(_signum, _frame) -> None:
+        nonlocal shutdown_requested
+        shutdown_requested = True
+        stop_event.set()
+
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(signum, request_shutdown)
+
+    aggregator = multiprocessing.Process(
+        target=aggregator_process,
+        args=(hid_queue, stop_event, args.config),
+        name="Aggregator",
+    )
+    writer = multiprocessing.Process(
+        target=hid_writer_process,
+        args=(hid_queue, stop_event),
+        name="HIDWriter",
+    )
+
+    processes = [aggregator, writer]
+
+    for process in processes:
+        process.start()
+
+    logger.info("All processes started")
 
     return_code = 0
 
     try:
-        asyncio.run(run_runtime(report_mailbox=report_mailbox, config_path=args.config))
+        while not shutdown_requested:
+            for process in processes:
+                if process.is_alive():
+                    continue
+                logger.error("Process %s exited unexpectedly with code %s", process.name, process.exitcode)
+                shutdown_requested = True
+                stop_event.set()
+                return_code = 1
+                break
+            time.sleep(1.0)
     except KeyboardInterrupt:
         logger.info("Shutdown signal received")
-    except Exception:
-        logger.exception("Runtime crashed")
-        return_code = 1
-    else:
-        return_code = 0
+        stop_event.set()
     finally:
-        worker_stop_event.set()
-        report_mailbox.close()
-        worker.join(timeout=5.0)
-        if worker.is_alive():
-            logger.warning("HID output worker did not exit cleanly")
+        stop_event.set()
+        for process in processes:
+            process.join(timeout=5.0)
+            if process.is_alive():
+                logger.warning("Process %s did not exit cleanly, terminating...", process.name)
+                process.terminate()
+        hid_queue.close()
+        hid_queue.join_thread()
 
-    logger.info("System shutdown complete")
+    logger.info("System Shutdown Complete.")
     return return_code
 
 
