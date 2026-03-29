@@ -10,7 +10,7 @@
 #define CONN_ITVL_MAX 12
 #define SLAVE_LATENCY 0
 #define SUP_TIMEOUT 100 // 1s
-#define ADV_DURATION_MS 30000
+#define ADV_DURATION_MS 180000
 
 static uint8_t own_addr_type;
 static gap_state_t gap_state = GAP_STATE_IDLE;
