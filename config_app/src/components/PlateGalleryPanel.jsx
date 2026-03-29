@@ -20,23 +20,24 @@ function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) 
                 cursor: isLoading ? "wait" : "pointer",
             }}
         >
-            <div className="h-40 bg-[#B8B8B8] flex items-center justify-center p-2 border-b border-[#A0A0A0]">
+            <div className="h-36 bg-[#B8B8B8] flex items-center justify-center p-3 border-b border-[#A0A0A0]">
                 <PlateTopPreview
                     plateId={plate.id}
                     alt=""
-                    className="max-h-full max-w-full object-contain"
+                    className="h-full w-full object-contain"
                 />
             </div>
 
-            <div className="px-3.5 pb-3.5 pt-3">
+            <div className="px-3 pb-3 pt-2.5">
                 <div
-                    className="text-sm font-semibold text-[#333333]"
+                    className="text-sm font-semibold text-[#333333] truncate"
                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    title={plate.name}
                 >
                     {plate.name}
                 </div>
                 <div
-                    className="mt-1 text-xs text-[#4A4A4A] leading-relaxed"
+                    className="mt-1 text-xs text-[#4A4A4A] leading-snug line-clamp-2"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                     {plate.description}
@@ -145,8 +146,8 @@ export default function PlateGalleryPanel({
                 </div>
             </div>
 
-            <div className="relative z-[1] flex-1 overflow-y-auto panel-scroll px-4 pb-4">
-                <div className="grid grid-cols-2 gap-3">
+            <div className="relative z-[1] flex-1 overflow-y-auto panel-scroll pb-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
                     {PLATES.map((plate, index) => {
                         const isSelected = plate.id === selectedPlateId;
                         const isLoading = selectedLoadingId === plate.id;

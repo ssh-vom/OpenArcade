@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
 const TOTAL_SCAN_ROWS = 20;
-const SCAN_SPEED_MS = 60;
+const SCAN_SPEED_MS = 55;
+const START_DELAY_MS = 300;
 
 export default function BootSequence({ onBootComplete, error }) {
     const [phase, setPhase] = useState("boot");
     const [scanProgress, setScanProgress] = useState(0);
-    const [memoryCheck, setMemoryCheck] = useState(0);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [hasWebSerial, setHasWebSerial] = useState(null);
 
@@ -15,39 +15,25 @@ export default function BootSequence({ onBootComplete, error }) {
         setHasWebSerial("serial" in navigator);
     }, []);
 
-    // Boot sequence: memory check -> logo reveal -> menu
+    // Boot sequence: logo reveal -> menu
     useEffect(() => {
         if (phase !== "boot") return;
 
-        // Memory check phase
-        let mem = 0;
-        const memInterval = setInterval(() => {
-            mem += Math.floor(Math.random() * 600) + 200;
-            if (mem > 64000) mem = 64000;
-            setMemoryCheck(mem);
-        }, 30);
-
-        // Start logo reveal after memory check
-        const scanTimeout = setTimeout(() => {
-            clearInterval(memInterval);
-            
+        const startTimeout = setTimeout(() => {
             let row = 0;
             const scanInterval = setInterval(() => {
                 row++;
                 setScanProgress(row);
                 if (row >= TOTAL_SCAN_ROWS) {
                     clearInterval(scanInterval);
-                    setTimeout(() => setPhase("menu"), 300);
+                    setTimeout(() => setPhase("menu"), 400);
                 }
             }, SCAN_SPEED_MS);
 
             return () => clearInterval(scanInterval);
-        }, 1200);
+        }, START_DELAY_MS);
 
-        return () => {
-            clearInterval(memInterval);
-            clearTimeout(scanTimeout);
-        };
+        return () => clearTimeout(startTimeout);
     }, [phase]);
 
     // Keyboard navigation
@@ -114,66 +100,65 @@ export default function BootSequence({ onBootComplete, error }) {
 
             {phase === "boot" && (
                 <div className="flex flex-col items-center z-10">
-                    {/* Memory check */}
+                    {/* Logo container with smooth scan reveal */}
                     <div 
-                        className="text-xs mb-8 tracking-[0.3em] uppercase"
-                        style={{ color: "#707070", fontFamily: "'IBM Plex Mono', monospace" }}
-                    >
-                        System Check: {memoryCheck.toString().padStart(5, "0")}K
-                    </div>
-
-                    {/* Logo container with scan reveal */}
-                    <div 
-                        className="relative w-56 h-56 sm:w-72 sm:h-72 rounded-2xl flex items-center justify-center"
+                        className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-2xl flex items-center justify-center"
                         style={{ 
                             background: "#CCCCCC",
                             boxShadow: "0 4px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)"
                         }}
                     >
-                        {/* The logo with row-by-row reveal */}
-                        <div className="relative w-full h-full flex items-center justify-center p-10">
+                        {/* The logo with smooth row-by-row reveal */}
+                        <div className="relative w-full h-full flex items-center justify-center p-8">
                             {/* Dimmed base logo */}
                             <img 
                                 src="/logos/oa_block.png" 
                                 alt=""
                                 className="w-full h-full object-contain"
-                                style={{ opacity: 0.15, filter: "grayscale(100%)" }}
+                                style={{ opacity: 0.1, filter: "grayscale(100%)" }}
                             />
 
-                            {/* Revealed rows */}
-                            <div className="absolute inset-0 flex flex-col p-10">
-                                {Array.from({ length: TOTAL_SCAN_ROWS }).map((_, i) => (
-                                    <div 
-                                        key={i}
-                                        className="flex-1 w-full overflow-hidden relative"
-                                        style={{
-                                            opacity: i < scanProgress ? 1 : 0,
-                                            transition: "opacity 0.08s ease-out"
-                                        }}
-                                    >
-                                        <img 
-                                            src="/logos/oa_block.png"
-                                            alt=""
-                                            className="absolute w-full object-contain"
+                            {/* Revealed rows with smooth cascade */}
+                            <div className="absolute inset-0 flex flex-col p-8">
+                                {Array.from({ length: TOTAL_SCAN_ROWS }).map((_, i) => {
+                                    const isRevealed = i < scanProgress;
+                                    const distance = scanProgress - i;
+                                    const opacity = isRevealed ? Math.min(1, 0.3 + distance * 0.15) : 0;
+                                    
+                                    return (
+                                        <div 
+                                            key={i}
+                                            className="flex-1 w-full overflow-hidden relative"
                                             style={{
-                                                height: `${TOTAL_SCAN_ROWS * 100}%`,
-                                                top: `${-i * 100}%`,
-                                                filter: "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))"
+                                                opacity: isRevealed ? 1 : 0,
+                                                transform: isRevealed ? "scale(1)" : "scale(0.98)",
+                                                transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)"
                                             }}
-                                        />
-                                    </div>
-                                ))}
+                                        >
+                                            <img 
+                                                src="/logos/oa_block.png"
+                                                alt=""
+                                                className="absolute w-full object-contain"
+                                                style={{
+                                                    height: `${TOTAL_SCAN_ROWS * 100}%`,
+                                                    top: `${-i * 100}%`,
+                                                    filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12))"
+                                                }}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
 
-                            {/* Scan line cursor */}
+                            {/* Smooth glow scan line with trail */}
                             <div 
-                                className="absolute left-8 right-8 h-0.5 rounded-full"
+                                className="absolute left-4 right-4 h-2 rounded-full pointer-events-none"
                                 style={{
-                                    top: `${8 + (scanProgress / TOTAL_SCAN_ROWS) * 84}%`,
-                                    background: "#5180C1",
-                                    boxShadow: "0 0 8px 1px rgba(81, 128, 193, 0.5)",
-                                    opacity: scanProgress < TOTAL_SCAN_ROWS ? 1 : 0,
-                                    transition: "top 0.06s linear"
+                                    top: `${4 + (scanProgress / TOTAL_SCAN_ROWS) * 92}%`,
+                                    background: "linear-gradient(180deg, rgba(81, 128, 193, 0.8), rgba(81, 128, 193, 0.2))",
+                                    boxShadow: "0 0 30px 4px rgba(81, 128, 193, 0.5), 0 -10px 40px 6px rgba(81, 128, 193, 0.2)",
+                                    opacity: scanProgress < TOTAL_SCAN_ROWS ? 0.9 : 0,
+                                    transition: "top 0.055s ease-out, opacity 0.5s ease-out"
                                 }}
                             />
                         </div>
@@ -183,14 +168,6 @@ export default function BootSequence({ onBootComplete, error }) {
                         <div className="absolute top-3 right-3 w-3 h-3 border-r-2 border-t-2 border-[#5180C1]/40" />
                         <div className="absolute bottom-3 left-3 w-3 h-3 border-l-2 border-b-2 border-[#5180C1]/40" />
                         <div className="absolute bottom-3 right-3 w-3 h-3 border-r-2 border-b-2 border-[#5180C1]/40" />
-                    </div>
-
-                    {/* Status text */}
-                    <div 
-                        className="mt-8 text-xs tracking-[0.2em]"
-                        style={{ color: "#707070", fontFamily: "'IBM Plex Mono', monospace" }}
-                    >
-                        INITIALIZING...
                     </div>
                 </div>
             )}

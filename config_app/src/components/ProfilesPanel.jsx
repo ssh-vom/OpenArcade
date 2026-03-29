@@ -204,13 +204,13 @@ export default function ProfilesPanel({
                 </button>
             </div>
 
-            <div className="relative z-[1] flex-1 min-h-0 overflow-y-auto px-4 py-4">
+            <div className="relative z-[1] flex-1 min-h-0 overflow-y-auto py-4">
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center min-h-[200px]">
                         <div className="w-5 h-5 border-2 border-[#5180C1] border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
                         {profiles.map((profile, index) => {
                             const isActive = profile.id === activeProfile?.id;
                             const plateName = plateNameById.get(profile.plate_id) || getPlateName(profile.plate_id);
@@ -230,18 +230,18 @@ export default function ProfilesPanel({
                                             : "0 1px 3px rgba(0, 0, 0, 0.1)",
                                     }}
                                 >
-                                    <div className="aspect-[4/3] bg-[#B8B8B8] flex items-center justify-center p-3 border-b border-[#A0A0A0] shrink-0">
+                                    <div className="h-32 bg-[#B8B8B8] flex items-center justify-center p-3 border-b border-[#A0A0A0] shrink-0">
                                         <PlateTopPreview
                                             plateId={profile.plate_id}
                                             alt=""
-                                            className="max-h-full max-w-full object-contain"
+                                            className="h-full w-full object-contain"
                                         />
                                     </div>
 
                                     <div className="p-3 flex flex-col gap-2 flex-1">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex items-center min-w-0 flex-1">
-                                                {isActive && <span className="w-2 h-2 rounded-full bg-[#5180C1] inline-block mr-2 shrink-0 mt-1.5" />}
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                {isActive && <span className="w-2 h-2 rounded-full bg-[#5180C1] shrink-0" />}
 
                                                 {renamingId === profile.id ? (
                                                     <input
@@ -259,7 +259,7 @@ export default function ProfilesPanel({
                                                                 setRenamingId(null);
                                                             }
                                                         }}
-                                                        className="text-sm font-semibold text-[#333333] bg-transparent border border-[#909090] rounded-md px-1.5 py-0.5 outline-none focus:border-[#5180C1] min-w-0 w-full"
+                                                        className="text-sm font-semibold text-[#333333] bg-[#D9D9D9] border border-[#A0A0A0] rounded-md px-1.5 py-0.5 outline-none focus:border-[#5180C1] min-w-0 flex-1"
                                                         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                                     />
                                                 ) : (
@@ -269,7 +269,7 @@ export default function ProfilesPanel({
                                                             setRenamingId(profile.id);
                                                             setRenameValue(profile.name || "");
                                                         }}
-                                                        className="text-sm font-semibold text-[#333333] truncate text-left"
+                                                        className="text-sm font-semibold text-[#333333] truncate text-left min-w-0"
                                                         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                                         title="Double-click to rename"
                                                     >
@@ -279,7 +279,7 @@ export default function ProfilesPanel({
 
                                                 {isActive && (
                                                     <span
-                                                        className="ml-2 shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[#5180C1]/15 text-[#5180C1]"
+                                                        className="shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[#5180C1]/15 text-[#5180C1]"
                                                         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                                     >
                                                         Active
@@ -293,10 +293,10 @@ export default function ProfilesPanel({
                                                         type="button"
                                                         onClick={() => handleSwitch(profile.id)}
                                                         disabled={isSwitching || isDeleting}
-                                                        className="text-xs font-medium text-[#5180C1] px-2 py-1 rounded-lg hover:bg-[#5180C1]/10 border border-[#5180C1]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="text-xs font-medium text-[#5180C1] px-2 py-1 rounded-lg hover:bg-[#5180C1]/10 border border-[#5180C1]/40 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                                         style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                                     >
-                                                        {isSwitching ? "Switching…" : "Switch"}
+                                                        {isSwitching ? "…" : "Switch"}
                                                     </button>
                                                 )}
 
@@ -304,7 +304,7 @@ export default function ProfilesPanel({
                                                     type="button"
                                                     onClick={() => handleDelete(profile.id)}
                                                     disabled={profiles.length <= 1 || isDeleting || isSwitching}
-                                                    className="text-[#707070] hover:text-[#EF4444] p-1 rounded-lg hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                    className="text-[#707070] hover:text-[#EF4444] p-1 rounded-lg hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
                                                     aria-label="Delete profile"
                                                 >
                                                     {isDeleting ? (
@@ -316,10 +316,11 @@ export default function ProfilesPanel({
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 flex-wrap mt-auto">
+                                        <div className="flex items-center justify-between gap-2 mt-auto pt-1">
                                             <span
-                                                className="inline-flex items-center rounded-full bg-[#B8B8B8] text-[#4A4A4A] text-[11px] px-2 py-0.5"
+                                                className="inline-flex items-center rounded-full bg-[#B8B8B8] text-[#4A4A4A] text-[11px] px-2 py-0.5 truncate max-w-[120px]"
                                                 style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                title={plateName}
                                             >
                                                 {plateName}
                                             </span>
@@ -330,7 +331,7 @@ export default function ProfilesPanel({
                                                     setEditingProfileId(profile.id);
                                                     setView("gallery");
                                                 }}
-                                                className="text-[11px] text-[#5180C1] ml-auto underline-offset-2 hover:underline"
+                                                className="text-[11px] text-[#5180C1] underline-offset-2 hover:underline shrink-0"
                                                 style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                             >
                                                 Change plate →
