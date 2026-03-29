@@ -784,7 +784,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             />
 
             <div className="flex flex-1 min-h-0">
-                {/* Left Sidebar Navigation — Refined styling */}
+                {/* Left Sidebar Navigation — Always visible */}
                 <div
                     className="w-[72px] bg-[#CCCCCC] flex flex-col items-center pt-5 gap-2 shrink-0"
                     style={{
@@ -1054,16 +1054,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                             )}
                         </div>
 
-                        {/* Right Sidebar (Inspector) */}
-                        <div className="flex flex-col w-[320px] h-full shrink-0">
-                            <div className="flex-1 overflow-auto">
-                                {viewMode === '3d' ? (
-                                    <ButtonMappingsPanel
-                                        mappings={currentMappings}
-                                        moduleName={currentModule.name}
-                                        onSelectButton={handleButtonClick}
-                                    />
-                                ) : (
+                        {/* Right Sidebar (Inspector) - Only visible in 2D view */}
+                        {viewMode === '2d' && (
+                            <div className="flex flex-col w-[320px] h-full shrink-0">
+                                <div className="flex-1 overflow-auto">
                                     <D2ConfigPanel
                                         mappings={currentMappings}
                                         moduleName={currentModule.name}
@@ -1078,25 +1072,59 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                         onToggleMappingMode={toggleMappingMode}
                                         mappingStatus={mappingStatus}
                                     />
-                                )}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </>
                 ) : activeSection === "profiles" ? (
-                    <div className="flex-1 min-w-0 min-h-0 flex flex-col">
-                        <ProfilesPanel
-                            deviceId={currentModule?.deviceId || null}
-                            configClient={activeClient}
-                            activeProfile={activeProfile}
-                            refreshKey={profilesRefreshKey}
-                            onProfileChanged={() => {
-                                triggerProfileRefresh();
-                                refreshDevices();
-                            }}
-                        />
-                    </div>
+                    viewMode === '2d' ? (
+                        <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+                            <ProfilesPanel
+                                deviceId={currentModule?.deviceId || null}
+                                configClient={activeClient}
+                                activeProfile={activeProfile}
+                                refreshKey={profilesRefreshKey}
+                                onProfileChanged={() => {
+                                    triggerProfileRefresh();
+                                    refreshDevices();
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center bg-[#D9D9D9]">
+                            <div className="text-center">
+                                <p className="text-[#707070] text-sm mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                    Profiles are managed in 2D view
+                                </p>
+                                <button
+                                    onClick={() => setViewMode('2d')}
+                                    className="px-4 py-2 bg-[#5180C1] text-white rounded-lg text-sm font-medium hover:bg-[#4070B0] transition-colors"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    Switch to 2D
+                                </button>
+                            </div>
+                        </div>
+                    )
                 ) : (
-                    <LiveInputPanel />
+                    viewMode === '2d' ? (
+                        <LiveInputPanel />
+                    ) : (
+                        <div className="flex-1 flex items-center justify-center bg-[#D9D9D9]">
+                            <div className="text-center">
+                                <p className="text-[#707070] text-sm mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                    Live Input is available in 2D view
+                                </p>
+                                <button
+                                    onClick={() => setViewMode('2d')}
+                                    className="px-4 py-2 bg-[#5180C1] text-white rounded-lg text-sm font-medium hover:bg-[#4070B0] transition-colors"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    Switch to 2D
+                                </button>
+                            </div>
+                        </div>
+                    )
                 )}
             </div>
             {/* Modal Layer */}
