@@ -99,6 +99,8 @@ install_os_packages() {
     apt-get install -y --no-install-recommends \
         avahi-daemon \
         bluez \
+        bluez-tools \
+        rfkill \
         openssh-server \
         python3 \
         python3-pip \
@@ -133,6 +135,28 @@ ensure_hostname() {
     fi
 
     hostnamectl set-hostname "$desired_hostname"
+}
+
+ensure_ble_enabled() {
+    echo "Configuring Bluetooth LE..."
+
+    rfkill unblock bluetooth 2>/dev/null || true
+
+    systemctl enable bluetooth 2>/dev/null || true
+    systemctl start bluetooth 2>/dev/null || true
+
+    btmgmt power off 2>/dev/null || true
+    btmgmt le on 2>/dev/null || true
+    btmgmt connectable on 2>/dev/null || true
+    btmgmt discov on 2>/dev/null || true
+    btmgmt power on 2>/dev/null || true
+
+    if btmgmt info 2>/dev/null | grep -q "Powered: yes"; then
+        echo "Bluetooth LE configured successfully"
+        btmgmt info 2>/dev/null | grep -E "(Powered|LE|Discoverable|Connectable)" || true
+    else
+        echo "WARNING: Bluetooth adapter may not be ready"
+    fi
 }
 
 ensure_base_services() {
@@ -239,6 +263,12 @@ Log commands:
   journalctl -u openarcade-subscriber.service -f
   journalctl -u openarcade-configd.service -f
   journalctl -u openarcade-display.service -f
+
+Bluetooth debug commands:
+  rfkill list
+  btmgmt info
+  btmgmt find
+  /opt/openarcade/app/packaging/rpi/bluetooth-setup.sh
 EOF
 
     if [[ "$REBOOT_REQUIRED" -eq 1 ]]; then
@@ -259,7 +289,7 @@ main() {
     setup_state_dir
     install_env_file
     ensure_hostname
-    install_systemd_units
+    ensure_ble_enabled
     ensure_base_services
     start_services_if_ready
     print_summary
