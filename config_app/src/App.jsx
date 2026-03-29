@@ -1,37 +1,61 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { OpenArcade3DView } from "./components/OpenArcade3DView"
-import DeviceConnectionScreen from "./components/DeviceConnectionScreen"
+import BootSequence from "./components/BootSequence"
 import SerialConfigClient from "./services/SerialConfigClient";
+import MockConfigClient from "./services/MockConfigClient.js";
 import './App.css'
 
 function App() {
-    const [connected, setConnected] = useState(false);
+    const [bootPhase, setBootPhase] = useState("boot"); // boot -> connecting -> connected
     const [configClient, setConfigClient] = useState(null);
-    const [connectionError, setConnectionError] = useState(null);
+    const [bootError, setBootError] = useState(null);
     const clientRef = useRef(null);
 
-    const handleConnect = useCallback(async () => {
-        setConnectionError(null);
-        const client = new SerialConfigClient();
+    const handleBootComplete = useCallback(async (selection) => {
+        setBootPhase("connecting");
+        setBootError(null);
 
-        try {
+        if (selection.type === "demo") {
+            // Use mock client for demo mode (no hardware required)
+            const client = new MockConfigClient();
             await client.connect();
             clientRef.current = client;
             setConfigClient(client);
-            setConnected(true);
-        } catch (err) {
-            // Detect if port is already in use (another tab has it open)
-            const errorMessage = err?.message || "";
-            const isPortInUse = errorMessage.includes("already open") ||
-                errorMessage.includes("in use") ||
-                errorMessage.includes("Access denied") ||
-                err?.name === "InvalidStateError";
+            setBootPhase("connected");
+            return;
+        }
 
-            if (isPortInUse) {
-                throw new Error("Serial port already in use. Please close any other configurator tabs and try again.");
+        if (selection.type === "serial") {
+            const client = new SerialConfigClient();
+
+            try {
+                await client.connect();
+                clientRef.current = client;
+                setConfigClient(client);
+                setBootPhase("connected");
+            } catch (err) {
+                // Detect if port is already in use (another tab has it open)
+                const errorMessage = err?.message || "";
+                const isPortInUse = 
+                    err?.name === "PortInUseError" ||
+                    errorMessage.includes("already open") ||
+                    errorMessage.includes("in use") ||
+                    errorMessage.includes("Access denied") ||
+                    errorMessage.includes("Failed to open serial port") ||
+                    err?.name === "InvalidStateError";
+
+                if (isPortInUse) {
+                    setBootError("Device already in use. Close other OpenArcade tabs and try again.");
+                } else if (err?.name === "UserCancelledError" || errorMessage.includes("No device selected")) {
+                    // User cancelled the browser picker, go back to menu
+                    setBootPhase("boot");
+                    return;
+                } else {
+                    setBootError(err?.message || "Failed to connect to device");
+                }
+                
+                setBootPhase("boot");
             }
-
-            throw err;
         }
     }, []);
 
@@ -45,7 +69,8 @@ function App() {
             clientRef.current = null;
         }
         setConfigClient(null);
-        setConnected(false);
+        setBootPhase("boot");
+        setBootError(null);
     }, []);
 
     // Cleanup on component unmount
@@ -61,35 +86,22 @@ function App() {
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (clientRef.current) {
-                // Note: We can't await here, but we can attempt synchronous cleanup
-                // Modern browsers may not fully execute async beforeunload handlers
                 clientRef.current.disconnect().catch(() => { });
             }
         };
 
         window.addEventListener("beforeunload", handleBeforeUnload);
-
-        // Also handle page visibility changes (user switches tabs)
-        const handleVisibilityChange = () => {
-            if (document.hidden && clientRef.current) {
-                // Optional: pause polling or reduce activity when tab is hidden
-                // but keep connection alive
-            }
-        };
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-
+        
         return () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
     }, []);
 
-    if (!connected) {
+    if (bootPhase === "boot" || bootPhase === "connecting") {
         return (
-            <DeviceConnectionScreen
-                onConnect={handleConnect}
-                connectionError={connectionError}
-                setConnectionError={setConnectionError}
+            <BootSequence 
+                onBootComplete={handleBootComplete}
+                error={bootPhase === "connecting" ? bootError : null}
             />
         );
     }
