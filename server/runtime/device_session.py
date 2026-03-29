@@ -19,7 +19,7 @@ class DeviceSession:
         device: Any,
         stop_event: asyncio.Event,
         on_state_update: StateUpdateCallback,
-        connect_timeout: float = 10.0,
+        connect_timeout: float = 30.0,
     ) -> None:
         self.device = device
         self.address = str(device.address)
@@ -43,7 +43,10 @@ class DeviceSession:
             timeout=self._connect_timeout,
         )
         await self._client.connect()
-        await self._client.start_notify(CHAR_UUID, self._handle_notification)
+        await asyncio.wait_for(
+            self._client.start_notify(CHAR_UUID, self._handle_notification),
+            timeout=10.0,
+        )
 
     async def wait_closed(self) -> None:
         stop_task = asyncio.create_task(self._stop_event.wait())

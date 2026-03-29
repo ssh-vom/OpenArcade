@@ -108,3 +108,4 @@ class SessionSupervisor:
 
             self._on_session_stopped(address)
             self._session_tasks.pop(address, None)
+            self._known_devices.pop(address, None)
