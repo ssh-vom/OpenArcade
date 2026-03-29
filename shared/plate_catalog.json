@@ -21,6 +21,15 @@
       "accent_color": "#2563EB"
     },
     {
+      "id": "tp1-a-180-joystick",
+      "name": "TP1 A Joystick (180°)",
+      "description": "Joystick plate rotated 180 degrees using the TP1_A_180_JOYSTICK assets",
+      "top_plate_preview": "/plates/TP1_A_180_JOYSTICK.png",
+      "plate_model": "/TP1_A_180_JOYSTICK.glb",
+      "controller_model": "/TP1_A_180_JOYSTICK.glb",
+      "accent_color": "#2563EB"
+    },
+    {
       "id": "tp1-a-0-button",
       "name": "TP1 A Button",
       "description": "Button plate using the TP1_A_0_BUTTON assets",
