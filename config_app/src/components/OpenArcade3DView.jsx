@@ -177,6 +177,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     const [activeProfile, setActiveProfile] = useState(null);
     const [profilesRefreshKey, setProfilesRefreshKey] = useState(0);
     const [showOnlyConnected, setShowOnlyConnected] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const triggerProfileRefresh = useCallback(() => setProfilesRefreshKey((k) => k + 1), []);
     useEffect(() => {
@@ -375,6 +376,18 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         const devices = await activeClient.listDevices();
         applyDeviceConfigs(devices);
     }, [activeClient, applyDeviceConfigs]);
+
+    const handleRefreshDevices = useCallback(async () => {
+        if (isRefreshing) return;
+        setIsRefreshing(true);
+        try {
+            await refreshDevices();
+        } catch (error) {
+            console.warn("Failed to refresh devices:", error);
+        } finally {
+            setIsRefreshing(false);
+        }
+    }, [isRefreshing, refreshDevices]);
 
     const handleRenameDevice = useCallback(async (deviceId, name) => {
         if (!deviceId || !name?.trim()) return;
@@ -766,6 +779,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 showOnlyConnected={showOnlyConnected}
                 onToggleConnectedFilter={() => setShowOnlyConnected((v) => !v)}
                 onRenameDevice={handleRenameDevice}
+                onRefreshDevices={handleRefreshDevices}
+                isRefreshing={isRefreshing}
             />
 
             <div className="flex flex-1 min-h-0">
