@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import multiprocessing
+import os
 import queue
 import sys
 import time
@@ -10,13 +11,26 @@ import time
 logger = logging.getLogger("OpenArcade")
 
 
+def set_cpu_affinity(core_id: int) -> None:
+    """Pin this process to a specific CPU core."""
+    try:
+        os.sched_setaffinity(0, {core_id})
+        logger.info(f"Pinned to CPU core {core_id}")
+    except Exception as exc:
+        logger.warning(f"Could not set CPU affinity: {exc}")
+
+
 def hid_writer_process(
     hid_queue: multiprocessing.Queue,
     stop_event: multiprocessing.Event,
+    cpu_core: int = 1,
 ):
-    """Writes aggregated reports to the USB HID gadget interface."""
-
-    logger.info("HID Writer Process Started")
+    """HID output process pinned to a specific CPU core."""
+    
+    # Pin to specific CPU core immediately
+    set_cpu_affinity(cpu_core)
+    
+    logger.info("HID Writer Process Started on core %d", cpu_core)
 
     hid_device_path = "/dev/hidg0"
     use_mock = False

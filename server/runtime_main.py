@@ -24,9 +24,23 @@ def main() -> int:
         "--config",
         help="Path to the persistent config store JSON file",
     )
+    parser.add_argument(
+        "--aggregator-core",
+        type=int,
+        default=0,
+        help="CPU core for aggregator process (default: 0)",
+    )
+    parser.add_argument(
+        "--writer-core",
+        type=int,
+        default=1,
+        help="CPU core for HID writer process (default: 1)",
+    )
     args = parser.parse_args()
 
     logger.info("Initializing OpenArcade Subscriber...")
+    logger.info("Aggregator on CPU core %d, HID writer on CPU core %d", 
+                args.aggregator_core, args.writer_core)
 
     hid_queue = multiprocessing.Queue()
     stop_event = multiprocessing.Event()
@@ -42,12 +56,12 @@ def main() -> int:
 
     aggregator = multiprocessing.Process(
         target=aggregator_process,
-        args=(hid_queue, stop_event, args.config),
+        args=(hid_queue, stop_event, args.config, args.aggregator_core),
         name="Aggregator",
     )
     writer = multiprocessing.Process(
         target=hid_writer_process,
-        args=(hid_queue, stop_event),
+        args=(hid_queue, stop_event, args.writer_core),
         name="HIDWriter",
     )
 
