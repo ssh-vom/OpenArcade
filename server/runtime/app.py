@@ -8,7 +8,6 @@ from typing import Any, Protocol
 from device_config_store import DeviceConfigStore
 
 from .control_server import RuntimeControlServer
-from .discovery import DiscoveryService
 from .report_builder import build_mapping_cache, build_keyboard_report
 from .sessions import SessionSupervisor
 from .state_reducer import StateReducer
@@ -33,15 +32,9 @@ class RuntimeApplication:
         self._publish_scheduled = False
         self._live_states: dict[str, dict[str, Any]] = {}
         self._state_sequence = 0
-        self._discovered_devices: asyncio.Queue[Any] = asyncio.Queue()
-        self._discovery = DiscoveryService(self._discovered_devices)
         self._sessions = SessionSupervisor(
-            discovered_devices=self._discovered_devices,
-            stop_event=self._shutdown_event,
             on_state_update=self._handle_state_update,
             on_session_stopped=self._handle_session_stopped,
-            pause_discovery=self._discovery.pause,
-            resume_discovery=self._discovery.resume,
         )
         self._control_server = RuntimeControlServer(
             on_config_updated=self._reload_config,
@@ -55,11 +48,7 @@ class RuntimeApplication:
         self._report_sink.publish(self._state_reducer.build_report())
 
         await self._control_server.start()
-        await self._discovery.start()
-        sessions_task = asyncio.create_task(
-            self._sessions.run(),
-            name="session-supervisor",
-        )
+        self._sessions.start(self._loop)
 
         try:
             await shutdown_signal.wait()
@@ -67,8 +56,8 @@ class RuntimeApplication:
             logger.info("Runtime stopping")
             self._shutdown_event.set()
             self._report_sink.publish(build_keyboard_report([]))
-            await self._discovery.stop()
-            await sessions_task
+            self._sessions.stop()
+            await self._sessions.wait_closed()
             await self._control_server.stop()
             logger.info("Runtime stopped")
 

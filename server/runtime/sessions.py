@@ -2,123 +2,224 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from typing import Any
 
 from constants import SCANNER_DELAY
 
 from .device_session import DeviceSession, StateUpdateCallback
+from .discovery import DiscoveryService
 
 
 logger = logging.getLogger("OpenArcade")
 
 SessionStoppedCallback = Callable[[str], None]
-DiscoveryControlCallback = Callable[[], Awaitable[None]]
+
+
+class DeviceSessionWorker(threading.Thread):
+    def __init__(
+        self,
+        device: Any,
+        shutdown_event: threading.Event,
+        connect_gate: threading.Semaphore,
+        on_state_update: StateUpdateCallback,
+        on_connected: Callable[[str], None],
+        on_stopped: Callable[[str, bool], None],
+    ) -> None:
+        address = str(getattr(device, "address", device))
+        super().__init__(name=f"device-session:{address}", daemon=True)
+        self.device = device
+        self.address = address
+        self._shutdown_event = shutdown_event
+        self._connect_gate = connect_gate
+        self._on_state_update = on_state_update
+        self._on_connected = on_connected
+        self._on_stopped = on_stopped
+        self._connected = False
+
+    def run(self) -> None:
+        try:
+            asyncio.run(self._run())
+        except Exception:
+            logger.exception("Session worker crashed for %s", self.address)
+
+    async def _run(self) -> None:
+        session_stop_event = asyncio.Event()
+        session = DeviceSession(
+            device=self.address,
+            stop_event=session_stop_event,
+            on_state_update=self._on_state_update,
+        )
+
+        async def bridge_shutdown() -> None:
+            await asyncio.to_thread(self._shutdown_event.wait)
+            session_stop_event.set()
+
+        shutdown_bridge_task = asyncio.create_task(bridge_shutdown())
+        connect_gate_acquired = False
+
+        try:
+            try:
+                await asyncio.to_thread(self._connect_gate.acquire)
+                connect_gate_acquired = True
+                logger.info("Connecting to %s", self.address)
+                await session.connect()
+            except Exception as exc:
+                logger.error(
+                    "Device session error for %s: %s. Retrying after %ss",
+                    self.address,
+                    exc,
+                    SCANNER_DELAY,
+                )
+                return
+            finally:
+                if connect_gate_acquired:
+                    self._connect_gate.release()
+
+            self._connected = True
+            self._on_connected(self.address)
+            logger.info("Connected to %s", self.address)
+            await session.wait_closed()
+        finally:
+            shutdown_bridge_task.cancel()
+            await asyncio.gather(shutdown_bridge_task, return_exceptions=True)
+            try:
+                await session.disconnect()
+            except Exception as exc:
+                logger.warning("Disconnect cleanup failed for %s: %s", self.address, exc)
+            self._on_stopped(self.address, self._connected)
 
 
 class SessionSupervisor:
     def __init__(
         self,
-        discovered_devices: asyncio.Queue[Any],
-        stop_event: asyncio.Event,
         on_state_update: StateUpdateCallback,
         on_session_stopped: SessionStoppedCallback,
-        pause_discovery: DiscoveryControlCallback,
-        resume_discovery: DiscoveryControlCallback,
     ) -> None:
-        self._discovered_devices = discovered_devices
-        self._stop_event = stop_event
         self._on_state_update = on_state_update
         self._on_session_stopped = on_session_stopped
-        self._pause_discovery = pause_discovery
-        self._resume_discovery = resume_discovery
+        self._app_loop: asyncio.AbstractEventLoop | None = None
+        self._shutdown_event = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._state_lock = threading.Lock()
         self._known_devices: dict[str, Any] = {}
-        self._session_tasks: dict[str, asyncio.Task[None]] = {}
+        self._session_workers: dict[str, DeviceSessionWorker] = {}
         self._connected_addresses: set[str] = set()
         self._retry_after: dict[str, float] = {}
-        self._connect_lock = asyncio.Lock()
+        self._connect_gate = threading.Semaphore(1)
 
     @property
     def connected_addresses(self) -> set[str]:
-        return set(self._connected_addresses)
+        with self._state_lock:
+            return set(self._connected_addresses)
 
-    async def run(self) -> None:
-        while not self._stop_event.is_set():
-            try:
-                device = await asyncio.wait_for(
-                    self._discovered_devices.get(), timeout=0.5
-                )
-            except TimeoutError:
-                continue
-            self._schedule_session(device)
-
-        await asyncio.gather(*self._session_tasks.values(), return_exceptions=True)
-
-    def _schedule_session(self, device: Any) -> None:
-        address = str(device.address)
-        self._known_devices[address] = device
-
-        if address in self._session_tasks:
-            return
-        if time.monotonic() < self._retry_after.get(address, 0.0):
+    def start(self, app_loop: asyncio.AbstractEventLoop) -> None:
+        if self._thread is not None:
             return
 
-        logger.info("Discovered target device %s", address)
-        task = asyncio.create_task(
-            self._run_session(address),
-            name=f"device-session:{address}",
+        self._app_loop = app_loop
+        self._shutdown_event.clear()
+        self._thread = threading.Thread(
+            target=self._run_control_plane_thread,
+            name="BLEControlPlane",
+            daemon=True,
         )
-        self._session_tasks[address] = task
+        self._thread.start()
 
-    async def _run_session(self, address: str) -> None:
-        device = self._known_devices.get(address)
-        if device is None:
-            self._session_tasks.pop(address, None)
+    def stop(self) -> None:
+        self._shutdown_event.set()
+
+    async def wait_closed(self) -> None:
+        thread = self._thread
+        if thread is None:
             return
 
-        session = DeviceSession(
-            device=device,
-            stop_event=self._stop_event,
-            on_state_update=self._on_state_update,
-        )
-        connected = False
+        await asyncio.to_thread(thread.join, 5.0)
+        self._thread = None
+
+    def _run_control_plane_thread(self) -> None:
+        try:
+            asyncio.run(self._control_plane_main())
+        except Exception:
+            logger.exception("BLE control plane crashed")
+
+    async def _control_plane_main(self) -> None:
+        discovered_devices: asyncio.Queue[Any] = asyncio.Queue()
+        discovery = DiscoveryService(discovered_devices)
 
         try:
-            async with self._connect_lock:
-                await self._pause_discovery()
+            await discovery.start()
+            logger.info("BLE control plane started")
+
+            while not self._shutdown_event.is_set():
                 try:
-                    logger.info("Connecting to %s", address)
-                    await session.connect()
-                finally:
-                    if not self._stop_event.is_set():
-                        try:
-                            await self._resume_discovery()
-                        except Exception as exc:
-                            logger.warning("Failed to resume BLE scanner: %s", exc)
-            connected = True
-            self._connected_addresses.add(address)
-            logger.info("Connected to %s", address)
-            await session.wait_closed()
-        except Exception as exc:
-            logger.error(
-                "Device session error for %s: %s. Retrying after %ss",
-                address,
-                exc,
-                SCANNER_DELAY,
-            )
+                    device = await asyncio.wait_for(discovered_devices.get(), timeout=0.5)
+                except TimeoutError:
+                    continue
+                self._schedule_session(device)
         finally:
+            self._shutdown_event.set()
+            await discovery.stop()
+            workers = self._current_workers()
+            for worker in workers:
+                worker.join(timeout=5.0)
+            logger.info("BLE control plane stopped")
+
+    def _schedule_session(self, device: Any) -> None:
+        address = str(getattr(device, "address", device))
+        now = time.monotonic()
+
+        with self._state_lock:
+            self._known_devices[address] = device
+
+            if address in self._session_workers:
+                return
+            if now < self._retry_after.get(address, 0.0):
+                return
+
+            worker = DeviceSessionWorker(
+                device=address,
+                shutdown_event=self._shutdown_event,
+                connect_gate=self._connect_gate,
+                on_state_update=self._forward_state_update,
+                on_connected=self._handle_worker_connected,
+                on_stopped=self._handle_worker_stopped,
+            )
+            self._session_workers[address] = worker
+
+        logger.info("Discovered target device %s", address)
+        worker.start()
+
+    def _forward_state_update(self, address: str, state: int) -> None:
+        loop = self._app_loop
+        if loop is None or loop.is_closed():
+            return
+
+        loop.call_soon_threadsafe(self._on_state_update, address, state)
+
+    def _handle_worker_connected(self, address: str) -> None:
+        with self._state_lock:
+            self._connected_addresses.add(address)
+
+    def _handle_worker_stopped(self, address: str, connected: bool) -> None:
+        with self._state_lock:
             self._connected_addresses.discard(address)
-            if not self._stop_event.is_set():
-                self._retry_after[address] = time.monotonic() + SCANNER_DELAY
-                if connected:
-                    logger.warning("Disconnected from %s", address)
-
-            try:
-                await session.disconnect()
-            except Exception as exc:
-                logger.warning("Disconnect cleanup failed for %s: %s", address, exc)
-
-            self._on_session_stopped(address)
-            self._session_tasks.pop(address, None)
+            self._session_workers.pop(address, None)
             self._known_devices.pop(address, None)
+            if not self._shutdown_event.is_set():
+                self._retry_after[address] = time.monotonic() + SCANNER_DELAY
+
+        if connected and not self._shutdown_event.is_set():
+            logger.warning("Disconnected from %s", address)
+
+        loop = self._app_loop
+        if loop is None or loop.is_closed():
+            return
+
+        loop.call_soon_threadsafe(self._on_session_stopped, address)
+
+    def _current_workers(self) -> list[DeviceSessionWorker]:
+        with self._state_lock:
+            return list(self._session_workers.values())

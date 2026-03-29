@@ -22,7 +22,7 @@ class DeviceSession:
         connect_timeout: float = 30.0,
     ) -> None:
         self.device = device
-        self.address = str(device.address)
+        self.address = str(getattr(device, "address", device))
         self._stop_event = stop_event
         self._on_state_update = on_state_update
         self._connect_timeout = connect_timeout
