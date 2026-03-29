@@ -212,15 +212,11 @@ export default function ProfilesPanel({
                                     style={{ "--stagger": index }}
                                     onClick={() => !isActive && handleSwitch(profile.id)}
                                 >
-                                    <div className="relative h-36 bg-[#C5C5C5] rounded-xl flex items-center justify-center p-4 shrink-0 transition-all duration-200 group-hover:bg-[#BFBFBF] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                                    <div className={`preview-thumb ${isActive ? 'preview-thumb-selected' : ''}`}>
                                         <PlateTopPreview
                                             plateId={profile.plate_id}
                                             alt=""
-                                            className="h-full w-full object-contain opacity-90"
                                         />
-                                        {isActive && (
-                                            <div className="absolute inset-0 rounded-xl ring-2 ring-[#5180C1] ring-inset pointer-events-none" />
-                                        )}
                                     </div>
 
                                     <div className="pt-2.5 flex flex-col gap-1">
@@ -260,25 +256,16 @@ export default function ProfilesPanel({
                                             )}
 
                                             {isActive && (
-                                                <span
-                                                    className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#5180C1] text-white"
-                                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                                >
-                                                    Active
-                                                </span>
+                                                <span className="badge-active">Active</span>
                                             )}
                                         </div>
 
                                         <div className="flex items-center justify-between gap-2">
-                                            <span
-                                                className="text-[11px] text-[#707070] truncate"
-                                                style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                                title={plateName}
-                                            >
+                                            <span className="meta-text truncate" title={plateName}>
                                                 {plateName}
                                             </span>
 
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="action-group">
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
@@ -286,12 +273,11 @@ export default function ProfilesPanel({
                                                         setEditingProfileId(profile.id);
                                                         setView("gallery");
                                                     }}
-                                                    className="text-[11px] text-[#5180C1] hover:underline"
-                                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                    className="action-link"
                                                 >
                                                     Change
                                                 </button>
-                                                <span className="text-[#A0A0A0]">·</span>
+                                                <span className="action-group-separator">·</span>
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
@@ -299,8 +285,7 @@ export default function ProfilesPanel({
                                                         handleDelete(profile.id);
                                                     }}
                                                     disabled={profiles.length <= 1 || isDeleting}
-                                                    className="text-[11px] text-[#707070] hover:text-[#EF4444] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                    className="action-link-danger disabled:opacity-40 disabled:cursor-not-allowed"
                                                     aria-label="Delete"
                                                 >
                                                     {isDeleting ? "…" : "Delete"}

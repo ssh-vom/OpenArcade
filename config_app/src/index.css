@@ -497,6 +497,119 @@ select:focus-visible {
   color: var(--color-text-muted);
 }
 
+/* =============================================================================
+   New Shared Utilities (Added after component refactoring)
+   ============================================================================= */
+
+/* Preview thumbnail — plate/profile image containers */
+.preview-thumb {
+  position: relative;
+  height: 144px; /* h-36 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px; /* p-4 */
+  border-radius: 12px; /* rounded-xl */
+  background: #C5C5C5;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: background 0.2s ease;
+}
+
+.preview-thumb:hover {
+  background: #BFBFBF;
+}
+
+.preview-thumb img,
+.preview-thumb svg {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+/* Selected state for preview thumb */
+.preview-thumb-selected {
+  background: #C5C5C5;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+
+.preview-thumb-selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+/* Action text links — Change, Delete, etc. */
+.action-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: text-decoration 0.15s;
+}
+
+.action-link:hover {
+  text-decoration: underline;
+}
+
+.action-link-danger {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.action-link-danger:hover {
+  color: var(--color-error);
+}
+
+/* Soft shadow utility */
+.soft-shadow {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Active badge — pill style */
+.badge-active {
+  display: inline-flex;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Meta text — plate names, secondary info */
+.meta-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+/* Action group — container for hover-reveal actions */
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.group:hover .action-group {
+  opacity: 1;
+}
+
+.action-group-separator {
+  color: var(--color-border);
+}
+
 /* Section label */
 .section-label {
   font-family: var(--font-mono);

@@ -11,14 +11,13 @@ function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) 
             className="relative text-left plate-card-animate group"
             style={{ "--stagger": staggerIndex, opacity: isLoading ? 0.9 : 1, cursor: isLoading ? "wait" : "pointer" }}
         >
-            <div className={`relative h-36 rounded-xl flex items-center justify-center p-4 transition-all duration-200 ${isSelected ? "bg-[#C5C5C5]" : "bg-[#C8C8C8] group-hover:bg-[#C2C2C2]"}`} style={{ boxShadow: isSelected ? `0 2px 12px color-mix(in srgb, ${plate.accent_color} 25%, transparent)` : "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <div className={`preview-thumb ${isSelected ? '' : 'bg-[#C8C8C8] hover:bg-[#C2C2C2]'}`} style={{ boxShadow: isSelected ? `0 2px 12px color-mix(in srgb, ${plate.accent_color} 25%, transparent)` : undefined }}>
                 <PlateTopPreview
                     plateId={plate.id}
                     alt=""
-                    className="h-full w-full object-contain opacity-90"
                 />
                 {isSelected && (
-                    <div className="absolute inset-0 rounded-xl ring-2 ring-inset pointer-events-none" style={{ ringColor: plate.accent_color }} />
+                    <div className="absolute inset-0 rounded-xl ring-2 ring-inset pointer-events-none" style={{ '--tw-ring-color': plate.accent_color }} />
                 )}
             </div>
 
@@ -32,12 +31,7 @@ function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) 
                         {plate.name}
                     </span>
                     {isSelected && (
-                        <span
-                            className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full text-white"
-                            style={{ fontFamily: "'IBM Plex Mono', monospace", backgroundColor: plate.accent_color }}
-                        >
-                            Active
-                        </span>
+                        <span className="badge-active" style={{ backgroundColor: plate.accent_color }}>Active</span>
                     )}
                 </div>
                 <span
