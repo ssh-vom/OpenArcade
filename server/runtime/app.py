@@ -57,6 +57,8 @@ class RuntimeApplication:
             stop_event=self._shutdown_event,
             on_state_update=self._handle_state_update,
             on_session_stopped=self._handle_session_stopped,
+            pause_discovery=self._discovery.pause,
+            resume_discovery=self._discovery.resume,
         )
         self._control_server = RuntimeControlServer(
             on_config_updated=self._reload_config,

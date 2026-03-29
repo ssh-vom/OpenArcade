@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from constants import SCANNER_DELAY
@@ -14,6 +14,7 @@ from .device_session import DeviceSession, StateUpdateCallback
 logger = logging.getLogger("OpenArcade")
 
 SessionStoppedCallback = Callable[[str], None]
+DiscoveryControlCallback = Callable[[], Awaitable[None]]
 
 
 class SessionSupervisor:
@@ -23,11 +24,15 @@ class SessionSupervisor:
         stop_event: asyncio.Event,
         on_state_update: StateUpdateCallback,
         on_session_stopped: SessionStoppedCallback,
+        pause_discovery: DiscoveryControlCallback,
+        resume_discovery: DiscoveryControlCallback,
     ) -> None:
         self._discovered_devices = discovered_devices
         self._stop_event = stop_event
         self._on_state_update = on_state_update
         self._on_session_stopped = on_session_stopped
+        self._pause_discovery = pause_discovery
+        self._resume_discovery = resume_discovery
         self._known_devices: dict[str, Any] = {}
         self._session_tasks: dict[str, asyncio.Task[None]] = {}
         self._connected_addresses: set[str] = set()
@@ -81,8 +86,16 @@ class SessionSupervisor:
 
         try:
             async with self._connect_lock:
-                logger.info("Connecting to %s", address)
-                await session.connect()
+                await self._pause_discovery()
+                try:
+                    logger.info("Connecting to %s", address)
+                    await session.connect()
+                finally:
+                    if not self._stop_event.is_set():
+                        try:
+                            await self._resume_discovery()
+                        except Exception as exc:
+                            logger.warning("Failed to resume BLE scanner: %s", exc)
             connected = True
             self._connected_addresses.add(address)
             logger.info("Connected to %s", address)
