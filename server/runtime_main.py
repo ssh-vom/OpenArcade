@@ -3,11 +3,10 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-import multiprocessing
 import signal
-from multiprocessing.queues import Queue
+import threading
 
-from hid_output_worker import hid_output_worker_process
+from hid_output_worker import HIDOutputWorker, LatestReportMailbox
 from runtime import RuntimeApplication
 
 
@@ -20,7 +19,7 @@ logger = logging.getLogger("OpenArcade")
 
 
 async def run_runtime(
-    report_queue: Queue,
+    report_mailbox: LatestReportMailbox,
     config_path: str | None = None,
 ) -> None:
     shutdown_signal = asyncio.Event()
@@ -32,7 +31,7 @@ async def run_runtime(
         except NotImplementedError:
             pass
 
-    app = RuntimeApplication(report_queue=report_queue, config_path=config_path)
+    app = RuntimeApplication(report_sink=report_mailbox, config_path=config_path)
     await app.run(shutdown_signal)
 
 
@@ -46,19 +45,15 @@ def main() -> int:
 
     logger.info("Initializing OpenArcade runtime")
 
-    report_queue: Queue = multiprocessing.Queue(maxsize=1)
-    worker_stop_event = multiprocessing.Event()
-    worker = multiprocessing.Process(
-        target=hid_output_worker_process,
-        args=(report_queue, worker_stop_event),
-        name="HIDOutputWorker",
-    )
+    report_mailbox = LatestReportMailbox()
+    worker_stop_event = threading.Event()
+    worker = HIDOutputWorker(report_mailbox, worker_stop_event)
     worker.start()
 
     return_code = 0
 
     try:
-        asyncio.run(run_runtime(report_queue=report_queue, config_path=args.config))
+        asyncio.run(run_runtime(report_mailbox=report_mailbox, config_path=args.config))
     except KeyboardInterrupt:
         logger.info("Shutdown signal received")
     except Exception:
@@ -68,12 +63,10 @@ def main() -> int:
         return_code = 0
     finally:
         worker_stop_event.set()
+        report_mailbox.close()
         worker.join(timeout=5.0)
         if worker.is_alive():
-            logger.warning("HID output worker did not exit cleanly, terminating")
-            worker.terminate()
-        report_queue.close()
-        report_queue.join_thread()
+            logger.warning("HID output worker did not exit cleanly")
 
     logger.info("System shutdown complete")
     return return_code

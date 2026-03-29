@@ -29,6 +29,7 @@ class DeviceSession:
         self._client: BleakClient | None = None
         self._disconnect_event = asyncio.Event()
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._last_state: int | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -37,6 +38,7 @@ class DeviceSession:
     async def connect(self) -> None:
         self._loop = asyncio.get_running_loop()
         self._disconnect_event.clear()
+        self._last_state = None
         self._client = BleakClient(
             self.device,
             disconnected_callback=self._handle_disconnect,
@@ -72,7 +74,12 @@ class DeviceSession:
             self._loop.call_soon_threadsafe(self._disconnect_event.set)
 
     def _handle_notification(self, _sender: Any, data: bytearray) -> None:
-        if len(data) < 4:
+        if len(data) < 4 or self._loop is None:
             return
+
         state = struct.unpack("<I", data[:4])[0]
-        self._on_state_update(self.address, state)
+        if state == self._last_state:
+            return
+
+        self._last_state = state
+        self._loop.call_soon_threadsafe(self._on_state_update, self.address, state)
