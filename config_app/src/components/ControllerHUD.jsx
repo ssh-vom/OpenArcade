@@ -81,40 +81,16 @@ export default function ControllerHUD({
             </div>
 
             {/* Center: Module Selector */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
-                <div className="flex flex-col items-start gap-1">
+            <div className="absolute left-1/2 -translate-x-1/2">
+                <div className="flex flex-col items-start gap-1.5">
                     <span
                         className="text-[10px] font-semibold text-[#707070] uppercase tracking-[0.12em]"
                         style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                     >
                         Active Module
                     </span>
-                    <select
-                        value={String(currentModule)}
-                        onChange={(e) => onModuleChange(Number(e.target.value))}
-                        className="min-w-[240px] px-4 py-2 bg-[#CCCCCC] hover:bg-[#C0C0C0] border border-[#A0A0A0] rounded-xl text-[#333333] text-sm outline-none appearance-none transition-all duration-150 cursor-pointer"
-                        style={{
-                            fontFamily: "'DM Sans', sans-serif",
-                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23707070' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'right 12px center',
-                            paddingRight: '40px'
-                        }}
-                    >
-                        {dropdownModules.map((module) => {
-                            const shortId = module.deviceId ? module.deviceId.slice(-8) : "";
-                            const dot = module.connected !== false ? "● " : "○ ";
-                            const status = module.connected !== false ? "online" : "offline";
-                            const label = dot + module.name + (shortId ? "  " + shortId : "") + "  " + status;
-                            return (
-                                <option key={module.id} value={module.originalIndex}>
-                                    {label}
-                                </option>
-                            );
-                        })}
-                    </select>
                     {editingName ? (
-                        <div className="flex items-center gap-1.5 mt-1">
+                        <div className="flex items-center gap-2">
                             <input
                                 autoFocus
                                 value={nameValue}
@@ -123,30 +99,68 @@ export default function ControllerHUD({
                                     if (e.key === "Enter") { handleConfirmRename(); }
                                     if (e.key === "Escape") { setEditingName(false); }
                                 }}
-                                className="text-xs px-2 py-1 rounded-lg border border-[#5180C1]/40 outline-none focus:border-[#5180C1] bg-[#D9D9D9] text-[#333333]"
-                                style={{ fontFamily: "'DM Sans', sans-serif", minWidth: 160 }}
+                                className="px-3 py-2 rounded-xl border border-[#5180C1] outline-none focus:ring-2 focus:ring-[#5180C1]/20 bg-[#D9D9D9] text-[#333333] text-sm"
+                                style={{ fontFamily: "'DM Sans', sans-serif", width: 200 }}
                                 placeholder="Device nickname..."
                                 maxLength={32}
                             />
-                            <button onClick={handleConfirmRename} className="text-xs px-2 py-1 rounded-lg bg-[#5180C1] text-white font-medium hover:bg-[#4070B0] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                                Save
+                            <button 
+                                onClick={handleConfirmRename} 
+                                className="p-2 rounded-xl bg-[#5180C1] text-white hover:bg-[#4070B0] transition-colors"
+                                title="Save"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
                             </button>
-                            <button onClick={() => setEditingName(false)} className="text-xs px-2 py-1 rounded-lg text-[#555555] hover:text-[#333333] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                                Cancel
+                            <button 
+                                onClick={() => setEditingName(false)} 
+                                className="p-2 rounded-xl text-[#707070] hover:text-[#333333] hover:bg-[#CCCCCC] transition-colors"
+                                title="Cancel"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
                             </button>
                         </div>
                     ) : (
-                        <button
-                            onClick={() => { setNameValue(activeModule?.name || ""); setEditingName(true); }}
-                            className="flex items-center gap-1 mt-1 text-[10px] text-[#707070] hover:text-[#5180C1] transition-colors group"
-                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                        >
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                            Rename
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={String(currentModule)}
+                                onChange={(e) => onModuleChange(Number(e.target.value))}
+                                className="min-w-[240px] px-4 py-2 bg-[#CCCCCC] hover:bg-[#C0C0C0] border border-[#A0A0A0] rounded-xl text-[#333333] text-sm outline-none appearance-none transition-all duration-150 cursor-pointer"
+                                style={{
+                                    fontFamily: "'DM Sans', sans-serif",
+                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23707070' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                                    backgroundRepeat: 'no-repeat',
+                                    backgroundPosition: 'right 12px center',
+                                    paddingRight: '40px'
+                                }}
+                            >
+                                {dropdownModules.map((module) => {
+                                    const shortId = module.deviceId ? module.deviceId.slice(-8) : "";
+                                    const dot = module.connected !== false ? "● " : "○ ";
+                                    const status = module.connected !== false ? "online" : "offline";
+                                    const label = dot + module.name + (shortId ? "  " + shortId : "") + "  " + status;
+                                    return (
+                                        <option key={module.id} value={module.originalIndex}>
+                                            {label}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                            <button
+                                onClick={() => { setNameValue(activeModule?.name || ""); setEditingName(true); }}
+                                className="p-2 rounded-xl text-[#707070] hover:text-[#5180C1] hover:bg-[#5180C1]/10 transition-colors"
+                                title="Rename device"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
