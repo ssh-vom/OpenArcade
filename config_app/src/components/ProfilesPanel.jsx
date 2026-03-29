@@ -3,18 +3,6 @@ import PlateGalleryPanel from "./PlateGalleryPanel.jsx";
 import PlateTopPreview from "./PlateTopPreview.jsx";
 import { DEFAULT_PLATE_ID, PLATES, getPlateId, getPlateName } from "../lib/plateCatalog.js";
 
-function TrashIcon() {
-    return (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6" />
-            <path d="M14 11v6" />
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-        </svg>
-    );
-}
-
 export default function ProfilesPanel({
     deviceId,
     configClient,
@@ -210,7 +198,7 @@ export default function ProfilesPanel({
                         <div className="w-5 h-5 border-2 border-[#5180C1] border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full px-4">
                         {profiles.map((profile, index) => {
                             const isActive = profile.id === activeProfile?.id;
                             const plateName = plateNameById.get(profile.plate_id) || getPlateName(profile.plate_id);
@@ -220,122 +208,104 @@ export default function ProfilesPanel({
                             return (
                                 <div
                                     key={profile.id}
-                                    className="rounded-xl overflow-hidden flex flex-col plate-card-animate card-interactive transition-[box-shadow,border-color] duration-300 ease-out"
-                                    style={{
-                                        "--stagger": index,
-                                        background: "#CCCCCC",
-                                        border: `1px solid ${isActive ? "#5180C1" : "#A0A0A0"}`,
-                                        boxShadow: isActive
-                                            ? "0 6px 18px rgba(81, 128, 193, 0.2)"
-                                            : "0 1px 3px rgba(0, 0, 0, 0.1)",
-                                    }}
+                                    className="flex flex-col plate-card-animate group cursor-pointer"
+                                    style={{ "--stagger": index }}
+                                    onClick={() => !isActive && handleSwitch(profile.id)}
                                 >
-                                    <div className="h-32 bg-[#B8B8B8] flex items-center justify-center p-3 border-b border-[#A0A0A0] shrink-0">
+                                    <div className="relative h-36 bg-[#C5C5C5] rounded-xl flex items-center justify-center p-4 shrink-0 transition-all duration-200 group-hover:bg-[#BFBFBF] shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                                         <PlateTopPreview
                                             plateId={profile.plate_id}
                                             alt=""
-                                            className="h-full w-full object-contain"
+                                            className="h-full w-full object-contain opacity-90"
                                         />
+                                        {isActive && (
+                                            <div className="absolute inset-0 rounded-xl ring-2 ring-[#5180C1] ring-inset pointer-events-none" />
+                                        )}
                                     </div>
 
-                                    <div className="p-3 flex flex-col gap-2 flex-1">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                {isActive && <span className="w-2 h-2 rounded-full bg-[#5180C1] shrink-0" />}
-
-                                                {renamingId === profile.id ? (
-                                                    <input
-                                                        autoFocus
-                                                        value={renameValue}
-                                                        onChange={(event) => setRenameValue(event.target.value)}
-                                                        onBlur={() => handleRenameProfile(profile.id, renameValue)}
-                                                        onKeyDown={(event) => {
-                                                            if (event.key === "Enter") {
-                                                                event.preventDefault();
-                                                                event.currentTarget.blur();
-                                                            }
-                                                            if (event.key === "Escape") {
-                                                                event.preventDefault();
-                                                                setRenamingId(null);
-                                                            }
-                                                        }}
-                                                        className="text-sm font-semibold text-[#333333] bg-[#D9D9D9] border border-[#A0A0A0] rounded-md px-1.5 py-0.5 outline-none focus:border-[#5180C1] min-w-0 flex-1"
-                                                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                                    />
-                                                ) : (
-                                                    <button
-                                                        type="button"
-                                                        onDoubleClick={() => {
-                                                            setRenamingId(profile.id);
-                                                            setRenameValue(profile.name || "");
-                                                        }}
-                                                        className="text-sm font-semibold text-[#333333] truncate text-left min-w-0"
-                                                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                                        title="Double-click to rename"
-                                                    >
-                                                        {profile.name}
-                                                    </button>
-                                                )}
-
-                                                {isActive && (
-                                                    <span
-                                                        className="shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[#5180C1]/15 text-[#5180C1]"
-                                                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                                    >
-                                                        Active
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="flex items-center gap-1 shrink-0">
-                                                {!isActive && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleSwitch(profile.id)}
-                                                        disabled={isSwitching || isDeleting}
-                                                        className="text-xs font-medium text-[#5180C1] px-2 py-1 rounded-lg hover:bg-[#5180C1]/10 border border-[#5180C1]/40 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                                                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                                    >
-                                                        {isSwitching ? "…" : "Switch"}
-                                                    </button>
-                                                )}
-
+                                    <div className="pt-2.5 flex flex-col gap-1">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            {renamingId === profile.id ? (
+                                                <input
+                                                    autoFocus
+                                                    value={renameValue}
+                                                    onChange={(event) => setRenameValue(event.target.value)}
+                                                    onBlur={() => handleRenameProfile(profile.id, renameValue)}
+                                                    onKeyDown={(event) => {
+                                                        if (event.key === "Enter") {
+                                                            event.preventDefault();
+                                                            event.currentTarget.blur();
+                                                        }
+                                                        if (event.key === "Escape") {
+                                                            event.preventDefault();
+                                                            setRenamingId(null);
+                                                        }
+                                                    }}
+                                                    className="text-sm font-medium text-[#333333] bg-[#E5E5E5] border-0 rounded-md px-2 py-1 outline-none focus:ring-2 focus:ring-[#5180C1]/30 min-w-0 flex-1"
+                                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                />
+                                            ) : (
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleDelete(profile.id)}
-                                                    disabled={profiles.length <= 1 || isDeleting || isSwitching}
-                                                    className="text-[#707070] hover:text-[#EF4444] p-1 rounded-lg hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
-                                                    aria-label="Delete profile"
+                                                    onDoubleClick={() => {
+                                                        setRenamingId(profile.id);
+                                                        setRenameValue(profile.name || "");
+                                                    }}
+                                                    className="text-sm font-medium text-[#333333] truncate text-left min-w-0 hover:text-[#5180C1] transition-colors"
+                                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                    title="Double-click to rename"
                                                 >
-                                                    {isDeleting ? (
-                                                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                                    ) : (
-                                                        <TrashIcon />
-                                                    )}
+                                                    {profile.name}
                                                 </button>
-                                            </div>
+                                            )}
+
+                                            {isActive && (
+                                                <span
+                                                    className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#5180C1] text-white"
+                                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                >
+                                                    Active
+                                                </span>
+                                            )}
                                         </div>
 
-                                        <div className="flex items-center justify-between gap-2 mt-auto pt-1">
+                                        <div className="flex items-center justify-between gap-2">
                                             <span
-                                                className="inline-flex items-center rounded-full bg-[#B8B8B8] text-[#4A4A4A] text-[11px] px-2 py-0.5 truncate max-w-[120px]"
+                                                className="text-[11px] text-[#707070] truncate"
                                                 style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                                 title={plateName}
                                             >
                                                 {plateName}
                                             </span>
 
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setEditingProfileId(profile.id);
-                                                    setView("gallery");
-                                                }}
-                                                className="text-[11px] text-[#5180C1] underline-offset-2 hover:underline shrink-0"
-                                                style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                            >
-                                                Change plate →
-                                            </button>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingProfileId(profile.id);
+                                                        setView("gallery");
+                                                    }}
+                                                    className="text-[11px] text-[#5180C1] hover:underline"
+                                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                >
+                                                    Change
+                                                </button>
+                                                <span className="text-[#A0A0A0]">·</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(profile.id);
+                                                    }}
+                                                    disabled={profiles.length <= 1 || isDeleting}
+                                                    className="text-[11px] text-[#707070] hover:text-[#EF4444] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                                    aria-label="Delete"
+                                                >
+                                                    {isDeleting ? "…" : "Delete"}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

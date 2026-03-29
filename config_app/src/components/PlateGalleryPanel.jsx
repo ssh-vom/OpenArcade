@@ -8,61 +8,54 @@ function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) 
             type="button"
             onClick={onClick}
             disabled={isLoading}
-            className="relative text-left rounded-xl overflow-hidden plate-card-animate transition-shadow duration-300 ease-out hover:shadow-lg"
-            style={{
-                "--stagger": staggerIndex,
-                border: `1.5px solid ${isSelected ? plate.accent_color : "#A0A0A0"}`,
-                background: "#CCCCCC",
-                boxShadow: isSelected
-                    ? `0 8px 24px color-mix(in srgb, ${plate.accent_color} 30%, transparent)`
-                    : "0 1px 3px rgba(0, 0, 0, 0.1)",
-                opacity: isLoading ? 0.9 : 1,
-                cursor: isLoading ? "wait" : "pointer",
-            }}
+            className="relative text-left plate-card-animate group"
+            style={{ "--stagger": staggerIndex, opacity: isLoading ? 0.9 : 1, cursor: isLoading ? "wait" : "pointer" }}
         >
-            <div className="h-36 bg-[#B8B8B8] flex items-center justify-center p-3 border-b border-[#A0A0A0]">
+            <div className={`relative h-36 rounded-xl flex items-center justify-center p-4 transition-all duration-200 ${isSelected ? "bg-[#C5C5C5]" : "bg-[#C8C8C8] group-hover:bg-[#C2C2C2]"}`} style={{ boxShadow: isSelected ? `0 2px 12px color-mix(in srgb, ${plate.accent_color} 25%, transparent)` : "0 2px 8px rgba(0,0,0,0.06)" }}>
                 <PlateTopPreview
                     plateId={plate.id}
                     alt=""
-                    className="h-full w-full object-contain"
+                    className="h-full w-full object-contain opacity-90"
                 />
-            </div>
-
-            <div className="px-3 pb-3 pt-2.5">
-                <div
-                    className="text-sm font-semibold text-[#333333] truncate"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                    title={plate.name}
-                >
-                    {plate.name}
-                </div>
-                <div
-                    className="mt-1 text-xs text-[#4A4A4A] leading-snug line-clamp-2"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
-                >
-                    {plate.description}
-                </div>
-
                 {isSelected && (
-                    <div
-                        className="inline-flex mt-2 rounded-full px-2 py-0.5 text-xs font-medium"
-                        style={{
-                            fontFamily: "'IBM Plex Mono', monospace",
-                            backgroundColor: `${plate.accent_color}1A`,
-                            color: plate.accent_color,
-                        }}
-                    >
-                        Active
-                    </div>
+                    <div className="absolute inset-0 rounded-xl ring-2 ring-inset pointer-events-none" style={{ ringColor: plate.accent_color }} />
                 )}
             </div>
 
+            <div className="pt-2.5 flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                    <span
+                        className="text-sm font-medium text-[#333333] truncate"
+                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                        title={plate.name}
+                    >
+                        {plate.name}
+                    </span>
+                    {isSelected && (
+                        <span
+                            className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full text-white"
+                            style={{ fontFamily: "'IBM Plex Mono', monospace", backgroundColor: plate.accent_color }}
+                        >
+                            Active
+                        </span>
+                    )}
+                </div>
+                <span
+                    className="text-[11px] text-[#707070] leading-snug line-clamp-2"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                    {plate.description}
+                </span>
+            </div>
+
             {isLoading && (
-                <div className="absolute inset-0 bg-[#CCCCCC]/80 flex items-center justify-center">
-                    <div
-                        className="w-5 h-5 rounded-full border-2 border-[#5180C1] border-t-transparent animate-spin"
-                        aria-label="Saving plate"
-                    />
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[#CCCCCC]/90 flex items-center justify-center shadow-lg">
+                        <div
+                            className="w-5 h-5 rounded-full border-2 border-[#5180C1] border-t-transparent animate-spin"
+                            aria-label="Saving plate"
+                        />
+                    </div>
                 </div>
             )}
         </button>
@@ -147,7 +140,7 @@ export default function PlateGalleryPanel({
             </div>
 
             <div className="relative z-[1] flex-1 overflow-y-auto panel-scroll pb-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full px-4">
                     {PLATES.map((plate, index) => {
                         const isSelected = plate.id === selectedPlateId;
                         const isLoading = selectedLoadingId === plate.id;
