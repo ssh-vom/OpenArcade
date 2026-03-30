@@ -176,7 +176,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     const [pressedButtons, setPressedButtons] = useState([]);
     const [activeProfile, setActiveProfile] = useState(null);
     const [profilesRefreshKey, setProfilesRefreshKey] = useState(0);
-    const [showOnlyConnected, setShowOnlyConnected] = useState(false);
+    const [showOnlyConnected, setShowOnlyConnected] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const triggerProfileRefresh = useCallback(() => setProfilesRefreshKey((k) => k + 1), []);
