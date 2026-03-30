@@ -42,7 +42,12 @@ def main() -> int:
     logger.info("Aggregator on CPU core %d, HID writer on CPU core %d", 
                 args.aggregator_core, args.writer_core)
 
-    hid_queue = multiprocessing.Queue()
+    # Shared memory mailbox for latest HID report (replaces Queue)
+    # Array holds the 8-byte HID report, Value holds version for change detection
+    report_array = multiprocessing.Array("B", 8, lock=False)  # 8 bytes for HID report
+    report_version = multiprocessing.Value("i", 0, lock=True)  # Version counter
+    report_event = multiprocessing.Event()  # Signals new data available
+    
     stop_event = multiprocessing.Event()
     shutdown_requested = False
 
@@ -50,18 +55,25 @@ def main() -> int:
         nonlocal shutdown_requested
         shutdown_requested = True
         stop_event.set()
+        report_event.set()  # Wake up writer so it can exit
 
     for signum in (signal.SIGINT, signal.SIGTERM):
         signal.signal(signum, request_shutdown)
 
+    shared_mailbox = {
+        "report_array": report_array,
+        "report_version": report_version,
+        "report_event": report_event,
+    }
+
     aggregator = multiprocessing.Process(
         target=aggregator_process,
-        args=(hid_queue, stop_event, args.config, args.aggregator_core),
+        args=(shared_mailbox, stop_event, args.config, args.aggregator_core),
         name="Aggregator",
     )
     writer = multiprocessing.Process(
         target=hid_writer_process,
-        args=(hid_queue, stop_event, args.writer_core),
+        args=(shared_mailbox, stop_event, args.writer_core),
         name="HIDWriter",
     )
 
@@ -82,21 +94,22 @@ def main() -> int:
                 logger.error("Process %s exited unexpectedly with code %s", process.name, process.exitcode)
                 shutdown_requested = True
                 stop_event.set()
+                report_event.set()
                 return_code = 1
                 break
             time.sleep(1.0)
     except KeyboardInterrupt:
         logger.info("Shutdown signal received")
         stop_event.set()
+        report_event.set()
     finally:
         stop_event.set()
+        report_event.set()
         for process in processes:
             process.join(timeout=5.0)
             if process.is_alive():
                 logger.warning("Process %s did not exit cleanly, terminating...", process.name)
                 process.terminate()
-        hid_queue.close()
-        hid_queue.join_thread()
 
     logger.info("System Shutdown Complete.")
     return return_code

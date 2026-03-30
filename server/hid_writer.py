@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import logging
-import multiprocessing
 import os
-import queue
 import sys
 import time
+from typing import Any
 
 
 logger = logging.getLogger("OpenArcade")
@@ -21,8 +20,8 @@ def set_cpu_affinity(core_id: int) -> None:
 
 
 def hid_writer_process(
-    hid_queue: multiprocessing.Queue,
-    stop_event: multiprocessing.Event,
+    mailbox: dict[str, Any],
+    stop_event: Any,
     cpu_core: int = 1,
 ):
     """HID output process pinned to a specific CPU core."""
@@ -31,6 +30,10 @@ def hid_writer_process(
     set_cpu_affinity(cpu_core)
     
     logger.info("HID Writer Process Started on core %d", cpu_core)
+
+    report_array = mailbox["report_array"]
+    report_version = mailbox["report_version"]
+    report_event = mailbox["report_event"]
 
     hid_device_path = "/dev/hidg0"
     use_mock = False
@@ -46,20 +49,27 @@ def hid_writer_process(
             hid_device_path,
         )
 
+    last_seen_version = 0
+
     while not stop_event.is_set():
-        try:
-            report = hid_queue.get(timeout=1.0)
-            while True:
-                try:
-                    report = hid_queue.get_nowait()
-                except queue.Empty:
-                    break
-        except queue.Empty:
+        # Wait for new data signal (with timeout to check stop_event periodically)
+        report_event.wait(timeout=0.5)
+        
+        if stop_event.is_set():
+            break
+            
+        # Check if there's new data
+        current_version = report_version.value
+        if current_version == last_seen_version:
             continue
-        except Exception as exc:
-            logger.error("HID queue error: %s", exc)
-            time.sleep(1.0)
-            continue
+            
+        last_seen_version = current_version
+        
+        # Read the current report from shared memory
+        report = bytes(report_array)
+        
+        # Clear the event flag (we'll wait for next signal)
+        report_event.clear()
 
         try:
             if use_mock:

@@ -33,8 +33,8 @@ def set_cpu_affinity(core_id: int) -> None:
 
 
 def aggregator_process(
-    hid_queue,
-    stop_event,
+    mailbox: dict[str, Any],
+    stop_event: Any,
     config_path: str | None = None,
     cpu_core: int = 0,
 ):
@@ -48,6 +48,13 @@ def aggregator_process(
     set_cpu_affinity(cpu_core)
     
     logger.info("Aggregator Process Started on core %d", cpu_core)
+
+    report_array = mailbox["report_array"]
+    report_version = mailbox["report_version"]
+    report_event = mailbox["report_event"]
+    
+    # Track last published report for deduplication
+    last_published_report: bytes | None = None
 
     connected_clients: dict[str, BleakClient] = {}
     connecting_addresses: set[str] = set()
@@ -63,14 +70,24 @@ def aggregator_process(
     config_store = DeviceConfigStore(path=config_path)
     reducer = StateReducer(build_mapping_cache(config_store.load()))
     config_mtime: float | None = None
-    last_report: bytes | None = None
 
     def publish_report(report: bytes | None) -> None:
-        nonlocal last_report
-        if report is None or report == last_report:
+        nonlocal last_published_report
+        if report is None:
             return
-        last_report = report
-        hid_queue.put(report)
+        # Deduplication: only publish if report actually changed
+        if report == last_published_report:
+            return
+        last_published_report = report
+        
+        # Write to shared memory (overwrites previous value)
+        for i, byte_val in enumerate(report):
+            report_array[i] = byte_val
+        
+        # Increment version and signal writer
+        with report_version.get_lock():
+            report_version.value += 1
+        report_event.set()
 
     def refresh_mapping_cache(force: bool = False) -> None:
         nonlocal config_mtime
@@ -134,6 +151,7 @@ def aggregator_process(
         connect_lock = asyncio.Lock()
         scanner: BleakScanner | None = None
         scanner_running = False
+        pending_tasks: set[asyncio.Task] = set()
 
         async def handle_config_updated() -> None:
             refresh_mapping_cache(force=True)
@@ -251,6 +269,11 @@ def aggregator_process(
                         else:
                             await stop_scanner()
 
+        def cleanup_task(task: asyncio.Task) -> None:
+            pending_tasks.discard(task)
+            if task.exception():
+                logger.error("Connect task failed: %s", task.exception())
+
         # Initial setup
         refresh_mapping_cache()
         publish_report(reducer.build_report())
@@ -269,7 +292,16 @@ def aggregator_process(
 
                     pending_connects.discard(address)
                     connecting_addresses.add(address)
-                    asyncio.create_task(connect_device(address))
+                    task = asyncio.create_task(connect_device(address))
+                    pending_tasks.add(task)
+                    task.add_done_callback(cleanup_task)
+
+                # Clean up completed tasks periodically
+                done_tasks = [t for t in pending_tasks if t.done()]
+                for t in done_tasks:
+                    pending_tasks.discard(t)
+                    if t.exception():
+                        logger.error("Connect task failed: %s", t.exception())
 
                 # Periodic cache refresh (non-blocking)
                 refresh_mapping_cache()
@@ -286,6 +318,12 @@ def aggregator_process(
         finally:
             logger.info("Aggregator stopping...")
             await stop_scanner()
+            
+            # Cancel any pending tasks
+            for task in pending_tasks:
+                task.cancel()
+            if pending_tasks:
+                await asyncio.gather(*pending_tasks, return_exceptions=True)
             
             for client in list(connected_clients.values()):
                 try:
