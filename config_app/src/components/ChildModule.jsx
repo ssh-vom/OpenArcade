@@ -590,7 +590,6 @@ const ChildModule = memo(function ChildModule({
                                     : isHovered
                                  ? `0 0 0 2px ${borderColor}, 0 6px 16px rgba(0, 0, 0, 0.1)`
                                  : '0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05)',
-                            borderLeft: `3px solid ${isPressed ? '#10B981' : isArmed ? '#4A90A4' : typeColor}`,
                             transform: isPressed
                                 ? 'translateY(-4px) scale(1.08)'
                                 : isArmed || isHovered
@@ -651,7 +650,6 @@ const ChildModule = memo(function ChildModule({
                                     fontFamily: "'DM Sans', system-ui, sans-serif",
                                     fontWeight: '500',
                                     whiteSpace: 'nowrap',
-                                    borderLeft: `3px solid ${getTypeColor(hoveredMapping?.type)}`,
                                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                                 }}>
                                     {hoveredMapping?.label}
