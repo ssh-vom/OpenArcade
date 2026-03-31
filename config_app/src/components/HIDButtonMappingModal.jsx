@@ -103,7 +103,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-6 animate-fade-in"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[500] p-6 animate-fade-in"
       onClick={onCancel}
     >
         <div
@@ -134,7 +134,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
             />
           
           {/* Content */}
-          <div className="relative z-10">
+          <div className="relative z-10 isolate">
             {renderVisualSelector()}
           </div>
         </div>

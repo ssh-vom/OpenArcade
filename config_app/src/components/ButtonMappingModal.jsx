@@ -9,7 +9,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
 
     return (
         <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[500]"
             onClick={onCancel}
         >
             <div

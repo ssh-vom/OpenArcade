@@ -50,7 +50,7 @@ function StickSubmenu({ side, onSelect, onClose, accentColor }) {
 
   return (
     <div 
-      className="absolute z-20 bg-[#CCCCCC] rounded-xl shadow-xl border border-[#A0A0A0] p-2 min-w-[140px] animate-scale-in"
+      className="absolute bg-[#CCCCCC] rounded-xl shadow-xl border border-[#A0A0A0] p-2 min-w-[140px] animate-scale-in"
       style={{ 
         top: '50%', 
         left: isLeft ? '100%' : 'auto',

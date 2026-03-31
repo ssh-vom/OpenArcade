@@ -562,6 +562,7 @@ const ChildModule = memo(function ChildModule({
                         key={`${buttonName}-mapping`}
                         position={position}
                         center
+                        zIndexRange={[50, 0]}
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
                         <div style={{
@@ -630,6 +631,7 @@ const ChildModule = memo(function ChildModule({
                     <Html
                         position={offsetPos}
                         center
+                        zIndexRange={[50, 0]}
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
                         <div style={{
