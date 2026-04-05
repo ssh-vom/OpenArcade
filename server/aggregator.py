@@ -11,9 +11,10 @@ from bleak import BleakClient, BleakScanner
 
 from constants import CHAR_UUID, SCANNER_DELAY
 from device_config_store import DeviceConfigStore
+from hid_mode_state import HIDModeState
 from runtime.control_server import RuntimeControlServer
-from runtime.report_builder import build_mapping_cache, build_keyboard_report
-from runtime.state_reducer import StateReducer
+from runtime.report_builder import build_mapping_cache, build_keyboard_report, build_gamepad_report
+from runtime.state_reducer import StateReducer, HIDMode
 
 
 logger = logging.getLogger("OpenArcade")
@@ -68,8 +69,16 @@ def aggregator_process(
     next_background_scan_at = scan_until + BACKGROUND_SCAN_INTERVAL_SECONDS
 
     config_store = DeviceConfigStore(path=config_path)
-    reducer = StateReducer(build_mapping_cache(config_store.load()))
+    hid_mode_state = HIDModeState()
+    
+    # Load initial HID mode
+    initial_mode_state = hid_mode_state.load()
+    current_mode: HIDMode = initial_mode_state["active_mode"]
+    current_mode_sequence = initial_mode_state["sequence"]
+    
+    reducer = StateReducer(build_mapping_cache(config_store.load(), mode=current_mode), mode=current_mode)
     config_mtime: float | None = None
+    mode_file_mtime: float | None = None
 
     def publish_report(report: bytes | None) -> None:
         nonlocal last_published_report
@@ -99,7 +108,52 @@ def aggregator_process(
             return
         config_mtime = mtime
         snapshot = config_store.load()
-        publish_report(reducer.set_mapping_cache(build_mapping_cache(snapshot)))
+        publish_report(reducer.set_mapping_cache(build_mapping_cache(snapshot, mode=current_mode)))
+
+    def check_mode_change() -> None:
+        """Check if HID mode has changed and update if needed."""
+        nonlocal current_mode, current_mode_sequence, mode_file_mtime
+        
+        try:
+            # Check if mode state file was modified
+            mtime = os.path.getmtime(hid_mode_state.path)
+            if mode_file_mtime is not None and mtime == mode_file_mtime:
+                return
+            mode_file_mtime = mtime
+            
+            # Load current mode state
+            mode_state = hid_mode_state.load()
+            new_mode: HIDMode = mode_state["active_mode"]
+            new_sequence = mode_state["sequence"]
+            
+            # Check if mode actually changed
+            if new_mode == current_mode and new_sequence == current_mode_sequence:
+                return
+            
+            logger.info(
+                f"HID mode changed: {current_mode} -> {new_mode} (seq: {current_mode_sequence} -> {new_sequence})"
+            )
+            
+            # Send neutral report to old endpoint before switching
+            if current_mode == "keyboard":
+                publish_report(build_keyboard_report([]))
+            else:
+                publish_report(build_gamepad_report([]))
+            
+            # Switch mode
+            current_mode = new_mode
+            current_mode_sequence = new_sequence
+            
+            # Rebuild mapping cache for new mode
+            snapshot = config_store.load()
+            mapping_cache = build_mapping_cache(snapshot, mode=current_mode)
+            
+            # Update reducer and publish new report
+            reducer.set_mapping_cache(mapping_cache)
+            publish_report(reducer.set_mode(current_mode))
+            
+        except Exception as exc:
+            logger.error(f"Error checking mode change: {exc}", exc_info=True)
 
     def update_live_state(address: str, state: int) -> None:
         nonlocal state_sequence
@@ -276,6 +330,7 @@ def aggregator_process(
 
         # Initial setup
         refresh_mapping_cache()
+        check_mode_change()  # Ensure we're in sync with current mode
         publish_report(reducer.build_report())
         await control_server.start()
         await ensure_scanner_running()
@@ -305,6 +360,9 @@ def aggregator_process(
 
                 # Periodic cache refresh (non-blocking)
                 refresh_mapping_cache()
+                
+                # Check for mode changes
+                check_mode_change()
                 
                 # Keep scanning only while actively discovering/connecting or shortly after activity.
                 if not stop_event.is_set():

@@ -1,0 +1,19 @@
+[Unit]
+Description=OpenArcade GPIO Service
+After=network.target openarcade-gadget.service
+Wants=openarcade-gadget.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/openarcade/server
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=-/etc/openarcade/openarcade.env
+ExecStart=/usr/bin/python3 /opt/openarcade/server/gpio_service.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

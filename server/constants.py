@@ -247,3 +247,74 @@ def _load_default_mapping() -> dict[int, int]:
 DEFAULT_MAPPING = _load_default_mapping()
 
 SCANNER_DELAY = 10
+
+# ============================================================================
+# Gamepad Constants
+# ============================================================================
+
+# Gamepad Button Bit Positions (for 16-bit button field)
+# These map to the button bitfield in the gamepad HID report
+GP_BUTTON_A = 0
+GP_BUTTON_B = 1
+GP_BUTTON_X = 2
+GP_BUTTON_Y = 3
+GP_LEFT_BUMPER = 4
+GP_RIGHT_BUMPER = 5
+GP_VIEW = 6  # Back/Select
+GP_MENU = 7  # Start
+GP_HOME = 8  # Xbox/Guide button
+GP_LEFT_STICK_BUTTON = 9
+GP_RIGHT_STICK_BUTTON = 10
+
+# D-Pad values (HAT switch, byte 2 of report)
+# Using 8-direction HAT encoding
+GP_DPAD_UP = 0
+GP_DPAD_UP_RIGHT = 1
+GP_DPAD_RIGHT = 2
+GP_DPAD_DOWN_RIGHT = 3
+GP_DPAD_DOWN = 4
+GP_DPAD_DOWN_LEFT = 5
+GP_DPAD_LEFT = 6
+GP_DPAD_UP_LEFT = 7
+GP_DPAD_CENTER = 15  # No direction pressed
+
+# Gamepad Input Name -> Bit Position/Value Mapping
+# This maps the input schema names to actual HID report values
+GAMEPAD_INPUT_MAP = {
+    "xb_button_a": ("button", GP_BUTTON_A),
+    "xb_button_b": ("button", GP_BUTTON_B),
+    "xb_button_x": ("button", GP_BUTTON_X),
+    "xb_button_y": ("button", GP_BUTTON_Y),
+    "xb_left_bumper": ("button", GP_LEFT_BUMPER),
+    "xb_right_bumper": ("button", GP_RIGHT_BUMPER),
+    "xb_view": ("button", GP_VIEW),
+    "xb_menu": ("button", GP_MENU),
+    "xb_home": ("button", GP_HOME),
+    "xb_left_stick_button": ("button", GP_LEFT_STICK_BUTTON),
+    "xb_right_stick_button": ("button", GP_RIGHT_STICK_BUTTON),
+    "xb_dpad_up": ("dpad", GP_DPAD_UP),
+    "xb_dpad_down": ("dpad", GP_DPAD_DOWN),
+    "xb_dpad_left": ("dpad", GP_DPAD_LEFT),
+    "xb_dpad_right": ("dpad", GP_DPAD_RIGHT),
+}
+
+# Default gamepad mapping (similar to keyboard)
+# Maps bit indices to gamepad inputs
+_DEFAULT_GAMEPAD_MAPPING_FALLBACK = {
+    0: "xb_button_a",  # Button 1
+    1: "xb_button_b",  # Button 2
+    2: "xb_button_x",  # Button 3
+    3: "xb_button_y",  # Button 4
+    4: "xb_left_bumper",  # Button 5
+    5: "xb_right_bumper",  # Button 6
+    6: "xb_button_a",  # Button 7
+    7: "xb_button_b",  # Button 8
+    8: "xb_dpad_left",  # Joy L
+    9: "xb_dpad_right",  # Joy R
+    10: "xb_dpad_up",  # Joy U
+    11: "xb_dpad_down",  # Joy D
+    12: "xb_view",  # Select
+    13: "xb_menu",  # Start
+}
+
+DEFAULT_GAMEPAD_MAPPING = dict(_DEFAULT_GAMEPAD_MAPPING_FALLBACK)
