@@ -135,32 +135,17 @@ class StatusDisplay:
         )
 
         with self._canvas(self._device) as draw:
-            if state.pairing_enabled:
-                # Pairing active: prominent display
-                pairing_text = "PAIRING ACTIVE"
-                pairing_x = self._centered_x(draw, pairing_text)
-                title_x = self._centered_x(draw, title)
-                count_mode_text = f"{count_text} | {mode_text}"
-                count_mode_x = self._centered_x(draw, count_mode_text)
-                temperature_x = self._centered_x(draw, temperature_text)
+            pairing_text = "Pairing: ON" if state.pairing_enabled else "Pairing: OFF"
+            title_x = self._centered_x(draw, title)
+            count_mode_text = f"{count_text} | {mode_text}"
+            count_mode_x = self._centered_x(draw, count_mode_text)
+            pairing_x = self._centered_x(draw, pairing_text)
+            temperature_x = self._centered_x(draw, temperature_text)
 
-                draw.text((title_x, 2), title, font=self._font, fill="white")
-                draw.text((pairing_x, 18), pairing_text, font=self._font, fill="white")
-                draw.text((count_mode_x, 34), count_mode_text, font=self._font, fill="white")
-                draw.text((temperature_x, 50), temperature_text, font=self._font, fill="white")
-            else:
-                # Pairing off: standard display with pairing status
-                pairing_text = "Pairing: OFF"
-                title_x = self._centered_x(draw, title)
-                count_mode_text = f"{count_text} | {mode_text}"
-                count_mode_x = self._centered_x(draw, count_mode_text)
-                pairing_x = self._centered_x(draw, pairing_text)
-                temperature_x = self._centered_x(draw, temperature_text)
-
-                draw.text((title_x, 2), title, font=self._font, fill="white")
-                draw.text((count_mode_x, 18), count_mode_text, font=self._font, fill="white")
-                draw.text((pairing_x, 34), pairing_text, font=self._font, fill="white")
-                draw.text((temperature_x, 50), temperature_text, font=self._font, fill="white")
+            draw.text((title_x, 2), title, font=self._font, fill="white")
+            draw.text((count_mode_x, 18), count_mode_text, font=self._font, fill="white")
+            draw.text((pairing_x, 34), pairing_text, font=self._font, fill="white")
+            draw.text((temperature_x, 50), temperature_text, font=self._font, fill="white")
 
         self._last_state = state
 
