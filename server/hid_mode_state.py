@@ -66,12 +66,42 @@ class HIDModeState:
         if directory:
             os.makedirs(directory, exist_ok=True)
 
-        tmp_path = f"{self.path}.tmp"
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(state, f, indent=2)
-            f.write("\n")
+        tmp_path = f"{self.path}.{os.getpid()}.tmp"
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2)
+                f.write("\n")
 
-        os.replace(tmp_path, self.path)
+            os.replace(tmp_path, self.path)
+        finally:
+            try:
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    def _normalize_state(self, state: Any) -> tuple[dict[str, Any], bool]:
+        """Normalize loaded state and report whether it was modified."""
+        if not isinstance(state, dict):
+            return self._default_state(), True
+
+        normalized = dict(state)
+        changed = False
+
+        if normalized.get("active_mode") not in ("keyboard", "gamepad"):
+            normalized["active_mode"] = "keyboard"
+            changed = True
+        if "source" not in normalized:
+            normalized["source"] = "unknown"
+            changed = True
+        if not isinstance(normalized.get("sequence"), int):
+            normalized["sequence"] = 0
+            changed = True
+        if "updated_at" not in normalized:
+            normalized["updated_at"] = datetime.now(timezone.utc).isoformat()
+            changed = True
+
+        return normalized, changed
 
     def load(self, use_cache: bool = False) -> dict[str, Any]:
         """
@@ -95,33 +125,30 @@ class HIDModeState:
 
             try:
                 with open(self.path, "r", encoding="utf-8") as f:
-                    state = json.load(f)
-
-                if not isinstance(state, dict):
-                    state = self._default_state()
-                else:
-                    # Validate and normalize
-                    state.setdefault("active_mode", "keyboard")
-                    state.setdefault("source", "unknown")
-                    state.setdefault("sequence", 0)
-                    state.setdefault("updated_at", datetime.now(timezone.utc).isoformat())
-
-                    # Validate mode value
-                    try:
-                        state["active_mode"] = self._validate_mode(state["active_mode"])
-                    except ValueError:
-                        state["active_mode"] = "keyboard"
-
-                # Rewrite normalized/default state so the file always exists and is valid
-                self._write_state_unlocked(state)
-                self._cache = state
-                return dict(state)
-
-            except (OSError, json.JSONDecodeError):
+                    raw_state = json.load(f)
+            except FileNotFoundError:
                 state = self._default_state()
                 self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
+            except json.JSONDecodeError:
+                state = self._default_state()
+                self._write_state_unlocked(state)
+                self._cache = state
+                return dict(state)
+            except OSError:
+                if self._cache is not None:
+                    return dict(self._cache)
+                state = self._default_state()
+                self._cache = state
+                return dict(state)
+
+            state, changed = self._normalize_state(raw_state)
+            if changed:
+                self._write_state_unlocked(state)
+
+            self._cache = state
+            return dict(state)
 
     def save(
         self,
@@ -141,8 +168,8 @@ class HIDModeState:
         with self._lock:
             validated_mode = self._validate_mode(mode)
 
-            # Load current state to get sequence number
-            current = self.load(use_cache=True)
+            # Load current state from disk to avoid stale cross-process cache.
+            current = self.load(use_cache=False)
 
             # Build new state
             new_state = {
