@@ -309,8 +309,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 ...defaultLayout,
                 ...(resolvedLayout || {}),
             };
-            const mode = deviceActiveProfile?.active_mode || "keyboard";
-            const mappingConfig = deviceActiveProfile?.modes?.[mode]?.mapping || {};
+            const keyboardMappingConfig = deviceActiveProfile?.modes?.keyboard?.mapping || {};
+            const gamepadMappingConfig = deviceActiveProfile?.modes?.gamepad?.mapping || {};
             const plateId = deviceActiveProfile?.plate_id || DEFAULT_PLATE_ID;
             const resolvedPath = getPlateControllerModel(plateId);
             const reverseLayout = Object.entries(layout).reduce((acc, [buttonName, controlId]) => {
@@ -322,21 +322,39 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             }, {});
 
             const mappings = {};
-            Object.entries(mappingConfig).forEach(([controlId, mapping]) => {
-                const buttonName = reverseLayout[String(controlId)];
-                if (!buttonName) return;
+            const applyMappingConfig = (mappingConfig, type) => {
+                Object.entries(mappingConfig).forEach(([controlId, mapping]) => {
+                    const buttonName = reverseLayout[String(controlId)];
+                    if (!buttonName) return;
 
-                const keycodeName = typeof mapping === "string" ? mapping : mapping?.keycode;
-                const inputValue = getInputForKeycode(keycodeName);
-                if (!inputValue) return;
+                    if (type === HID_INPUT_TYPES.KEYBOARD) {
+                        const keycodeName = typeof mapping === "string" ? mapping : mapping?.keycode;
+                        const inputValue = getInputForKeycode(keycodeName);
+                        if (!inputValue) return;
 
-                mappings[buttonName] = {
-                    type: HID_INPUT_TYPES.KEYBOARD,
-                    input: inputValue,
-                    label: getInputLabel(HID_INPUT_TYPES.KEYBOARD, inputValue),
-                    action: keycodeName,
-                };
-            });
+                        mappings[buttonName] = {
+                            type: HID_INPUT_TYPES.KEYBOARD,
+                            input: inputValue,
+                            label: getInputLabel(HID_INPUT_TYPES.KEYBOARD, inputValue),
+                            action: keycodeName,
+                        };
+                        return;
+                    }
+
+                    const gamepadInput = typeof mapping === "object" ? mapping?.gamepad_input : null;
+                    if (!gamepadInput) return;
+
+                    mappings[buttonName] = {
+                        type: HID_INPUT_TYPES.GAMEPAD,
+                        input: gamepadInput,
+                        label: getInputLabel(HID_INPUT_TYPES.GAMEPAD, gamepadInput),
+                        action: getInputLabel(HID_INPUT_TYPES.GAMEPAD, gamepadInput),
+                    };
+                });
+            };
+
+            applyMappingConfig(keyboardMappingConfig, HID_INPUT_TYPES.KEYBOARD);
+            applyMappingConfig(gamepadMappingConfig, HID_INPUT_TYPES.GAMEPAD);
 
             return {
                 id: deviceId,
