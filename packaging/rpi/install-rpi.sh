@@ -197,6 +197,18 @@ setup_state_dir() {
     if [[ ! -f "$STATE_DIR/config.json" && -f "$REPO_ROOT/server/config.json" ]]; then
         install -m 0644 "$REPO_ROOT/server/config.json" "$STATE_DIR/config.json"
     fi
+
+    if [[ ! -f "$STATE_DIR/hid_mode.json" ]]; then
+        cat > "$STATE_DIR/hid_mode.json" <<'EOF'
+{
+  "active_mode": "keyboard",
+  "source": "default",
+  "sequence": 0,
+  "updated_at": "1970-01-01T00:00:00+00:00"
+}
+EOF
+        chmod 0644 "$STATE_DIR/hid_mode.json"
+    fi
 }
 
 install_env_file() {

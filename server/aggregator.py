@@ -113,16 +113,26 @@ def aggregator_process(
     def check_mode_change() -> None:
         """Check if HID mode has changed and update if needed."""
         nonlocal current_mode, current_mode_sequence, mode_file_mtime
-        
+
         try:
-            # Check if mode state file was modified
-            mtime = os.path.getmtime(hid_mode_state.path)
-            if mode_file_mtime is not None and mtime == mode_file_mtime:
-                return
-            mode_file_mtime = mtime
-            
-            # Load current mode state
+            # Load current mode state first; this also ensures the backing file exists.
             mode_state = hid_mode_state.load()
+
+            # Check if mode state file was modified.
+            try:
+                mtime = os.path.getmtime(hid_mode_state.path)
+            except FileNotFoundError:
+                mode_file_mtime = None
+                mtime = None
+
+            if (
+                mtime is not None
+                and mode_file_mtime is not None
+                and mtime == mode_file_mtime
+            ):
+                return
+
+            mode_file_mtime = mtime
             new_mode: HIDMode = mode_state["active_mode"]
             new_sequence = mode_state["sequence"]
             

@@ -42,7 +42,7 @@ class HIDModeState:
 
     def __init__(self, path: str | None = None) -> None:
         self.path = path or resolve_hid_mode_path()
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._cache: dict[str, Any] | None = None
 
     def _default_state(self) -> dict[str, Any]:
@@ -60,6 +60,19 @@ class HIDModeState:
             raise ValueError(f"Invalid HID mode: {mode}. Must be 'keyboard' or 'gamepad'")
         return mode  # type: ignore
 
+    def _write_state_unlocked(self, state: dict[str, Any]) -> None:
+        """Write state atomically. Caller must hold self._lock."""
+        directory = os.path.dirname(self.path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        tmp_path = f"{self.path}.tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+            f.write("\n")
+
+        os.replace(tmp_path, self.path)
+
     def load(self, use_cache: bool = False) -> dict[str, Any]:
         """
         Load current HID mode state.
@@ -76,13 +89,14 @@ class HIDModeState:
 
             if not os.path.exists(self.path):
                 state = self._default_state()
+                self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
 
             try:
                 with open(self.path, "r", encoding="utf-8") as f:
                     state = json.load(f)
-                    
+
                 if not isinstance(state, dict):
                     state = self._default_state()
                 else:
@@ -91,18 +105,21 @@ class HIDModeState:
                     state.setdefault("source", "unknown")
                     state.setdefault("sequence", 0)
                     state.setdefault("updated_at", datetime.now(timezone.utc).isoformat())
-                    
+
                     # Validate mode value
                     try:
                         state["active_mode"] = self._validate_mode(state["active_mode"])
                     except ValueError:
                         state["active_mode"] = "keyboard"
-                
+
+                # Rewrite normalized/default state so the file always exists and is valid
+                self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
-                
+
             except (OSError, json.JSONDecodeError):
                 state = self._default_state()
+                self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
 
@@ -123,10 +140,10 @@ class HIDModeState:
         """
         with self._lock:
             validated_mode = self._validate_mode(mode)
-            
+
             # Load current state to get sequence number
             current = self.load(use_cache=True)
-            
+
             # Build new state
             new_state = {
                 "active_mode": validated_mode,
@@ -134,20 +151,9 @@ class HIDModeState:
                 "sequence": current.get("sequence", 0) + 1,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
-            
-            # Ensure directory exists
-            directory = os.path.dirname(self.path)
-            if directory:
-                os.makedirs(directory, exist_ok=True)
-            
-            # Write atomically via temp file
-            tmp_path = f"{self.path}.tmp"
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(new_state, f, indent=2)
-                f.write("\n")
-            
-            os.replace(tmp_path, self.path)
-            
+
+            self._write_state_unlocked(new_state)
+
             # Update cache
             self._cache = new_state
             return dict(new_state)
