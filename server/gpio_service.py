@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import Callable
+from typing import Any, Callable
 
 
 logger = logging.getLogger("OpenArcade")
@@ -18,7 +18,7 @@ logger = logging.getLogger("OpenArcade")
 
 # GPIO Configuration
 HID_MODE_BUTTON_PIN_ENV_VAR = "OPENARCADE_HID_MODE_PIN"
-DEFAULT_HID_MODE_PIN = 17  # GPIO17 (physical pin 11)
+DEFAULT_HID_MODE_PIN = 4  # GPIO4 (physical pin 7)
 DEBOUNCE_INTERVAL_SECONDS = 0.2
 
 

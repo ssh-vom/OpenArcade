@@ -105,6 +105,7 @@ install_os_packages() {
         openssh-server \
         python3 \
         python3-pip \
+        python3-rpi.gpio \
         python3-venv
 }
 

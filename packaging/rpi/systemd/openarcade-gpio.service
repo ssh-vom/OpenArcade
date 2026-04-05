@@ -6,10 +6,10 @@ Wants=openarcade-gadget.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/openarcade/server
+WorkingDirectory=/opt/openarcade/app/server
 Environment="PYTHONUNBUFFERED=1"
 EnvironmentFile=-/etc/openarcade/openarcade.env
-ExecStart=/usr/bin/python3 /opt/openarcade/server/gpio_service.py
+ExecStart=/usr/bin/python3 /opt/openarcade/app/server/gpio_service.py
 Restart=always
 RestartSec=5
 StandardOutput=journal
