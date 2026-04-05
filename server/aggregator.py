@@ -120,24 +120,18 @@ def aggregator_process(
         nonlocal current_mode, current_mode_sequence, mode_file_mtime
 
         try:
-            # Load current mode state first; this also ensures the backing file exists.
+            # Always read the state and compare sequence numbers directly.
+            # File mtime is not reliable enough here because multiple mode changes can
+            # happen within the same timestamp granularity, which would leave the
+            # aggregator building reports for the old mode while the writer has already
+            # switched endpoints.
             mode_state = hid_mode_state.load()
 
-            # Check if mode state file was modified.
             try:
-                mtime = os.path.getmtime(hid_mode_state.path)
+                mode_file_mtime = os.path.getmtime(hid_mode_state.path)
             except FileNotFoundError:
                 mode_file_mtime = None
-                mtime = None
 
-            if (
-                mtime is not None
-                and mode_file_mtime is not None
-                and mtime == mode_file_mtime
-            ):
-                return
-
-            mode_file_mtime = mtime
             new_mode: HIDMode = mode_state["active_mode"]
             new_sequence = mode_state["sequence"]
             
