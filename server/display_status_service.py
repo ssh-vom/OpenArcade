@@ -11,7 +11,7 @@ import threading
 from dataclasses import dataclass
 
 from hid_mode_state import HIDModeState
-from runtime_ipc import get_connected_devices
+from runtime_ipc import get_connected_devices, get_pairing_status
 
 
 logging.basicConfig(
@@ -36,6 +36,8 @@ class DisplayState:
     module_count: int
     temperature_c: float | None
     hid_mode: str
+    pairing_enabled: bool
+    scanner_running: bool
 
 
 def _read_env_int(name: str, default: int) -> int:
@@ -133,16 +135,17 @@ class StatusDisplay:
         )
 
         with self._canvas(self._device) as draw:
+            pairing_text = "Pairing: ON" if state.pairing_enabled else "Pairing: OFF"
             title_x = self._centered_x(draw, title)
-            count_mode_text = f"{count_text}  |  {mode_text}"
+            count_mode_text = f"{count_text} | {mode_text}"
             count_mode_x = self._centered_x(draw, count_mode_text)
+            pairing_x = self._centered_x(draw, pairing_text)
             temperature_x = self._centered_x(draw, temperature_text)
-            
-            draw.text((title_x, 10), title, font=self._font, fill="white")
-            draw.text((count_mode_x, 28), count_mode_text, font=self._font, fill="white")
-            draw.text(
-                (temperature_x, 44), temperature_text, font=self._font, fill="white"
-            )
+
+            draw.text((title_x, 2), title, font=self._font, fill="white")
+            draw.text((count_mode_x, 18), count_mode_text, font=self._font, fill="white")
+            draw.text((pairing_x, 34), pairing_text, font=self._font, fill="white")
+            draw.text((temperature_x, 50), temperature_text, font=self._font, fill="white")
 
         self._last_state = state
 
@@ -186,11 +189,24 @@ def run_service(config: DisplayConfig) -> None:
                 logger.warning(f"Failed to read HID mode: {e}")
                 hid_mode = "unknown"
             
+            # Read pairing status from runtime
+            pairing_enabled = False
+            scanner_running = False
+            try:
+                pairing_status = get_pairing_status()
+                if pairing_status is not None:
+                    pairing_enabled = pairing_status.get("enabled", False)
+                    scanner_running = pairing_status.get("scanner_running", False)
+            except Exception as e:
+                logger.warning(f"Failed to read pairing status: {e}")
+            
             display.render(
                 DisplayState(
                     module_count=module_count,
                     temperature_c=temperature_c,
                     hid_mode=hid_mode,
+                    pairing_enabled=pairing_enabled,
+                    scanner_running=scanner_running,
                 )
             )
 

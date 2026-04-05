@@ -16,13 +16,21 @@ from typing import Any, Callable
 logger = logging.getLogger("OpenArcade")
 
 
-# GPIO Configuration
+# GPIO Configuration - HID Mode Button
 HID_MODE_BUTTON_PIN_ENV_VAR = "OPENARCADE_HID_MODE_PIN"
 HID_MODE_BUTTON_HOLD_SECONDS_ENV_VAR = "OPENARCADE_HID_MODE_HOLD_SECONDS"
 DEFAULT_HID_MODE_PIN = 4  # GPIO4 (physical pin 7)
+DEFAULT_HID_MODE_HOLD_SECONDS = 3.0
+
+# GPIO Configuration - Pairing Mode Button
+PAIRING_MODE_BUTTON_PIN_ENV_VAR = "OPENARCADE_PAIRING_MODE_PIN"
+PAIRING_MODE_BUTTON_HOLD_SECONDS_ENV_VAR = "OPENARCADE_PAIRING_MODE_HOLD_SECONDS"
+DEFAULT_PAIRING_MODE_PIN = 17  # GPIO17 (physical pin 11)
+DEFAULT_PAIRING_MODE_HOLD_SECONDS = 1.5
+
+# Common GPIO Configuration
 DEBOUNCE_INTERVAL_SECONDS = 0.35
 PRESS_CONFIRMATION_SECONDS = 0.03
-DEFAULT_HOLD_SECONDS = 3.0
 
 
 def get_hid_mode_button_pin() -> int:
@@ -50,9 +58,40 @@ def get_hid_mode_hold_seconds() -> float:
         except ValueError:
             logger.warning(
                 f"Invalid {HID_MODE_BUTTON_HOLD_SECONDS_ENV_VAR}='{raw_value}', "
-                f"using default hold time {DEFAULT_HOLD_SECONDS}s"
+                f"using default hold time {DEFAULT_HID_MODE_HOLD_SECONDS}s"
             )
-    return DEFAULT_HOLD_SECONDS
+    return DEFAULT_HID_MODE_HOLD_SECONDS
+
+
+def get_pairing_mode_button_pin() -> int:
+    """Get the GPIO pin number for the pairing mode button from environment or use default."""
+    pin_str = os.environ.get(PAIRING_MODE_BUTTON_PIN_ENV_VAR)
+    if pin_str:
+        try:
+            return int(pin_str)
+        except ValueError:
+            logger.warning(
+                f"Invalid {PAIRING_MODE_BUTTON_PIN_ENV_VAR}='{pin_str}', "
+                f"using default pin {DEFAULT_PAIRING_MODE_PIN}"
+            )
+    return DEFAULT_PAIRING_MODE_PIN
+
+
+def get_pairing_mode_hold_seconds() -> float:
+    """Get required pairing button hold time from environment or use default."""
+    raw_value = os.environ.get(PAIRING_MODE_BUTTON_HOLD_SECONDS_ENV_VAR)
+    if raw_value:
+        try:
+            value = float(raw_value)
+            if value < 0:
+                raise ValueError("must be non-negative")
+            return value
+        except ValueError:
+            logger.warning(
+                f"Invalid {PAIRING_MODE_BUTTON_HOLD_SECONDS_ENV_VAR}='{raw_value}', "
+                f"using default hold time {DEFAULT_PAIRING_MODE_HOLD_SECONDS}s"
+            )
+    return DEFAULT_PAIRING_MODE_HOLD_SECONDS
 
 
 class GPIOService:
@@ -112,8 +151,9 @@ class GPIOService:
         pin: int,
         callback: Callable[[], None],
         debounce_seconds: float = DEBOUNCE_INTERVAL_SECONDS,
-        hold_seconds: float = DEFAULT_HOLD_SECONDS,
+        hold_seconds: float = DEFAULT_HID_MODE_HOLD_SECONDS,
         stop_event: Any = None,
+        button_name: str = "button",
     ) -> None:
         """
         Poll a button for presses with debouncing.
@@ -124,6 +164,7 @@ class GPIOService:
             debounce_seconds: Minimum time between recognized button presses
             hold_seconds: Required continuous hold time before press is accepted
             stop_event: Threading/multiprocessing event to signal stop
+            button_name: Human-readable name for logging
         """
         if not self.gpio_available or self.GPIO is None:
             logger.info(f"Mock GPIO: Would poll button on pin {pin}")
@@ -136,7 +177,7 @@ class GPIOService:
         press_started_at: float | None = None
 
         logger.info(
-            f"Starting button polling on GPIO pin {pin} "
+            f"Starting {button_name} polling on GPIO pin {pin} "
             f"(hold={hold_seconds:.2f}s, debounce={debounce_seconds:.2f}s)"
         )
 
@@ -156,8 +197,8 @@ class GPIOService:
                         if self.GPIO.input(pin) == self.GPIO.LOW:
                             press_started_at = time.monotonic()
                             logger.info(
-                                f"Button hold started on GPIO pin {pin}; "
-                                f"hold for {hold_seconds:.2f}s to toggle HID mode"
+                                f"{button_name.capitalize()} hold started on GPIO pin {pin}; "
+                                f"hold for {hold_seconds:.2f}s to toggle"
                             )
                     elif (
                         current_time - press_started_at >= hold_seconds
@@ -166,21 +207,21 @@ class GPIOService:
                         last_press_time = current_time
                         button_armed = False
                         logger.info(
-                            f"Button hold confirmed on GPIO pin {pin} "
+                            f"{button_name.capitalize()} hold confirmed on GPIO pin {pin} "
                             f"after {current_time - press_started_at:.2f}s"
                         )
                         try:
                             callback()
                         except Exception as e:
-                            logger.error(f"Button callback error: {e}", exc_info=True)
+                            logger.error(f"{button_name.capitalize()} callback error: {e}", exc_info=True)
 
                 time.sleep(0.01)  # 10ms poll interval
 
             except Exception as e:
-                logger.error(f"GPIO polling error: {e}", exc_info=True)
+                logger.error(f"GPIO polling error on {button_name}: {e}", exc_info=True)
                 time.sleep(1.0)
 
-        logger.info(f"Stopped polling button on GPIO pin {pin}")
+        logger.info(f"Stopped polling {button_name} on GPIO pin {pin}")
 
     def _mock_button_poll(
         self,
@@ -213,23 +254,43 @@ def gpio_service_main(stop_event: Any = None) -> None:
     """
     Main entry point for GPIO service.
     
-    Monitors the HID mode button and toggles between keyboard/gamepad modes.
+    Monitors the HID mode button and pairing mode button.
     
     Args:
         stop_event: Threading/multiprocessing event to signal shutdown
     """
+    import threading
     from hid_mode_state import HIDModeState
+    from pairing_mode_state import PairingModeState
 
     logger.info("GPIO Service Starting")
 
     hid_mode = HIDModeState()
+    pairing_mode = PairingModeState()
     gpio = GPIOService()
-    
-    # Ensure initial state file exists
-    current_state = hid_mode.ensure_initialized()
-    logger.info(f"Initial HID mode: {current_state['active_mode']}")
 
-    def on_mode_button_press() -> None:
+    # Resolve pin configurations
+    hid_pin = get_hid_mode_button_pin()
+    hid_hold = get_hid_mode_hold_seconds()
+    pairing_pin = get_pairing_mode_button_pin()
+    pairing_hold = get_pairing_mode_hold_seconds()
+
+    # Validate no pin collision
+    if hid_pin == pairing_pin:
+        logger.error(
+            f"FATAL: HID mode pin ({hid_pin}) and pairing mode pin ({pairing_pin}) "
+            "are the same! Please configure different pins via "
+            f"{HID_MODE_BUTTON_PIN_ENV_VAR} and {PAIRING_MODE_BUTTON_PIN_ENV_VAR}"
+        )
+        return
+
+    # Ensure initial state files exist
+    hid_state = hid_mode.ensure_initialized()
+    pairing_state = pairing_mode.ensure_initialized()
+    logger.info(f"Initial HID mode: {hid_state['active_mode']}")
+    logger.info(f"Initial pairing mode: enabled={pairing_state['enabled']}")
+
+    def on_hid_mode_button_press() -> None:
         """Handle HID mode button press - toggle between keyboard and gamepad."""
         try:
             new_state = hid_mode.toggle_mode(source="gpio")
@@ -240,19 +301,63 @@ def gpio_service_main(stop_event: Any = None) -> None:
         except Exception as e:
             logger.error(f"Failed to toggle HID mode: {e}", exc_info=True)
 
-    # Setup and poll the HID mode button
-    pin = get_hid_mode_button_pin()
-    hold_seconds = get_hid_mode_hold_seconds()
-    gpio.setup_button(pin, on_mode_button_press, pull_up=True)
-    
+    def on_pairing_button_press() -> None:
+        """Handle pairing mode button press - toggle pairing on/off."""
+        try:
+            new_state = pairing_mode.toggle(source="gpio")
+            logger.info(
+                f"Pairing mode toggled to: enabled={new_state['enabled']} "
+                f"(sequence: {new_state['sequence']})"
+            )
+        except Exception as e:
+            logger.error(f"Failed to toggle pairing mode: {e}", exc_info=True)
+
+    # Setup both buttons
+    gpio.setup_button(hid_pin, on_hid_mode_button_press, pull_up=True)
+    gpio.setup_button(pairing_pin, on_pairing_button_press, pull_up=True)
+
+    # Create threads for each button
+    hid_thread = threading.Thread(
+        target=gpio.poll_button,
+        kwargs={
+            "pin": hid_pin,
+            "callback": on_hid_mode_button_press,
+            "debounce_seconds": DEBOUNCE_INTERVAL_SECONDS,
+            "hold_seconds": hid_hold,
+            "stop_event": stop_event,
+            "button_name": "HID mode button",
+        },
+        daemon=True,
+        name="gpio-hid-mode",
+    )
+
+    pairing_thread = threading.Thread(
+        target=gpio.poll_button,
+        kwargs={
+            "pin": pairing_pin,
+            "callback": on_pairing_button_press,
+            "debounce_seconds": DEBOUNCE_INTERVAL_SECONDS,
+            "hold_seconds": pairing_hold,
+            "stop_event": stop_event,
+            "button_name": "pairing mode button",
+        },
+        daemon=True,
+        name="gpio-pairing-mode",
+    )
+
     try:
-        gpio.poll_button(
-            pin,
-            on_mode_button_press,
-            debounce_seconds=DEBOUNCE_INTERVAL_SECONDS,
-            hold_seconds=hold_seconds,
-            stop_event=stop_event,
+        hid_thread.start()
+        pairing_thread.start()
+
+        logger.info(
+            f"GPIO service running - HID button: pin {hid_pin} (hold {hid_hold}s), "
+            f"Pairing button: pin {pairing_pin} (hold {pairing_hold}s)"
         )
+
+        # Wait for stop signal
+        while stop_event is None or not stop_event.is_set():
+            time.sleep(0.5)
+
     finally:
         gpio.cleanup()
         logger.info("GPIO Service Exiting")

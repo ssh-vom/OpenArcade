@@ -11,6 +11,7 @@ from runtime_ipc import (
     MESSAGE_TYPE_CONFIG_UPDATED,
     MESSAGE_TYPE_GET_DEVICE_STATES,
     MESSAGE_TYPE_GET_CONNECTED_DEVICES,
+    MESSAGE_TYPE_GET_PAIRING_STATUS,
     resolve_runtime_socket_path,
 )
 
@@ -20,6 +21,7 @@ logger = logging.getLogger("OpenArcade")
 ConfigUpdatedHandler = Callable[[], Awaitable[None]]
 ConnectedDevicesProvider = Callable[[], set[str]]
 DeviceStatesProvider = Callable[[], dict[str, dict[str, Any]]]
+PairingStatusProvider = Callable[[], dict[str, Any]]
 
 
 class RuntimeControlServer:
@@ -28,11 +30,13 @@ class RuntimeControlServer:
         on_config_updated: ConfigUpdatedHandler,
         get_connected_devices: ConnectedDevicesProvider,
         get_device_states: DeviceStatesProvider,
+        get_pairing_status: PairingStatusProvider | None = None,
         socket_path: str | None = None,
     ) -> None:
         self._on_config_updated = on_config_updated
         self._get_connected_devices = get_connected_devices
         self._get_device_states = get_device_states
+        self._get_pairing_status = get_pairing_status
         self._socket_path = socket_path or resolve_runtime_socket_path()
         self._server: asyncio.AbstractServer | None = None
 
@@ -106,6 +110,15 @@ class RuntimeControlServer:
             return {
                 "ok": True,
                 "device_states": device_states,
+            }
+
+        if message_type == MESSAGE_TYPE_GET_PAIRING_STATUS:
+            if self._get_pairing_status is None:
+                return {"ok": False, "error": "pairing_status_not_available"}
+            pairing_status = self._get_pairing_status()
+            return {
+                "ok": True,
+                "pairing": pairing_status,
             }
 
         logger.warning("Unknown runtime control message: %s", message_type)
