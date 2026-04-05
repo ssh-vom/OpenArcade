@@ -510,16 +510,30 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
 
         const deviceLayout = currentModule.deviceLayout;
         const controlId = getControlIdForButton(deviceLayout, buttonName);
-        if (!controlId || !config || config.type !== HID_INPUT_TYPES.KEYBOARD) {
+        if (!controlId || !config) {
             return;
         }
 
-        const keycodeName = getKeycodeForInput(config.input);
-        if (!keycodeName) {
+        // Determine the mode and mapping value based on input type
+        let mode, mappingValue;
+        
+        if (config.type === HID_INPUT_TYPES.KEYBOARD) {
+            mode = "keyboard";
+            const keycodeName = getKeycodeForInput(config.input);
+            if (!keycodeName) {
+                return;
+            }
+            mappingValue = { keycode: keycodeName };
+        } else if (config.type === HID_INPUT_TYPES.GAMEPAD) {
+            mode = "gamepad";
+            // For gamepad, the input value is the gamepad input name directly
+            mappingValue = { gamepad_input: config.input };
+        } else {
+            // Unsupported type for now
             return;
         }
 
-        activeClient.setMapping(currentModule.deviceId, "keyboard", controlId, { keycode: keycodeName })
+        activeClient.setMapping(currentModule.deviceId, mode, controlId, mappingValue)
             .catch((error) => {
                 console.warn("Failed to update mapping:", error);
             });
@@ -723,19 +737,40 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 console.log('Saving configuration to device...');
 
                 const layout = module.deviceLayout || defaultLayout;
-                const mode = "keyboard";
+                
+                // Save mappings for each mode separately
+                const keyboardMappings = [];
+                const gamepadMappings = [];
+                
                 for (const [buttonName, mapping] of Object.entries(module.mappings)) {
-                    if (mapping?.type !== HID_INPUT_TYPES.KEYBOARD) {
-                        continue;
-                    }
                     const controlId = getControlIdForButton(layout, buttonName);
-                    const keycodeName = getKeycodeForInput(mapping.input);
-                    if (!controlId || !keycodeName) {
+                    if (!controlId) {
                         continue;
                     }
-                    await activeClient.setMapping(module.deviceId, mode, controlId, { keycode: keycodeName });
+                    
+                    if (mapping?.type === HID_INPUT_TYPES.KEYBOARD) {
+                        const keycodeName = getKeycodeForInput(mapping.input);
+                        if (keycodeName) {
+                            keyboardMappings.push({ controlId, value: { keycode: keycodeName } });
+                        }
+                    } else if (mapping?.type === HID_INPUT_TYPES.GAMEPAD) {
+                        // For gamepad, the input value is the gamepad input name
+                        gamepadMappings.push({ controlId, value: { gamepad_input: mapping.input } });
+                    }
                 }
-                await activeClient.setActiveMode(module.deviceId, mode);
+                
+                // Save keyboard mappings
+                for (const { controlId, value } of keyboardMappings) {
+                    await activeClient.setMapping(module.deviceId, "keyboard", controlId, value);
+                }
+                
+                // Save gamepad mappings  
+                for (const { controlId, value } of gamepadMappings) {
+                    await activeClient.setMapping(module.deviceId, "gamepad", controlId, value);
+                }
+                
+                // Note: We no longer call setActiveMode here, as the HID mode is now
+                // controlled by the GPIO button on the Raspberry Pi, not by software.
 
                 console.log('Configuration saved successfully!');
                 // Could add success notification here

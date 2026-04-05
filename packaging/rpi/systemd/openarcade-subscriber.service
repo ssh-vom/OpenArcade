@@ -1,15 +1,15 @@
 [Unit]
 Description=OpenArcade BLE to HID runtime
 Requires=openarcade-gadget.service
-After=openarcade-gadget.service bluetooth.target
-Wants=bluetooth.target
+After=openarcade-gadget.service bluetooth.service
+Wants=bluetooth.service
 
 [Service]
 Type=simple
 EnvironmentFile=-/etc/openarcade/openarcade.env
 WorkingDirectory=/opt/openarcade/app/server
 ExecStartPre=/bin/bash -c 'rfkill unblock bluetooth 2>/dev/null || true'
-ExecStartPre=/bin/bash -c 'btmgmt power off 2>/dev/null || true && btmgmt le on 2>/dev/null || true && btmgmt connectable on 2>/dev/null || true && btmgmt discov on 2>/dev/null || true && btmgmt power on 2>/dev/null || true'
+ExecStartPre=/bin/bash -c 'timeout 5s btmgmt power off 2>/dev/null || true; timeout 5s btmgmt le on 2>/dev/null || true; timeout 5s btmgmt connectable on 2>/dev/null || true; timeout 5s btmgmt discov on 2>/dev/null || true; timeout 5s btmgmt power on 2>/dev/null || true'
 ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/runtime_main.py --config $OPENARCADE_CONFIG_PATH
 Restart=on-failure
 RestartSec=5

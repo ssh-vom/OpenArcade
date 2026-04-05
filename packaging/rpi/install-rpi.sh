@@ -19,6 +19,7 @@ REBOOT_REQUIRED=0
 
 SERVICE_NAMES=(
     openarcade-gadget.service
+    openarcade-gpio.service
     openarcade-subscriber.service
     openarcade-configd.service
     openarcade-display.service
@@ -104,6 +105,7 @@ install_os_packages() {
         openssh-server \
         python3 \
         python3-pip \
+        python3-rpi.gpio \
         python3-venv
 }
 
@@ -195,6 +197,18 @@ setup_state_dir() {
     if [[ ! -f "$STATE_DIR/config.json" && -f "$REPO_ROOT/server/config.json" ]]; then
         install -m 0644 "$REPO_ROOT/server/config.json" "$STATE_DIR/config.json"
     fi
+
+    if [[ ! -f "$STATE_DIR/hid_mode.json" ]]; then
+        cat > "$STATE_DIR/hid_mode.json" <<'EOF'
+{
+  "active_mode": "keyboard",
+  "source": "default",
+  "sequence": 0,
+  "updated_at": "1970-01-01T00:00:00+00:00"
+}
+EOF
+        chmod 0644 "$STATE_DIR/hid_mode.json"
+    fi
 }
 
 install_env_file() {
@@ -240,6 +254,7 @@ start_services_if_ready() {
     fi
 
     systemctl restart openarcade-gadget.service
+    systemctl restart openarcade-gpio.service
     systemctl restart openarcade-configd.service
     systemctl restart openarcade-subscriber.service
     systemctl restart openarcade-display.service
@@ -254,12 +269,14 @@ OpenArcade has been installed to:
 
 Service status commands:
   systemctl status openarcade-gadget.service
+  systemctl status openarcade-gpio.service
   systemctl status openarcade-subscriber.service
   systemctl status openarcade-configd.service
   systemctl status openarcade-display.service
 
 Log commands:
   journalctl -u openarcade-gadget.service -f
+  journalctl -u openarcade-gpio.service -f
   journalctl -u openarcade-subscriber.service -f
   journalctl -u openarcade-configd.service -f
   journalctl -u openarcade-display.service -f
@@ -291,6 +308,7 @@ main() {
     ensure_hostname
     ensure_ble_enabled
     ensure_base_services
+    install_systemd_units
     start_services_if_ready
     print_summary
 }

@@ -91,7 +91,7 @@ static void controller_task(void *param) {
       gap_request_pair();
     }
 
-    if (ble_ready) {
+    if (ble_ready && st.raw != prev_state.raw) {
       send_button_state_notification(&st);
     }
 

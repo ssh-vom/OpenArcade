@@ -10,6 +10,7 @@ import subprocess
 import threading
 from dataclasses import dataclass
 
+from hid_mode_state import HIDModeState
 from runtime_ipc import get_connected_devices
 
 
@@ -34,6 +35,7 @@ class DisplayConfig:
 class DisplayState:
     module_count: int
     temperature_c: float | None
+    hid_mode: str
 
 
 def _read_env_int(name: str, default: int) -> int:
@@ -119,6 +121,11 @@ class StatusDisplay:
 
         title = "OpenArcade"
         count_text = f"Modules: {state.module_count}"
+        mode_abbrev = {
+            "keyboard": "KB",
+            "gamepad": "GP",
+        }.get(state.hid_mode, "??")
+        mode_text = f"Mode: {mode_abbrev}"
         temperature_text = (
             f"Temp: {state.temperature_c:.1f}C"
             if state.temperature_c is not None
@@ -127,10 +134,12 @@ class StatusDisplay:
 
         with self._canvas(self._device) as draw:
             title_x = self._centered_x(draw, title)
-            count_x = self._centered_x(draw, count_text)
+            count_mode_text = f"{count_text}  |  {mode_text}"
+            count_mode_x = self._centered_x(draw, count_mode_text)
             temperature_x = self._centered_x(draw, temperature_text)
+            
             draw.text((title_x, 10), title, font=self._font, fill="white")
-            draw.text((count_x, 28), count_text, font=self._font, fill="white")
+            draw.text((count_mode_x, 28), count_mode_text, font=self._font, fill="white")
             draw.text(
                 (temperature_x, 44), temperature_text, font=self._font, fill="white"
             )
@@ -150,6 +159,7 @@ class StatusDisplay:
 def run_service(config: DisplayConfig) -> None:
     stop_event = threading.Event()
     temperature_available: bool | None = None
+    hid_mode_state = HIDModeState()
 
     def _handle_signal(_signum: int, _frame: object) -> None:
         stop_event.set()
@@ -168,8 +178,20 @@ def run_service(config: DisplayConfig) -> None:
         while not stop_event.is_set():
             module_count = len(get_connected_devices())
             temperature_c = read_pi_temperature_c()
+            
+            # Read current HID mode
+            try:
+                hid_mode = hid_mode_state.get_active_mode()
+            except Exception as e:
+                logger.warning(f"Failed to read HID mode: {e}")
+                hid_mode = "unknown"
+            
             display.render(
-                DisplayState(module_count=module_count, temperature_c=temperature_c)
+                DisplayState(
+                    module_count=module_count,
+                    temperature_c=temperature_c,
+                    hid_mode=hid_mode,
+                )
             )
 
             is_available = temperature_c is not None
