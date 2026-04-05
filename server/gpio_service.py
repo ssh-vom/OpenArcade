@@ -19,7 +19,8 @@ logger = logging.getLogger("OpenArcade")
 # GPIO Configuration
 HID_MODE_BUTTON_PIN_ENV_VAR = "OPENARCADE_HID_MODE_PIN"
 DEFAULT_HID_MODE_PIN = 4  # GPIO4 (physical pin 7)
-DEBOUNCE_INTERVAL_SECONDS = 0.2
+DEBOUNCE_INTERVAL_SECONDS = 0.35
+PRESS_CONFIRMATION_SECONDS = 0.03
 
 
 def get_hid_mode_button_pin() -> int:
@@ -110,7 +111,7 @@ class GPIOService:
             return
 
         last_press_time = 0.0
-        last_state = self.GPIO.HIGH  # Assuming pull-up (button not pressed)
+        button_armed = True
 
         logger.info(f"Starting button polling on GPIO pin {pin}")
 
@@ -119,18 +120,24 @@ class GPIOService:
                 current_state = self.GPIO.input(pin)
                 current_time = time.monotonic()
 
-                # Detect falling edge (button press with pull-up)
-                if last_state == self.GPIO.HIGH and current_state == self.GPIO.LOW:
-                    # Check debounce
-                    if current_time - last_press_time >= debounce_seconds:
-                        last_press_time = current_time
-                        logger.info(f"Button pressed on GPIO pin {pin}")
-                        try:
-                            callback()
-                        except Exception as e:
-                            logger.error(f"Button callback error: {e}", exc_info=True)
+                # Re-arm only after full release.
+                if current_state == self.GPIO.HIGH:
+                    button_armed = True
 
-                last_state = current_state
+                # Detect a fresh press with pull-up wiring.
+                if current_state == self.GPIO.LOW and button_armed:
+                    # Brief confirmation to reject transient noise/bounce.
+                    time.sleep(PRESS_CONFIRMATION_SECONDS)
+                    if self.GPIO.input(pin) == self.GPIO.LOW:
+                        if current_time - last_press_time >= debounce_seconds:
+                            last_press_time = current_time
+                            button_armed = False
+                            logger.info(f"Button pressed on GPIO pin {pin}")
+                            try:
+                                callback()
+                            except Exception as e:
+                                logger.error(f"Button callback error: {e}", exc_info=True)
+
                 time.sleep(0.01)  # 10ms poll interval
 
             except Exception as e:

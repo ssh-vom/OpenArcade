@@ -121,7 +121,11 @@ class StatusDisplay:
 
         title = "OpenArcade"
         count_text = f"Modules: {state.module_count}"
-        mode_text = f"Mode: {state.hid_mode.upper()[:2]}"
+        mode_abbrev = {
+            "keyboard": "KB",
+            "gamepad": "GP",
+        }.get(state.hid_mode, "??")
+        mode_text = f"Mode: {mode_abbrev}"
         temperature_text = (
             f"Temp: {state.temperature_c:.1f}C"
             if state.temperature_c is not None
