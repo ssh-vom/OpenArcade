@@ -6,19 +6,54 @@ import sys
 import time
 from typing import Any
 
-from hid_mode_state import HIDModeState, HIDMode
+from hid_mode_state import HIDMode, HIDModeState
+from runtime.report_builder import (
+    build_gamepad_pc_report,
+    build_gamepad_switch_hori_report,
+    build_keyboard_report,
+)
 
 
 logger = logging.getLogger("OpenArcade")
 
+REPORT_LENGTH_BY_MODE: dict[HIDMode, int] = {
+    "keyboard": 8,
+    "gamepad_pc": 8,
+    "gamepad_switch_hori": 64,
+}
+
+MODE_DEVICE_CANDIDATES: dict[HIDMode, tuple[str, ...]] = {
+    "keyboard": ("/dev/hidg0",),
+    "gamepad_pc": ("/dev/hidg1",),
+    "gamepad_switch_hori": ("/dev/hidg0", "/dev/hidg1"),
+}
+
+MODE_TAGS: dict[HIDMode, str] = {
+    "keyboard": "KB",
+    "gamepad_pc": "GP",
+    "gamepad_switch_hori": "SW",
+}
+
 
 def set_cpu_affinity(core_id: int) -> None:
-    """Pin this process to a specific CPU core."""
     try:
         os.sched_setaffinity(0, {core_id})
-        logger.info(f"Pinned to CPU core {core_id}")
+        logger.info("Pinned to CPU core %d", core_id)
     except Exception as exc:
-        logger.warning(f"Could not set CPU affinity: {exc}")
+        logger.warning("Could not set CPU affinity: %s", exc)
+
+
+def _neutral_report_for_mode(mode: HIDMode) -> bytes:
+    if mode == "keyboard":
+        return build_keyboard_report([])
+    if mode == "gamepad_switch_hori":
+        return build_gamepad_switch_hori_report([])
+    return build_gamepad_pc_report([])
+
+
+def _trim_report_for_mode(mode: HIDMode, report: bytes) -> bytes:
+    report_length = REPORT_LENGTH_BY_MODE.get(mode, 8)
+    return report[:report_length]
 
 
 def hid_writer_process(
@@ -26,61 +61,123 @@ def hid_writer_process(
     stop_event: Any,
     cpu_core: int = 1,
 ):
-    """HID output process pinned to a specific CPU core."""
-    
-    # Pin to specific CPU core immediately
     set_cpu_affinity(cpu_core)
-    
     logger.info("HID Writer Process Started on core %d", cpu_core)
 
     report_array = mailbox["report_array"]
     report_version = mailbox["report_version"]
     report_event = mailbox["report_event"]
 
-    # HID device paths for different modes
-    hid_keyboard_path = "/dev/hidg0"
-    hid_gamepad_path = "/dev/hidg1"
-    
-    use_mock = False
-    hid_keyboard_device = None
-    hid_gamepad_device = None
-    
-    # HID mode state tracker
     hid_mode_state = HIDModeState()
     initial_mode_state = hid_mode_state.load()
     current_mode: HIDMode = initial_mode_state["active_mode"]
     last_mode_sequence = initial_mode_state["sequence"]
 
-    # Try to open HID devices
-    try:
-        hid_keyboard_device = open(hid_keyboard_path, "wb", buffering=0)
-        logger.info("Opened keyboard HID interface: %s", hid_keyboard_path)
-    except (FileNotFoundError, PermissionError, OSError) as e:
-        logger.warning(f"Keyboard HID interface not available: {e}")
-    
-    try:
-        hid_gamepad_device = open(hid_gamepad_path, "wb", buffering=0)
-        logger.info("Opened gamepad HID interface: %s", hid_gamepad_path)
-    except (FileNotFoundError, PermissionError, OSError) as e:
-        logger.warning(f"Gamepad HID interface not available: {e}")
-    
-    # If neither device is available, use mock mode
-    if hid_keyboard_device is None and hid_gamepad_device is None:
-        use_mock = True
-        logger.warning(
-            "No HID interfaces available. Using MOCK mode (stdout)."
-        )
-
+    use_mock = False
+    opened_devices: dict[str, Any] = {}
+    current_device = None
+    current_device_path: str | None = None
     last_seen_version = 0
+    pending_report: bytes | None = None
+
+    def close_all_devices() -> None:
+        nonlocal current_device, current_device_path
+        for path, handle in list(opened_devices.items()):
+            try:
+                handle.close()
+            except OSError:
+                pass
+            opened_devices.pop(path, None)
+        current_device = None
+        current_device_path = None
+
+    def open_mode_device(mode: HIDMode):
+        nonlocal use_mock, current_device, current_device_path
+
+        for path in MODE_DEVICE_CANDIDATES[mode]:
+            handle = opened_devices.get(path)
+            if handle is not None and not handle.closed:
+                current_device = handle
+                current_device_path = path
+                use_mock = False
+                return handle
+
+            try:
+                handle = open(path, "wb", buffering=0)
+                opened_devices[path] = handle
+                current_device = handle
+                current_device_path = path
+                use_mock = False
+                logger.info("Opened HID interface for %s mode: %s", mode, path)
+                return handle
+            except (FileNotFoundError, PermissionError, OSError) as exc:
+                logger.debug("HID path not ready for %s mode (%s): %s", mode, path, exc)
+
+        if not opened_devices:
+            use_mock = True
+        current_device = None
+        current_device_path = None
+        return None
+
+    def ensure_mode_device(mode: HIDMode):
+        if current_device_path in MODE_DEVICE_CANDIDATES[mode]:
+            handle = opened_devices.get(current_device_path or "")
+            if handle is not None and not handle.closed:
+                return handle
+        return open_mode_device(mode)
+
+    def write_report(mode: HIDMode, report: bytes) -> bool:
+        nonlocal current_device, current_device_path
+        target_report = _trim_report_for_mode(mode, report)
+        target_device = ensure_mode_device(mode)
+        tag = MODE_TAGS[mode]
+
+        if use_mock and target_device is None:
+            if mode == "keyboard":
+                keys = [f"0x{key:02X}" for key in target_report[2:] if key != 0]
+                output = f"\r[{tag}] Mod: 0x{target_report[0]:02X} | Keys: {keys}" + " " * 20
+            else:
+                buttons = target_report[0] | (target_report[1] << 8)
+                dpad = target_report[2]
+                output = f"\r[{tag}] Buttons: 0x{buttons:04X} | HAT: {dpad}" + " " * 20
+            sys.stdout.write(output)
+            sys.stdout.flush()
+            return True
+
+        if target_device is None:
+            logger.warning("No HID device available for %s mode; waiting for re-enumeration", mode)
+            return False
+
+        try:
+            target_device.write(target_report)
+            return True
+        except Exception as exc:
+            logger.warning("HID write error (%s @ %s): %s", mode, current_device_path, exc)
+            if current_device_path is not None:
+                handle = opened_devices.pop(current_device_path, None)
+                if handle is not None:
+                    try:
+                        handle.close()
+                    except OSError:
+                        pass
+            current_device = None
+            time.sleep(0.2)
+            return False
+
+    # Best-effort initial open.
+    open_mode_device(current_mode)
+    if current_device is None:
+        logger.warning("No HID interfaces available on startup. Writer will retry dynamically.")
 
     while not stop_event.is_set():
-        # Wait for new data signal (with timeout to check stop_event periodically)
         report_event.wait(timeout=0.5)
-        
         if stop_event.is_set():
             break
-        
-        # Check for mode changes
+
+        if pending_report is not None and current_device is None:
+            if write_report(current_mode, pending_report):
+                pending_report = None
+
         try:
             mode_state = hid_mode_state.load()
             mode_sequence = mode_state["sequence"]
@@ -95,72 +192,35 @@ def hid_writer_process(
                 )
             elif mode_sequence != last_mode_sequence or new_mode != current_mode:
                 logger.info(
-                    f"HID writer detected mode change: {current_mode} -> {new_mode} "
-                    f"(seq: {last_mode_sequence} -> {mode_sequence})"
+                    "HID writer detected mode change: %s -> %s (seq: %s -> %s)",
+                    current_mode,
+                    new_mode,
+                    last_mode_sequence,
+                    mode_sequence,
                 )
                 current_mode = new_mode
                 last_mode_sequence = mode_sequence
-        except Exception as e:
-            logger.error(f"Error checking HID mode: {e}", exc_info=True)
-            
-        # Check if there's new data
+                current_device = None
+                current_device_path = None
+                open_mode_device(current_mode)
+        except Exception as exc:
+            logger.error("Error checking HID mode: %s", exc, exc_info=True)
+
         current_version = report_version.value
         if current_version == last_seen_version:
             continue
-            
         last_seen_version = current_version
-        
-        # Read the current report from shared memory
+
         report = bytes(report_array)
-        
-        # Clear the event flag (we'll wait for next signal)
         report_event.clear()
-
-        # Select the appropriate HID device based on current mode
-        if current_mode == "keyboard":
-            target_device = hid_keyboard_device
-            device_name = "keyboard"
+        if not write_report(current_mode, report):
+            pending_report = report
         else:
-            target_device = hid_gamepad_device
-            device_name = "gamepad"
+            pending_report = None
 
-        try:
-            if use_mock:
-                # Mock output with mode indicator
-                if current_mode == "keyboard":
-                    keys = [f"0x{key:02X}" for key in report[2:] if key != 0]
-                    output = f"\r[KB] Mod: 0x{report[0]:02X} | Keys: {keys}" + " " * 20
-                else:
-                    buttons = report[0] | (report[1] << 8)
-                    dpad = report[2]
-                    output = f"\r[GP] Buttons: 0x{buttons:04X} | D-Pad: {dpad}" + " " * 20
-                sys.stdout.write(output)
-                sys.stdout.flush()
-            elif target_device is not None:
-                target_device.write(report)
-            else:
-                logger.warning(f"No HID device available for {device_name} mode")
-                
-        except Exception as exc:
-            logger.error("HID write error (%s): %s", device_name, exc)
-            time.sleep(1.0)
-
-    # Cleanup: send neutral reports and close devices
-    neutral_keyboard_report = bytes([0] * 8)
-    neutral_gamepad_report = bytes([0, 0, 15, 0x80, 0x80, 0x80, 0x80, 0])
-    
-    if hid_keyboard_device is not None:
-        try:
-            hid_keyboard_device.write(neutral_keyboard_report)
-            hid_keyboard_device.close()
-        except OSError:
-            pass
-    
-    if hid_gamepad_device is not None:
-        try:
-            hid_gamepad_device.write(neutral_gamepad_report)
-            hid_gamepad_device.close()
-        except OSError:
-            pass
-
+    try:
+        write_report(current_mode, _neutral_report_for_mode(current_mode))
+    except Exception:
+        pass
+    close_all_devices()
     logger.info("HID Writer Process Exiting")

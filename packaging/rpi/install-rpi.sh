@@ -18,7 +18,7 @@ BOOT_CONFIG=""
 REBOOT_REQUIRED=0
 
 SERVICE_NAMES=(
-    openarcade-gadget.service
+    openarcade-gadget-manager.service
     openarcade-gpio.service
     openarcade-subscriber.service
     openarcade-configd.service
@@ -253,7 +253,7 @@ start_services_if_ready() {
         return
     fi
 
-    systemctl restart openarcade-gadget.service
+    systemctl restart openarcade-gadget-manager.service
     systemctl restart openarcade-gpio.service
     systemctl restart openarcade-configd.service
     systemctl restart openarcade-subscriber.service
@@ -268,14 +268,14 @@ OpenArcade has been installed to:
   State: $STATE_DIR
 
 Service status commands:
-  systemctl status openarcade-gadget.service
+  systemctl status openarcade-gadget-manager.service
   systemctl status openarcade-gpio.service
   systemctl status openarcade-subscriber.service
   systemctl status openarcade-configd.service
   systemctl status openarcade-display.service
 
 Log commands:
-  journalctl -u openarcade-gadget.service -f
+  journalctl -u openarcade-gadget-manager.service -f
   journalctl -u openarcade-gpio.service -f
   journalctl -u openarcade-subscriber.service -f
   journalctl -u openarcade-configd.service -f

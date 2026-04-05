@@ -124,6 +124,8 @@ class StatusDisplay:
         mode_abbrev = {
             "keyboard": "KB",
             "gamepad": "GP",
+            "gamepad_pc": "GP",
+            "gamepad_switch_hori": "SW",
         }.get(state.hid_mode, "??")
         mode_text = f"Mode: {mode_abbrev}"
         temperature_text = (

@@ -1,7 +1,7 @@
 """
 GPIO Service for Raspberry Pi
 
-Provides GPIO handling for OpenArcade, including the HID mode toggle button.
+Provides GPIO handling for OpenArcade, including the HID mode cycle button.
 Designed to be reusable for other GPIO-based features.
 """
 
@@ -60,7 +60,7 @@ class GPIOService:
     Generic GPIO service for Raspberry Pi.
     
     Provides:
-    - HID mode toggle button monitoring
+    - HID mode cycle button monitoring
     - Debouncing
     - Extensible for additional GPIO features
     """
@@ -157,7 +157,7 @@ class GPIOService:
                             press_started_at = time.monotonic()
                             logger.info(
                                 f"Button hold started on GPIO pin {pin}; "
-                                f"hold for {hold_seconds:.2f}s to toggle HID mode"
+                                f"hold for {hold_seconds:.2f}s to cycle HID mode"
                             )
                     elif (
                         current_time - press_started_at >= hold_seconds
@@ -213,7 +213,7 @@ def gpio_service_main(stop_event: Any = None) -> None:
     """
     Main entry point for GPIO service.
     
-    Monitors the HID mode button and toggles between keyboard/gamepad modes.
+    Monitors the HID mode button and cycles keyboard/PC gamepad/Switch modes.
     
     Args:
         stop_event: Threading/multiprocessing event to signal shutdown
@@ -230,11 +230,11 @@ def gpio_service_main(stop_event: Any = None) -> None:
     logger.info(f"Initial HID mode: {current_state['active_mode']}")
 
     def on_mode_button_press() -> None:
-        """Handle HID mode button press - toggle between keyboard and gamepad."""
+        """Handle HID mode button press by cycling to the next output mode."""
         try:
-            new_state = hid_mode.toggle_mode(source="gpio")
+            new_state = hid_mode.cycle_mode(source="gpio")
             logger.info(
-                f"HID mode toggled to: {new_state['active_mode']} "
+                f"HID mode changed to: {new_state['active_mode']} "
                 f"(sequence: {new_state['sequence']})"
             )
         except Exception as e:

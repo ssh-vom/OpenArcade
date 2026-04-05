@@ -1,7 +1,7 @@
 [Unit]
 Description=OpenArcade BLE to HID runtime
-Requires=openarcade-gadget.service
-After=openarcade-gadget.service bluetooth.service
+Requires=openarcade-gadget-manager.service
+After=openarcade-gadget-manager.service bluetooth.service
 Wants=bluetooth.service
 
 [Service]

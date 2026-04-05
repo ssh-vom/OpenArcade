@@ -1,9 +1,9 @@
 """
 HID Mode State Manager
 
-Manages the global HID mode state (keyboard vs gamepad) that is selected
-via GPIO on the Raspberry Pi. This is the source of truth for which HID
-output mode is currently active across the entire system.
+Manages the global HID mode state selected via GPIO on the Raspberry Pi.
+This is the source of truth for which HID output mode is currently active
+across the entire system.
 """
 
 from __future__ import annotations
@@ -15,14 +15,22 @@ import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from multiprocessing import current_process
-from typing import Any, Iterator, Literal
+from typing import Any, Iterator, Literal, cast
 
 import fcntl
 
 
 logger = logging.getLogger("OpenArcade")
 
-HIDMode = Literal["keyboard", "gamepad"]
+HIDMode = Literal["keyboard", "gamepad_pc", "gamepad_switch_hori"]
+VALID_HID_MODES: tuple[HIDMode, ...] = (
+    "keyboard",
+    "gamepad_pc",
+    "gamepad_switch_hori",
+)
+LEGACY_HID_MODE_ALIASES: dict[str, HIDMode] = {
+    "gamepad": "gamepad_pc",
+}
 
 OPENARCADE_HID_MODE_PATH_ENV_VAR = "OPENARCADE_HID_MODE_PATH"
 DEFAULT_HID_MODE_PATH = "/var/lib/openarcade/hid_mode.json"
@@ -41,7 +49,7 @@ class HIDModeState:
     Manages persistent HID mode state across the system.
     
     The state includes:
-    - active_mode: "keyboard" or "gamepad"
+    - active_mode: "keyboard", "gamepad_pc", or "gamepad_switch_hori"
     - source: where the mode change originated (e.g., "gpio", "api")
     - sequence: incrementing counter for change tracking
     - updated_at: ISO timestamp of last change
@@ -63,9 +71,13 @@ class HIDModeState:
 
     def _validate_mode(self, mode: str) -> HIDMode:
         """Validate and normalize mode value."""
-        if mode not in ("keyboard", "gamepad"):
-            raise ValueError(f"Invalid HID mode: {mode}. Must be 'keyboard' or 'gamepad'")
-        return mode  # type: ignore
+        normalized_mode = LEGACY_HID_MODE_ALIASES.get(mode, mode)
+        if normalized_mode not in VALID_HID_MODES:
+            raise ValueError(
+                "Invalid HID mode: "
+                f"{mode}. Must be one of: {', '.join(VALID_HID_MODES)}"
+            )
+        return cast(HIDMode, normalized_mode)
 
     @property
     def _lock_path(self) -> str:
@@ -130,8 +142,13 @@ class HIDModeState:
         normalized = dict(state)
         changed = False
 
-        if normalized.get("active_mode") not in ("keyboard", "gamepad"):
+        active_mode = normalized.get("active_mode")
+        normalized_mode = LEGACY_HID_MODE_ALIASES.get(str(active_mode), active_mode)
+        if normalized_mode not in VALID_HID_MODES:
             normalized["active_mode"] = "keyboard"
+            changed = True
+        elif normalized_mode != active_mode:
+            normalized["active_mode"] = normalized_mode
             changed = True
         if "source" not in normalized:
             normalized["source"] = "unknown"
@@ -195,7 +212,7 @@ class HIDModeState:
         Save new HID mode state.
         
         Args:
-            mode: The HID mode to activate ("keyboard" or "gamepad")
+            mode: The HID mode to activate
             source: Source of the mode change (e.g., "gpio", "api")
         
         Returns:
@@ -242,7 +259,7 @@ class HIDModeState:
             use_cache: If True, use cached value without reading file
         
         Returns:
-            "keyboard" or "gamepad"
+            "keyboard", "gamepad_pc", or "gamepad_switch_hori"
         """
         state = self.load(use_cache=use_cache)
         return state["active_mode"]  # type: ignore
@@ -260,16 +277,22 @@ class HIDModeState:
         state = self.load(use_cache=use_cache)
         return state.get("sequence", 0)
 
-    def toggle_mode(self, source: str = "gpio") -> dict[str, Any]:
+    def cycle_mode(self, source: str = "gpio") -> dict[str, Any]:
         """
-        Toggle between keyboard and gamepad mode.
+        Cycle through the supported HID modes.
         
         Args:
-            source: Source of the toggle (e.g., "gpio", "api")
+            source: Source of the mode change (e.g., "gpio", "api")
         
         Returns:
             The new state dictionary
         """
         current_mode = self.get_active_mode()
-        new_mode: HIDMode = "gamepad" if current_mode == "keyboard" else "keyboard"
+        mode_cycle: tuple[HIDMode, ...] = VALID_HID_MODES
+        current_index = mode_cycle.index(current_mode)
+        new_mode = mode_cycle[(current_index + 1) % len(mode_cycle)]
         return self.save(new_mode, source=source)
+
+    def toggle_mode(self, source: str = "gpio") -> dict[str, Any]:
+        """Backward-compatible alias for cycling HID modes."""
+        return self.cycle_mode(source=source)

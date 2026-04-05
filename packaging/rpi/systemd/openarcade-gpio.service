@@ -1,7 +1,7 @@
 [Unit]
 Description=OpenArcade GPIO Service
-After=network.target openarcade-gadget.service
-Wants=openarcade-gadget.service
+After=network.target openarcade-gadget-manager.service
+Wants=openarcade-gadget-manager.service
 
 [Service]
 Type=simple

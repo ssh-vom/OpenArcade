@@ -42,9 +42,9 @@ def main() -> int:
     logger.info("Aggregator on CPU core %d, HID writer on CPU core %d", 
                 args.aggregator_core, args.writer_core)
 
-    # Shared memory mailbox for latest HID report (replaces Queue)
-    # Array holds the 8-byte HID report, Value holds version for change detection
-    report_array = multiprocessing.Array("B", 8, lock=False)  # 8 bytes for HID report
+    # Shared memory mailbox for latest HID report (replaces Queue).
+    # Use a 64-byte buffer so Switch-mode gadget transport can share the same mailbox.
+    report_array = multiprocessing.Array("B", 64, lock=False)
     report_version = multiprocessing.Value("i", 0, lock=True)  # Version counter
     report_event = multiprocessing.Event()  # Signals new data available
     

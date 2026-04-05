@@ -278,6 +278,41 @@ GP_DPAD_LEFT = 6
 GP_DPAD_UP_LEFT = 7
 GP_DPAD_CENTER = 15  # No direction pressed
 
+GP_AXIS_MIN = 0x00
+GP_AXIS_NEUTRAL = 0x80
+GP_AXIS_MAX = 0xFF
+
+# Switch HORI / Pokkén button bit positions.
+SW_HORI_BUTTON_Y = 0
+SW_HORI_BUTTON_B = 1
+SW_HORI_BUTTON_A = 2
+SW_HORI_BUTTON_X = 3
+SW_HORI_BUTTON_L = 4
+SW_HORI_BUTTON_R = 5
+SW_HORI_BUTTON_ZL = 6
+SW_HORI_BUTTON_ZR = 7
+SW_HORI_BUTTON_MINUS = 8
+SW_HORI_BUTTON_PLUS = 9
+SW_HORI_BUTTON_LCLICK = 10
+SW_HORI_BUTTON_RCLICK = 11
+SW_HORI_BUTTON_HOME = 12
+SW_HORI_BUTTON_CAPTURE = 13
+
+SW_HORI_HAT_UP = 0
+SW_HORI_HAT_UP_RIGHT = 1
+SW_HORI_HAT_RIGHT = 2
+SW_HORI_HAT_DOWN_RIGHT = 3
+SW_HORI_HAT_DOWN = 4
+SW_HORI_HAT_DOWN_LEFT = 5
+SW_HORI_HAT_LEFT = 6
+SW_HORI_HAT_UP_LEFT = 7
+SW_HORI_HAT_CENTER = 8
+
+SW_HORI_AXIS_MIN = 0x00
+SW_HORI_AXIS_NEUTRAL = 0x80
+SW_HORI_AXIS_MAX = 0xFF
+SW_HORI_VENDOR_BYTE_DEFAULT = 0x00
+
 # Gamepad Input Name -> Bit Position/Value Mapping
 # This maps the input schema names to actual HID report values
 GAMEPAD_INPUT_MAP = {
@@ -296,6 +331,14 @@ GAMEPAD_INPUT_MAP = {
     "xb_dpad_down": ("dpad", GP_DPAD_DOWN),
     "xb_dpad_left": ("dpad", GP_DPAD_LEFT),
     "xb_dpad_right": ("dpad", GP_DPAD_RIGHT),
+    "xb_left_stick_left": ("axis", ("lx", -1)),
+    "xb_left_stick_right": ("axis", ("lx", 1)),
+    "xb_left_stick_up": ("axis", ("ly", -1)),
+    "xb_left_stick_down": ("axis", ("ly", 1)),
+    "xb_right_stick_left": ("axis", ("rx", -1)),
+    "xb_right_stick_right": ("axis", ("rx", 1)),
+    "xb_right_stick_up": ("axis", ("ry", -1)),
+    "xb_right_stick_down": ("axis", ("ry", 1)),
 }
 
 # Default gamepad mapping (similar to keyboard)
@@ -318,3 +361,30 @@ _DEFAULT_GAMEPAD_MAPPING_FALLBACK = {
 }
 
 DEFAULT_GAMEPAD_MAPPING = dict(_DEFAULT_GAMEPAD_MAPPING_FALLBACK)
+
+SWITCH_HORI_INPUT_MAP = {
+    "xb_button_a": ("button", SW_HORI_BUTTON_B),
+    "xb_button_b": ("button", SW_HORI_BUTTON_A),
+    "xb_button_x": ("button", SW_HORI_BUTTON_Y),
+    "xb_button_y": ("button", SW_HORI_BUTTON_X),
+    "xb_left_bumper": ("button", SW_HORI_BUTTON_L),
+    "xb_right_bumper": ("button", SW_HORI_BUTTON_R),
+    "xb_view": ("button", SW_HORI_BUTTON_MINUS),
+    "xb_menu": ("button", SW_HORI_BUTTON_PLUS),
+    "xb_home": ("button", SW_HORI_BUTTON_HOME),
+    "xb_left_stick_button": ("button", SW_HORI_BUTTON_LCLICK),
+    "xb_right_stick_button": ("button", SW_HORI_BUTTON_RCLICK),
+    "xb_capture": ("button", SW_HORI_BUTTON_CAPTURE),
+    "xb_dpad_up": ("dpad", SW_HORI_HAT_UP),
+    "xb_dpad_down": ("dpad", SW_HORI_HAT_DOWN),
+    "xb_dpad_left": ("dpad", SW_HORI_HAT_LEFT),
+    "xb_dpad_right": ("dpad", SW_HORI_HAT_RIGHT),
+    "xb_left_stick_left": ("axis", ("lx", -1)),
+    "xb_left_stick_right": ("axis", ("lx", 1)),
+    "xb_left_stick_up": ("axis", ("ly", -1)),
+    "xb_left_stick_down": ("axis", ("ly", 1)),
+    "xb_right_stick_left": ("axis", ("rx", -1)),
+    "xb_right_stick_right": ("axis", ("rx", 1)),
+    "xb_right_stick_up": ("axis", ("ry", -1)),
+    "xb_right_stick_down": ("axis", ("ry", 1)),
+}

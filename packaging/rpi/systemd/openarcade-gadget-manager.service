@@ -1,0 +1,17 @@
+[Unit]
+Description=OpenArcade USB gadget mode manager
+After=local-fs.target systemd-modules-load.service sys-kernel-config.mount
+Wants=sys-kernel-config.mount
+Before=openarcade-subscriber.service openarcade-configd.service openarcade-display.service
+ConditionPathExists=/sys/kernel/config
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openarcade/openarcade.env
+WorkingDirectory=/opt/openarcade/app/server
+ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/gadget_mode_manager.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

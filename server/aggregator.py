@@ -13,7 +13,12 @@ from constants import CHAR_UUID, SCANNER_DELAY
 from device_config_store import DeviceConfigStore
 from hid_mode_state import HIDModeState
 from runtime.control_server import RuntimeControlServer
-from runtime.report_builder import build_mapping_cache, build_keyboard_report, build_gamepad_report
+from runtime.report_builder import (
+    build_gamepad_pc_report,
+    build_gamepad_switch_hori_report,
+    build_keyboard_report,
+    build_mapping_cache,
+)
 from runtime.state_reducer import StateReducer, HIDMode
 
 
@@ -89,9 +94,9 @@ def aggregator_process(
             return
         last_published_report = report
         
-        # Write to shared memory (overwrites previous value)
-        for i, byte_val in enumerate(report):
-            report_array[i] = byte_val
+        # Write to shared memory and clear any trailing bytes from a prior report.
+        for i in range(len(report_array)):
+            report_array[i] = report[i] if i < len(report) else 0
         
         # Increment version and signal writer
         with report_version.get_lock():
@@ -155,11 +160,13 @@ def aggregator_process(
                 f"HID mode changed: {current_mode} -> {new_mode} (seq: {current_mode_sequence} -> {new_sequence})"
             )
             
-            # Send neutral report to old endpoint before switching
+            # Send neutral report to old endpoint before switching.
             if current_mode == "keyboard":
                 publish_report(build_keyboard_report([]))
+            elif current_mode == "gamepad_switch_hori":
+                publish_report(build_gamepad_switch_hori_report([]))
             else:
-                publish_report(build_gamepad_report([]))
+                publish_report(build_gamepad_pc_report([]))
             
             # Switch mode
             current_mode = new_mode
@@ -412,7 +419,12 @@ def aggregator_process(
 
             live_states.clear()
             await control_server.stop()
-            publish_report(build_keyboard_report([]))
+            if current_mode == "gamepad_switch_hori":
+                publish_report(build_gamepad_switch_hori_report([]))
+            elif current_mode == "gamepad_pc":
+                publish_report(build_gamepad_pc_report([]))
+            else:
+                publish_report(build_keyboard_report([]))
 
     try:
         asyncio.run(run())

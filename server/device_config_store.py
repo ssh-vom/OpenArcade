@@ -52,6 +52,11 @@ class DeviceConfigStore:
         return {
             "keyboard": {"output": "hid_keyboard", "mapping": {}},
             "gamepad": {"output": "hid_gamepad", "mapping": {}},
+            "gamepad_pc": {"output": "hid_gamepad_pc", "mapping": {}},
+            "gamepad_switch_hori": {
+                "output": "hid_gamepad_switch_hori",
+                "mapping": {},
+            },
         }
 
     def _normalize_control_id(self, control_id: Any) -> str | None:

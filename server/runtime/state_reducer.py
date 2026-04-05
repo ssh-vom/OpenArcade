@@ -3,12 +3,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Literal
 
-from constants import DEFAULT_MAPPING, DEFAULT_GAMEPAD_MAPPING
+from constants import DEFAULT_GAMEPAD_MAPPING, DEFAULT_MAPPING
 
-from .report_builder import build_keyboard_report, build_gamepad_report
+from .report_builder import (
+    build_gamepad_pc_report,
+    build_gamepad_switch_hori_report,
+    build_keyboard_report,
+)
 
 
-HIDMode = Literal["keyboard", "gamepad"]
+HIDMode = Literal["keyboard", "gamepad_pc", "gamepad_switch_hori"]
 
 
 class StateReducer:
@@ -27,12 +31,10 @@ class StateReducer:
         self._mode: HIDMode = mode
 
     def set_mode(self, mode: HIDMode) -> bytes:
-        """Switch HID output mode and rebuild report."""
         self._mode = mode
         return self.build_report()
 
     def get_mode(self) -> HIDMode:
-        """Get current HID mode."""
         return self._mode
 
     def set_mapping_cache(
@@ -57,30 +59,32 @@ class StateReducer:
         return self.build_report()
 
     def build_report(self) -> bytes:
-        """Build HID report for the current mode."""
         if self._mode == "keyboard":
             return self._build_keyboard_report()
-        else:
-            return self._build_gamepad_report()
+        if self._mode == "gamepad_switch_hori":
+            return self._build_switch_hori_report()
+        return self._build_gamepad_pc_report()
 
     def _build_keyboard_report(self) -> bytes:
-        """Build keyboard HID report from current device states."""
         active_keys: set[int] = set()
         for device_id, state in self._device_states.items():
             mapping = self._mapping_cache.get(device_id, DEFAULT_MAPPING)
             for bit_index, key_code in mapping.items():
-                if (state >> bit_index) & 1:
-                    if isinstance(key_code, int):
-                        active_keys.add(key_code)
+                if (state >> bit_index) & 1 and isinstance(key_code, int):
+                    active_keys.add(key_code)
         return build_keyboard_report(active_keys)
 
-    def _build_gamepad_report(self) -> bytes:
-        """Build gamepad HID report from current device states."""
+    def _collect_active_inputs(self) -> set[str]:
         active_inputs: set[str] = set()
         for device_id, state in self._device_states.items():
             mapping = self._mapping_cache.get(device_id, DEFAULT_GAMEPAD_MAPPING)
             for bit_index, gamepad_input in mapping.items():
-                if (state >> bit_index) & 1:
-                    if isinstance(gamepad_input, str):
-                        active_inputs.add(gamepad_input)
-        return build_gamepad_report(active_inputs)
+                if (state >> bit_index) & 1 and isinstance(gamepad_input, str):
+                    active_inputs.add(gamepad_input)
+        return active_inputs
+
+    def _build_gamepad_pc_report(self) -> bytes:
+        return build_gamepad_pc_report(self._collect_active_inputs())
+
+    def _build_switch_hori_report(self) -> bytes:
+        return build_gamepad_switch_hori_report(self._collect_active_inputs())
