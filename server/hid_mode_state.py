@@ -9,14 +9,18 @@ output mode is currently active across the entire system.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from multiprocessing import current_process
 from typing import Any, Iterator, Literal
 
 import fcntl
 
+
+logger = logging.getLogger("OpenArcade")
 
 HIDMode = Literal["keyboard", "gamepad"]
 
@@ -87,6 +91,15 @@ class HIDModeState:
         if directory:
             os.makedirs(directory, exist_ok=True)
 
+        previous_state: dict[str, Any] | None = None
+        try:
+            with open(self.path, "r", encoding="utf-8") as f:
+                raw_previous = json.load(f)
+            if isinstance(raw_previous, dict):
+                previous_state = raw_previous
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            previous_state = None
+
         tmp_path = f"{self.path}.{os.getpid()}.tmp"
         try:
             with open(tmp_path, "w", encoding="utf-8") as f:
@@ -94,6 +107,14 @@ class HIDModeState:
                 f.write("\n")
 
             os.replace(tmp_path, self.path)
+            logger.warning(
+                "HID mode state write pid=%s process=%s path=%s prev=%s new=%s",
+                os.getpid(),
+                current_process().name,
+                self.path,
+                previous_state,
+                state,
+            )
         finally:
             try:
                 if os.path.exists(tmp_path):
