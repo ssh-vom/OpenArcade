@@ -198,10 +198,13 @@ def hid_writer_process(
                     last_mode_sequence,
                     mode_sequence,
                 )
+                # Force all HID gadget file descriptors to be reopened after a mode
+                # change. This is especially important when transitioning into or out
+                # of Switch persona, because gadget re-enumeration destroys and recreates
+                # /dev/hidg* nodes and old file descriptors become stale.
+                close_all_devices()
                 current_mode = new_mode
                 last_mode_sequence = mode_sequence
-                current_device = None
-                current_device_path = None
                 open_mode_device(current_mode)
         except Exception as exc:
             logger.error("Error checking HID mode: %s", exc, exc_info=True)
