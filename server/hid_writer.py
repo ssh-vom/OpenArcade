@@ -47,8 +47,9 @@ def hid_writer_process(
     
     # HID mode state tracker
     hid_mode_state = HIDModeState()
-    current_mode: HIDMode = hid_mode_state.get_active_mode()
-    last_mode_sequence = hid_mode_state.get_sequence()
+    initial_mode_state = hid_mode_state.load()
+    current_mode: HIDMode = initial_mode_state["active_mode"]
+    last_mode_sequence = initial_mode_state["sequence"]
 
     # Try to open HID devices
     try:
@@ -81,14 +82,18 @@ def hid_writer_process(
         
         # Check for mode changes
         try:
-            mode_sequence = hid_mode_state.get_sequence(use_cache=False)
-            if mode_sequence != last_mode_sequence:
-                new_mode = hid_mode_state.get_active_mode()
-                logger.info(f"HID writer detected mode change: {current_mode} -> {new_mode}")
+            mode_state = hid_mode_state.load()
+            mode_sequence = mode_state["sequence"]
+            new_mode: HIDMode = mode_state["active_mode"]
+            if mode_sequence != last_mode_sequence or new_mode != current_mode:
+                logger.info(
+                    f"HID writer detected mode change: {current_mode} -> {new_mode} "
+                    f"(seq: {last_mode_sequence} -> {mode_sequence})"
+                )
                 current_mode = new_mode
                 last_mode_sequence = mode_sequence
         except Exception as e:
-            logger.error(f"Error checking HID mode: {e}")
+            logger.error(f"Error checking HID mode: {e}", exc_info=True)
             
         # Check if there's new data
         current_version = report_version.value

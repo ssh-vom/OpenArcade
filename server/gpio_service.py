@@ -18,9 +18,11 @@ logger = logging.getLogger("OpenArcade")
 
 # GPIO Configuration
 HID_MODE_BUTTON_PIN_ENV_VAR = "OPENARCADE_HID_MODE_PIN"
+HID_MODE_BUTTON_HOLD_SECONDS_ENV_VAR = "OPENARCADE_HID_MODE_HOLD_SECONDS"
 DEFAULT_HID_MODE_PIN = 4  # GPIO4 (physical pin 7)
 DEBOUNCE_INTERVAL_SECONDS = 0.35
 PRESS_CONFIRMATION_SECONDS = 0.03
+DEFAULT_HOLD_SECONDS = 3.0
 
 
 def get_hid_mode_button_pin() -> int:
@@ -34,6 +36,23 @@ def get_hid_mode_button_pin() -> int:
                 f"Invalid {HID_MODE_BUTTON_PIN_ENV_VAR}='{pin_str}', using default pin {DEFAULT_HID_MODE_PIN}"
             )
     return DEFAULT_HID_MODE_PIN
+
+
+def get_hid_mode_hold_seconds() -> float:
+    """Get required button hold time from environment or use default."""
+    raw_value = os.environ.get(HID_MODE_BUTTON_HOLD_SECONDS_ENV_VAR)
+    if raw_value:
+        try:
+            value = float(raw_value)
+            if value < 0:
+                raise ValueError("must be non-negative")
+            return value
+        except ValueError:
+            logger.warning(
+                f"Invalid {HID_MODE_BUTTON_HOLD_SECONDS_ENV_VAR}='{raw_value}', "
+                f"using default hold time {DEFAULT_HOLD_SECONDS}s"
+            )
+    return DEFAULT_HOLD_SECONDS
 
 
 class GPIOService:
@@ -93,6 +112,7 @@ class GPIOService:
         pin: int,
         callback: Callable[[], None],
         debounce_seconds: float = DEBOUNCE_INTERVAL_SECONDS,
+        hold_seconds: float = DEFAULT_HOLD_SECONDS,
         stop_event: Any = None,
     ) -> None:
         """
@@ -102,6 +122,7 @@ class GPIOService:
             pin: GPIO pin number (BCM numbering)
             callback: Function to call when button is pressed
             debounce_seconds: Minimum time between recognized button presses
+            hold_seconds: Required continuous hold time before press is accepted
             stop_event: Threading/multiprocessing event to signal stop
         """
         if not self.gpio_available or self.GPIO is None:
@@ -112,31 +133,46 @@ class GPIOService:
 
         last_press_time = 0.0
         button_armed = True
+        press_started_at: float | None = None
 
-        logger.info(f"Starting button polling on GPIO pin {pin}")
+        logger.info(
+            f"Starting button polling on GPIO pin {pin} "
+            f"(hold={hold_seconds:.2f}s, debounce={debounce_seconds:.2f}s)"
+        )
 
         while stop_event is None or not stop_event.is_set():
             try:
                 current_state = self.GPIO.input(pin)
                 current_time = time.monotonic()
 
-                # Re-arm only after full release.
                 if current_state == self.GPIO.HIGH:
+                    # Re-arm only after full release.
                     button_armed = True
-
-                # Detect a fresh press with pull-up wiring.
-                if current_state == self.GPIO.LOW and button_armed:
-                    # Brief confirmation to reject transient noise/bounce.
-                    time.sleep(PRESS_CONFIRMATION_SECONDS)
-                    if self.GPIO.input(pin) == self.GPIO.LOW:
-                        if current_time - last_press_time >= debounce_seconds:
-                            last_press_time = current_time
-                            button_armed = False
-                            logger.info(f"Button pressed on GPIO pin {pin}")
-                            try:
-                                callback()
-                            except Exception as e:
-                                logger.error(f"Button callback error: {e}", exc_info=True)
+                    press_started_at = None
+                elif button_armed:
+                    # Start timing only after a brief low confirmation.
+                    if press_started_at is None:
+                        time.sleep(PRESS_CONFIRMATION_SECONDS)
+                        if self.GPIO.input(pin) == self.GPIO.LOW:
+                            press_started_at = time.monotonic()
+                            logger.info(
+                                f"Button hold started on GPIO pin {pin}; "
+                                f"hold for {hold_seconds:.2f}s to toggle HID mode"
+                            )
+                    elif (
+                        current_time - press_started_at >= hold_seconds
+                        and current_time - last_press_time >= debounce_seconds
+                    ):
+                        last_press_time = current_time
+                        button_armed = False
+                        logger.info(
+                            f"Button hold confirmed on GPIO pin {pin} "
+                            f"after {current_time - press_started_at:.2f}s"
+                        )
+                        try:
+                            callback()
+                        except Exception as e:
+                            logger.error(f"Button callback error: {e}", exc_info=True)
 
                 time.sleep(0.01)  # 10ms poll interval
 
@@ -206,6 +242,7 @@ def gpio_service_main(stop_event: Any = None) -> None:
 
     # Setup and poll the HID mode button
     pin = get_hid_mode_button_pin()
+    hold_seconds = get_hid_mode_hold_seconds()
     gpio.setup_button(pin, on_mode_button_press, pull_up=True)
     
     try:
@@ -213,6 +250,7 @@ def gpio_service_main(stop_event: Any = None) -> None:
             pin,
             on_mode_button_press,
             debounce_seconds=DEBOUNCE_INTERVAL_SECONDS,
+            hold_seconds=hold_seconds,
             stop_event=stop_event,
         )
     finally:
