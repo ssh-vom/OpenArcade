@@ -210,73 +210,107 @@ def build_keyboard_report(active_keys: Iterable[int]) -> bytes:
     return bytes(report)
 
 
+def _resolve_dpad_value(dpad_directions: set[int]) -> int:
+    if not dpad_directions:
+        return const.GP_DPAD_CENTER
+
+    has_up = const.GP_DPAD_UP in dpad_directions
+    has_down = const.GP_DPAD_DOWN in dpad_directions
+    has_left = const.GP_DPAD_LEFT in dpad_directions
+    has_right = const.GP_DPAD_RIGHT in dpad_directions
+
+    if has_up and not has_down:
+        if has_right and not has_left:
+            return const.GP_DPAD_UP_RIGHT
+        if has_left and not has_right:
+            return const.GP_DPAD_UP_LEFT
+        return const.GP_DPAD_UP
+
+    if has_down and not has_up:
+        if has_right and not has_left:
+            return const.GP_DPAD_DOWN_RIGHT
+        if has_left and not has_right:
+            return const.GP_DPAD_DOWN_LEFT
+        return const.GP_DPAD_DOWN
+
+    if has_left and not has_right:
+        return const.GP_DPAD_LEFT
+    if has_right and not has_left:
+        return const.GP_DPAD_RIGHT
+
+    return const.GP_DPAD_CENTER
+
+
+def _resolve_axis_value(negative_active: bool, positive_active: bool) -> int:
+    if negative_active == positive_active:
+        return const.GP_AXIS_NEUTRAL
+    if negative_active:
+        return const.GP_AXIS_MIN
+    return const.GP_AXIS_MAX
+
+
 def build_gamepad_report(active_inputs: Iterable[str]) -> bytes:
     """
     Build an 8-byte HID gamepad report.
-    
+
     Report structure:
     - Bytes 0-1: Button bitfield (16 buttons)
     - Byte 2: HAT/D-Pad (8-direction + center)
-    - Bytes 3-6: Reserved (axes, centered at 0x80)
+    - Bytes 3-6: Left/Right stick axes
     - Byte 7: Reserved
     """
     report = bytearray(8)
-    
-    buttons = 0  # 16-bit button field
-    dpad_value = const.GP_DPAD_CENTER  # Default: centered
+
+    buttons = 0
     dpad_directions: set[int] = set()
-    
-    # Process active inputs
+    axis_state: dict[str, set[int]] = {
+        const.GP_AXIS_LX: set(),
+        const.GP_AXIS_LY: set(),
+        const.GP_AXIS_RX: set(),
+        const.GP_AXIS_RY: set(),
+    }
+
     for input_name in set(active_inputs):
         if not isinstance(input_name, str):
             continue
-            
+
         mapping = GAMEPAD_INPUT_MAP.get(input_name)
         if mapping is None:
             continue
-            
+
         input_type, value = mapping
-        
+
         if input_type == "button":
-            # Set button bit
             buttons |= (1 << value)
         elif input_type == "dpad":
-            # Collect d-pad directions
             dpad_directions.add(value)
-    
-    # Resolve d-pad to HAT value (handle combinations for diagonals)
-    if dpad_directions:
-        # Priority for diagonal detection
-        has_up = const.GP_DPAD_UP in dpad_directions
-        has_down = const.GP_DPAD_DOWN in dpad_directions
-        has_left = const.GP_DPAD_LEFT in dpad_directions
-        has_right = const.GP_DPAD_RIGHT in dpad_directions
-        
-        if has_up and has_right:
-            dpad_value = const.GP_DPAD_UP_RIGHT
-        elif has_up and has_left:
-            dpad_value = const.GP_DPAD_UP_LEFT
-        elif has_down and has_right:
-            dpad_value = const.GP_DPAD_DOWN_RIGHT
-        elif has_down and has_left:
-            dpad_value = const.GP_DPAD_DOWN_LEFT
-        elif has_up:
-            dpad_value = const.GP_DPAD_UP
-        elif has_down:
-            dpad_value = const.GP_DPAD_DOWN
-        elif has_left:
-            dpad_value = const.GP_DPAD_LEFT
-        elif has_right:
-            dpad_value = const.GP_DPAD_RIGHT
-    
-    # Pack report
-    report[0] = buttons & 0xFF  # Low byte of buttons
-    report[1] = (buttons >> 8) & 0xFF  # High byte of buttons
-    report[2] = dpad_value
-    report[3] = 0x80  # Left stick X (centered)
-    report[4] = 0x80  # Left stick Y (centered)
-    report[5] = 0x80  # Right stick X (centered)
-    report[6] = 0x80  # Right stick Y (centered)
-    report[7] = 0x00  # Reserved
-    
+        elif input_type == "axis":
+            axis_name, direction = value
+            if axis_name in axis_state and direction in (
+                const.GP_AXIS_NEGATIVE,
+                const.GP_AXIS_POSITIVE,
+            ):
+                axis_state[axis_name].add(direction)
+
+    report[0] = buttons & 0xFF
+    report[1] = (buttons >> 8) & 0xFF
+    report[2] = _resolve_dpad_value(dpad_directions)
+    report[3] = _resolve_axis_value(
+        const.GP_AXIS_NEGATIVE in axis_state[const.GP_AXIS_LX],
+        const.GP_AXIS_POSITIVE in axis_state[const.GP_AXIS_LX],
+    )
+    report[4] = _resolve_axis_value(
+        const.GP_AXIS_NEGATIVE in axis_state[const.GP_AXIS_LY],
+        const.GP_AXIS_POSITIVE in axis_state[const.GP_AXIS_LY],
+    )
+    report[5] = _resolve_axis_value(
+        const.GP_AXIS_NEGATIVE in axis_state[const.GP_AXIS_RX],
+        const.GP_AXIS_POSITIVE in axis_state[const.GP_AXIS_RX],
+    )
+    report[6] = _resolve_axis_value(
+        const.GP_AXIS_NEGATIVE in axis_state[const.GP_AXIS_RY],
+        const.GP_AXIS_POSITIVE in axis_state[const.GP_AXIS_RY],
+    )
+    report[7] = 0x00
+
     return bytes(report)

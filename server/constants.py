@@ -278,6 +278,19 @@ GP_DPAD_LEFT = 6
 GP_DPAD_UP_LEFT = 7
 GP_DPAD_CENTER = 15  # No direction pressed
 
+# Gamepad axis identifiers / values
+GP_AXIS_LX = "lx"
+GP_AXIS_LY = "ly"
+GP_AXIS_RX = "rx"
+GP_AXIS_RY = "ry"
+
+GP_AXIS_NEGATIVE = -1
+GP_AXIS_POSITIVE = 1
+
+GP_AXIS_MIN = 0x00
+GP_AXIS_NEUTRAL = 0x80
+GP_AXIS_MAX = 0xFF
+
 # Gamepad Input Name -> Bit Position/Value Mapping
 # This maps the input schema names to actual HID report values
 GAMEPAD_INPUT_MAP = {
@@ -296,6 +309,14 @@ GAMEPAD_INPUT_MAP = {
     "xb_dpad_down": ("dpad", GP_DPAD_DOWN),
     "xb_dpad_left": ("dpad", GP_DPAD_LEFT),
     "xb_dpad_right": ("dpad", GP_DPAD_RIGHT),
+    "xb_left_stick_left": ("axis", (GP_AXIS_LX, GP_AXIS_NEGATIVE)),
+    "xb_left_stick_right": ("axis", (GP_AXIS_LX, GP_AXIS_POSITIVE)),
+    "xb_left_stick_up": ("axis", (GP_AXIS_LY, GP_AXIS_NEGATIVE)),
+    "xb_left_stick_down": ("axis", (GP_AXIS_LY, GP_AXIS_POSITIVE)),
+    "xb_right_stick_left": ("axis", (GP_AXIS_RX, GP_AXIS_NEGATIVE)),
+    "xb_right_stick_right": ("axis", (GP_AXIS_RX, GP_AXIS_POSITIVE)),
+    "xb_right_stick_up": ("axis", (GP_AXIS_RY, GP_AXIS_NEGATIVE)),
+    "xb_right_stick_down": ("axis", (GP_AXIS_RY, GP_AXIS_POSITIVE)),
 }
 
 # Default gamepad mapping (similar to keyboard)
