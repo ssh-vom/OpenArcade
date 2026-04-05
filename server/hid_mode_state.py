@@ -11,8 +11,11 @@ from __future__ import annotations
 import json
 import os
 import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import Any, Iterator, Literal
+
+import fcntl
 
 
 HIDMode = Literal["keyboard", "gamepad"]
@@ -59,6 +62,24 @@ class HIDModeState:
         if mode not in ("keyboard", "gamepad"):
             raise ValueError(f"Invalid HID mode: {mode}. Must be 'keyboard' or 'gamepad'")
         return mode  # type: ignore
+
+    @property
+    def _lock_path(self) -> str:
+        return f"{self.path}.lock"
+
+    @contextmanager
+    def _file_lock(self) -> Iterator[None]:
+        """Cross-process file lock for HID mode state mutations."""
+        directory = os.path.dirname(self._lock_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        with open(self._lock_path, "a+", encoding="utf-8") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def _write_state_unlocked(self, state: dict[str, Any]) -> None:
         """Write state atomically. Caller must hold self._lock."""
@@ -119,7 +140,6 @@ class HIDModeState:
 
             if not os.path.exists(self.path):
                 state = dict(self._cache) if self._cache is not None else self._default_state()
-                self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
 
@@ -128,12 +148,10 @@ class HIDModeState:
                     raw_state = json.load(f)
             except FileNotFoundError:
                 state = dict(self._cache) if self._cache is not None else self._default_state()
-                self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
             except json.JSONDecodeError:
                 state = dict(self._cache) if self._cache is not None else self._default_state()
-                self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
             except OSError:
@@ -143,10 +161,7 @@ class HIDModeState:
                 self._cache = state
                 return dict(state)
 
-            state, changed = self._normalize_state(raw_state)
-            if changed:
-                self._write_state_unlocked(state)
-
+            state, _changed = self._normalize_state(raw_state)
             self._cache = state
             return dict(state)
 
@@ -168,22 +183,35 @@ class HIDModeState:
         with self._lock:
             validated_mode = self._validate_mode(mode)
 
-            # Load current state from disk to avoid stale cross-process cache.
-            current = self.load(use_cache=False)
+            with self._file_lock():
+                # Load current state from disk to avoid stale cross-process cache.
+                current = self.load(use_cache=False)
 
-            # Build new state
-            new_state = {
-                "active_mode": validated_mode,
-                "source": source,
-                "sequence": current.get("sequence", 0) + 1,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            }
+                # Build new state
+                new_state = {
+                    "active_mode": validated_mode,
+                    "source": source,
+                    "sequence": current.get("sequence", 0) + 1,
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }
 
-            self._write_state_unlocked(new_state)
+                self._write_state_unlocked(new_state)
 
             # Update cache
             self._cache = new_state
             return dict(new_state)
+
+    def ensure_initialized(self) -> dict[str, Any]:
+        """Ensure the backing file exists with a valid initial state."""
+        with self._lock:
+            with self._file_lock():
+                if os.path.exists(self.path):
+                    state = self.load(use_cache=False)
+                else:
+                    state = dict(self._cache) if self._cache is not None else self._default_state()
+                    self._write_state_unlocked(state)
+                    self._cache = state
+                return dict(state)
 
     def get_active_mode(self, use_cache: bool = False) -> HIDMode:
         """

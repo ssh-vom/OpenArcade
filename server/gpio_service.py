@@ -226,7 +226,7 @@ def gpio_service_main(stop_event: Any = None) -> None:
     gpio = GPIOService()
     
     # Ensure initial state file exists
-    current_state = hid_mode.load()
+    current_state = hid_mode.ensure_initialized()
     logger.info(f"Initial HID mode: {current_state['active_mode']}")
 
     def on_mode_button_press() -> None:
