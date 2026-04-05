@@ -4,7 +4,8 @@ import { useState } from 'react';
  * ControllerDiagram - Interactive dual-analog gamepad visualization
  * 
  * SVG-based controller with clickable regions for each input.
- * Sticks show a submenu for selecting X-axis, Y-axis, or Click.
+ * Sticks show a submenu for selecting directional inputs (Left/Right/Up/Down) or Click.
+ * This supports digital-to-analog stick direction mapping (leverless-style).
  */
 
 // Button/input definitions with their visual positions
@@ -24,27 +25,33 @@ const CONTROLLER_INPUTS = {
   xb_right_bumper: { label: 'RB', type: 'shoulder' },
   xb_left_trigger: { label: 'LT', type: 'trigger', isAnalog: true },
   xb_right_trigger: { label: 'RT', type: 'trigger', isAnalog: true },
-  // Sticks
+  // Sticks - directional inputs for digital-to-analog mapping
+  xb_left_stick_left: { label: 'L Stick ←', type: 'stick_direction' },
+  xb_left_stick_right: { label: 'L Stick →', type: 'stick_direction' },
+  xb_left_stick_up: { label: 'L Stick ↑', type: 'stick_direction' },
+  xb_left_stick_down: { label: 'L Stick ↓', type: 'stick_direction' },
   xb_left_stick_button: { label: 'L3', type: 'stick_click' },
+  xb_right_stick_left: { label: 'R Stick ←', type: 'stick_direction' },
+  xb_right_stick_right: { label: 'R Stick →', type: 'stick_direction' },
+  xb_right_stick_up: { label: 'R Stick ↑', type: 'stick_direction' },
+  xb_right_stick_down: { label: 'R Stick ↓', type: 'stick_direction' },
   xb_right_stick_button: { label: 'R3', type: 'stick_click' },
-  xb_left_stick_x: { label: 'L Stick X', type: 'stick_axis', isAnalog: true },
-  xb_left_stick_y: { label: 'L Stick Y', type: 'stick_axis', isAnalog: true },
-  xb_right_stick_x: { label: 'R Stick X', type: 'stick_axis', isAnalog: true },
-  xb_right_stick_y: { label: 'R Stick Y', type: 'stick_axis', isAnalog: true },
   // Menu
   xb_menu: { label: 'Menu', type: 'menu' },
   xb_view: { label: 'View', type: 'menu' },
   xb_home: { label: 'Home', type: 'menu' },
 };
 
-// Stick submenu component
+// Stick submenu component - directional options for digital-to-analog mapping
 function StickSubmenu({ side, onSelect, onClose, accentColor }) {
   const isLeft = side === 'left';
   const prefix = isLeft ? 'xb_left_stick' : 'xb_right_stick';
   
   const options = [
-    { id: `${prefix}_x`, label: 'X Axis', icon: '↔' },
-    { id: `${prefix}_y`, label: 'Y Axis', icon: '↕' },
+    { id: `${prefix}_left`, label: 'Left', icon: '←' },
+    { id: `${prefix}_right`, label: 'Right', icon: '→' },
+    { id: `${prefix}_up`, label: 'Up', icon: '↑' },
+    { id: `${prefix}_down`, label: 'Down', icon: '↓' },
     { id: `${prefix}_button`, label: 'Click', icon: '⏺' },
   ];
 
@@ -260,15 +267,13 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onClick={(e) => handleStickClick('left', e)}
             onMouseEnter={() => setHoveredInput('left_stick')}
             onMouseLeave={() => setHoveredInput(null)}
-            fill={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
-            stroke={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
+            fill={activeStick === 'left' || ['xb_left_stick_left', 'xb_left_stick_right', 'xb_left_stick_up', 'xb_left_stick_down', 'xb_left_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
+            stroke={activeStick === 'left' || ['xb_left_stick_left', 'xb_left_stick_right', 'xb_left_stick_up', 'xb_left_stick_down', 'xb_left_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
             strokeWidth={activeStick === 'left' ? 3 : 2}
           />
           <text x="200" y="145" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
             L
           </text>
-          {/* Analog indicator */}
-          <circle cx="218" cy="122" r="4" fill="#6B9BD1" style={{ pointerEvents: 'none' }} />
         </g>
 
         {/* Right Stick */}
@@ -287,14 +292,13 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onClick={(e) => handleStickClick('right', e)}
             onMouseEnter={() => setHoveredInput('right_stick')}
             onMouseLeave={() => setHoveredInput(null)}
-            fill={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
-            stroke={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
+            fill={activeStick === 'right' || ['xb_right_stick_left', 'xb_right_stick_right', 'xb_right_stick_up', 'xb_right_stick_down', 'xb_right_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
+            stroke={activeStick === 'right' || ['xb_right_stick_left', 'xb_right_stick_right', 'xb_right_stick_up', 'xb_right_stick_down', 'xb_right_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
             strokeWidth={activeStick === 'right' ? 3 : 2}
           />
           <text x="340" y="205" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
             R
           </text>
-          <circle cx="358" cy="182" r="4" fill="#6B9BD1" style={{ pointerEvents: 'none' }} />
         </g>
 
         {/* D-Pad */}
