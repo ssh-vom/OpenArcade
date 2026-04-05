@@ -85,7 +85,15 @@ def hid_writer_process(
             mode_state = hid_mode_state.load()
             mode_sequence = mode_state["sequence"]
             new_mode: HIDMode = mode_state["active_mode"]
-            if mode_sequence != last_mode_sequence or new_mode != current_mode:
+            if mode_sequence < last_mode_sequence:
+                logger.warning(
+                    "Ignoring stale HID mode state in writer: %s -> %s (seq: %s -> %s)",
+                    current_mode,
+                    new_mode,
+                    last_mode_sequence,
+                    mode_sequence,
+                )
+            elif mode_sequence != last_mode_sequence or new_mode != current_mode:
                 logger.info(
                     f"HID writer detected mode change: {current_mode} -> {new_mode} "
                     f"(seq: {last_mode_sequence} -> {mode_sequence})"

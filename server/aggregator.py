@@ -136,10 +136,21 @@ def aggregator_process(
             new_mode: HIDMode = mode_state["active_mode"]
             new_sequence = mode_state["sequence"]
             
+            # Ignore stale or regressive updates.
+            if new_sequence < current_mode_sequence:
+                logger.warning(
+                    "Ignoring stale HID mode state: %s -> %s (seq: %s -> %s)",
+                    current_mode,
+                    new_mode,
+                    current_mode_sequence,
+                    new_sequence,
+                )
+                return
+
             # Check if mode actually changed
             if new_mode == current_mode and new_sequence == current_mode_sequence:
                 return
-            
+
             logger.info(
                 f"HID mode changed: {current_mode} -> {new_mode} (seq: {current_mode_sequence} -> {new_sequence})"
             )

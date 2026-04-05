@@ -118,7 +118,7 @@ class HIDModeState:
                 return dict(self._cache)
 
             if not os.path.exists(self.path):
-                state = self._default_state()
+                state = dict(self._cache) if self._cache is not None else self._default_state()
                 self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
@@ -127,12 +127,12 @@ class HIDModeState:
                 with open(self.path, "r", encoding="utf-8") as f:
                     raw_state = json.load(f)
             except FileNotFoundError:
-                state = self._default_state()
+                state = dict(self._cache) if self._cache is not None else self._default_state()
                 self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
             except json.JSONDecodeError:
-                state = self._default_state()
+                state = dict(self._cache) if self._cache is not None else self._default_state()
                 self._write_state_unlocked(state)
                 self._cache = state
                 return dict(state)
