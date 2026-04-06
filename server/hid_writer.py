@@ -37,6 +37,8 @@ MODE_TAGS: dict[HIDMode, str] = {
 }
 
 REOPEN_SETTLE_SECONDS = 0.6
+SWITCH_REPORT_REFRESH_SECONDS = 0.005
+DEFAULT_REPORT_WAIT_SECONDS = 0.5
 MODE_TO_REQUIRED_PERSONA: dict[HIDMode, GadgetPersona] = {
     "keyboard": "pc",
     "gamepad_pc": "pc",
@@ -90,6 +92,8 @@ def hid_writer_process(
     last_seen_version = 0
     pending_report: bytes | None = None
     last_opened_mode: HIDMode | None = None
+    current_report: bytes = _neutral_report_for_mode(current_mode)
+    last_write_at = 0.0
 
     def close_all_devices() -> None:
         nonlocal current_device, current_device_path
@@ -248,13 +252,19 @@ def hid_writer_process(
         logger.warning("No HID interfaces available on startup. Writer will retry dynamically.")
 
     while not stop_event.is_set():
-        report_event.wait(timeout=0.5)
+        wait_timeout = (
+            SWITCH_REPORT_REFRESH_SECONDS
+            if current_mode == "gamepad_switch_hori"
+            else DEFAULT_REPORT_WAIT_SECONDS
+        )
+        report_event.wait(timeout=wait_timeout)
         if stop_event.is_set():
             break
 
-        if pending_report is not None and current_device is None:
-            if write_report(current_mode, pending_report):
-                pending_report = None
+        # Clear event BEFORE reading version/report to avoid race condition.
+        # If aggregator sets event while we're processing, we'll catch it on
+        # the next iteration because the event will be set again.
+        report_event.clear()
 
         try:
             mode_state = hid_mode_state.load()
@@ -282,6 +292,9 @@ def hid_writer_process(
                 # /dev/hidg* nodes and old file descriptors become stale.
                 close_all_devices()
                 current_mode = new_mode
+                current_report = _neutral_report_for_mode(current_mode)
+                pending_report = current_report
+                last_write_at = 0.0
                 last_mode_sequence = mode_sequence
                 time.sleep(REOPEN_SETTLE_SECONDS)
                 if gadget_ready_for_mode(current_mode):
@@ -292,16 +305,28 @@ def hid_writer_process(
             logger.error("Error checking HID mode: %s", exc, exc_info=True)
 
         current_version = report_version.value
-        if current_version == last_seen_version:
-            continue
-        last_seen_version = current_version
+        if current_version != last_seen_version:
+            last_seen_version = current_version
+            current_report = bytes(report_array)
+            pending_report = current_report
 
-        report = bytes(report_array)
-        report_event.clear()
-        if not write_report(current_mode, report):
-            pending_report = report
-        else:
+        report_to_write = pending_report
+        should_refresh_switch_report = (
+            report_to_write is None
+            and current_mode == "gamepad_switch_hori"
+            and (time.monotonic() - last_write_at) >= SWITCH_REPORT_REFRESH_SECONDS
+        )
+        if should_refresh_switch_report:
+            report_to_write = current_report
+
+        if report_to_write is None:
+            continue
+
+        if write_report(current_mode, report_to_write):
             pending_report = None
+            last_write_at = time.monotonic()
+        else:
+            pending_report = report_to_write
 
     try:
         write_report(current_mode, _neutral_report_for_mode(current_mode))
