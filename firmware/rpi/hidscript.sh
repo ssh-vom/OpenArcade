@@ -18,7 +18,10 @@ cleanup_gadget() {
     echo "[*] Removing existing gadget configuration..."
 
     if [ -f "$GADGET_DIR/UDC" ]; then
-        echo "" > "$GADGET_DIR/UDC" || true
+        # During rapid persona rebuilds the gadget may already be partially
+        # torn down, and unbinding can return ENODEV. That should not abort
+        # cleanup.
+        echo "" > "$GADGET_DIR/UDC" 2>/dev/null || true
     fi
 
     find "$GADGET_DIR/configs" -type l -exec rm -f {} + 2>/dev/null || true

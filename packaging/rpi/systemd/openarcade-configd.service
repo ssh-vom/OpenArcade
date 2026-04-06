@@ -1,7 +1,7 @@
 [Unit]
 Description=OpenArcade USB serial configuration service
-Requires=openarcade-gadget.service
-After=openarcade-gadget.service
+Requires=openarcade-gadget-manager.service
+After=openarcade-gadget-manager.service
 
 [Service]
 Type=simple
