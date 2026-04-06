@@ -4,9 +4,11 @@ import argparse
 import json
 import os
 import sys
+import time
 from typing import Any
 
 from device_config_store import DeviceConfigStore
+from gadget_state import GadgetState
 from runtime.report_builder import build_control_maps, get_pressed_control_ids
 from runtime_ipc import (
     get_connected_devices,
@@ -366,55 +368,66 @@ def run(
 ) -> int:
     store = DeviceConfigStore(path=config_path)
     store.load()
+    gadget_state = GadgetState()
 
     while True:
         try:
-            fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY)
-        except OSError as exc:
-            print(f"Failed to open {device_path}: {exc}", file=sys.stderr)
-            return 1
+            state = gadget_state.load()
+            serial_enabled = (
+                state.get("persona") == "pc" and bool(state.get("ready"))
+            )
+            if not serial_enabled:
+                time.sleep(0.25)
+                continue
 
-        try:
-            while True:
-                line = read_line(fd)
-                if line is None:
-                    if verbose:
-                        print("Serial connection closed")
-                    break
-                if not line:
-                    continue
-
-                try:
-                    message = json.loads(line)
-                except json.JSONDecodeError:
-                    if verbose:
-                        print("Invalid JSON received")
-                    write_line(fd, {"ok": False, "error": "invalid_json"})
-                    continue
-
-                store.load()
+            try:
+                fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY)
+            except OSError as exc:
                 if verbose:
-                    print(f"Received: {message}")
+                    print(f"Failed to open {device_path}: {exc}", file=sys.stderr)
+                time.sleep(0.5)
+                continue
 
-                response, should_notify_runtime = handle_command(store, message)
+            try:
+                while True:
+                    line = read_line(fd)
+                    if line is None:
+                        if verbose:
+                            print("Serial connection closed")
+                        break
+                    if not line:
+                        continue
 
-                if verbose:
-                    print(f"Responding: {response}")
+                    try:
+                        message = json.loads(line)
+                    except json.JSONDecodeError:
+                        if verbose:
+                            print("Invalid JSON received")
+                        write_line(fd, {"ok": False, "error": "invalid_json"})
+                        continue
 
-                write_line(fd, response)
+                    store.load()
+                    if verbose:
+                        print(f"Received: {message}")
 
-                if should_notify_runtime:
-                    runtime_notified = notify_runtime_config_updated()
-                    if verbose and not runtime_notified:
-                        print("Runtime update notification failed")
+                    response, should_notify_runtime = handle_command(store, message)
+
+                    if verbose:
+                        print(f"Responding: {response}")
+
+                    write_line(fd, response)
+
+                    if should_notify_runtime:
+                        runtime_notified = notify_runtime_config_updated()
+                        if verbose and not runtime_notified:
+                            print("Runtime update notification failed")
+            finally:
+                os.close(fd)
+
+            if verbose:
+                print(f"Reopening serial device {device_path}")
         except KeyboardInterrupt:
-            os.close(fd)
             return 0
-        finally:
-            os.close(fd)
-
-        if verbose:
-            print(f"Reopening serial device {device_path}")
 
     return 0
 
