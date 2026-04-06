@@ -296,6 +296,7 @@ SW_HORI_BUTTON_PLUS = 9
 SW_HORI_BUTTON_LCLICK = 10
 SW_HORI_BUTTON_RCLICK = 11
 SW_HORI_BUTTON_HOME = 12
+# Strict Pokkén/HORI profile exposes 13 buttons total; keep capture unmapped.
 SW_HORI_BUTTON_CAPTURE = 13
 
 SW_HORI_HAT_UP = 0
@@ -374,7 +375,6 @@ SWITCH_HORI_INPUT_MAP = {
     "xb_home": ("button", SW_HORI_BUTTON_HOME),
     "xb_left_stick_button": ("button", SW_HORI_BUTTON_LCLICK),
     "xb_right_stick_button": ("button", SW_HORI_BUTTON_RCLICK),
-    "xb_capture": ("button", SW_HORI_BUTTON_CAPTURE),
     "xb_dpad_up": ("dpad", SW_HORI_HAT_UP),
     "xb_dpad_down": ("dpad", SW_HORI_HAT_DOWN),
     "xb_dpad_left": ("dpad", SW_HORI_HAT_LEFT),

@@ -54,8 +54,7 @@ init_common_gadget() {
     echo 0x0100 > bcdDevice
     echo 0x0200 > bcdUSB
     mkdir -p strings/0x409
-    echo "fedcba9876544210" > strings/0x409/serialnumber
-    mkdir -p configs/c.1/strings/0x409
+    mkdir -p configs/c.1
 }
 
 bind_gadget() {
@@ -70,8 +69,10 @@ setup_pc_persona() {
 
     echo 0x1d6b > idVendor
     echo 0x0104 > idProduct
+    echo "fedcba9876544210" > strings/0x409/serialnumber
     echo "OpenArcade" > strings/0x409/manufacturer
     echo "OpenArcade Multi-Function Gadget" > strings/0x409/product
+    mkdir -p configs/c.1/strings/0x409
     echo "Config 1: HID Keyboard + Gamepad" > configs/c.1/strings/0x409/configuration
     echo 250 > configs/c.1/MaxPower
 
@@ -147,15 +148,20 @@ setup_switch_hori_persona() {
 
     echo 0x0f0d > idVendor
     echo 0x0092 > idProduct
+    # Match the observed HORI Pokken device more closely:
+    # - iSerial = 0 (no serialnumber string)
+    # - iConfiguration = 0 (no configuration string)
     echo "HORI CO.,LTD." > strings/0x409/manufacturer
     echo "POKKEN CONTROLLER" > strings/0x409/product
-    echo "Config 1: Switch HORI Controller" > configs/c.1/strings/0x409/configuration
     echo 500 > configs/c.1/MaxPower
 
     mkdir -p functions/hid.usb0
     echo 0 > functions/hid.usb0/protocol
     echo 0 > functions/hid.usb0/subclass
     echo 64 > functions/hid.usb0/report_length
+    if [ -f functions/hid.usb0/interval ]; then
+        echo 5 > functions/hid.usb0/interval
+    fi
     if [ -f functions/hid.usb0/no_out_endpoint ]; then
         echo 0 > functions/hid.usb0/no_out_endpoint
     fi
