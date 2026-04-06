@@ -12,6 +12,7 @@ from bleak import BleakClient, BleakScanner
 from constants import CHAR_UUID, SCANNER_DELAY
 from device_config_store import DeviceConfigStore
 from hid_mode_state import HIDModeState
+from pairing_mode_state import PairingModeState
 from runtime.control_server import RuntimeControlServer
 from runtime.report_builder import (
     build_gamepad_pc_report,
@@ -85,12 +86,19 @@ def aggregator_process(
 
     config_store = DeviceConfigStore(path=config_path)
     hid_mode_state = HIDModeState()
-    
+    pairing_mode_state = PairingModeState()
+
     # Load initial HID mode
     initial_mode_state = hid_mode_state.load()
     current_mode: HIDMode = initial_mode_state["active_mode"]
     current_mode_sequence = initial_mode_state["sequence"]
-    
+
+    # Load initial pairing mode
+    initial_pairing_state = pairing_mode_state.load()
+    pairing_enabled: bool = initial_pairing_state.get("enabled", False)
+    pairing_sequence: int = initial_pairing_state.get("sequence", 0)
+    pairing_file_mtime: float | None = None
+
     reducer = StateReducer(build_mapping_cache(config_store.load(), mode=current_mode), mode=current_mode)
     config_mtime: float | None = None
     mode_file_mtime: float | None = None
@@ -230,6 +238,61 @@ def aggregator_process(
         except Exception as exc:
             logger.error(f"Error checking mode change: {exc}", exc_info=True)
 
+    def check_pairing_change() -> tuple[bool, bool]:
+        """
+        Check if pairing mode has changed and update if needed.
+
+        Returns:
+            Tuple of (changed: bool, now_enabled: bool)
+        """
+        nonlocal pairing_enabled, pairing_sequence, pairing_file_mtime
+
+        try:
+            pairing_state = pairing_mode_state.load()
+
+            try:
+                mtime = os.path.getmtime(pairing_mode_state.path)
+            except FileNotFoundError:
+                pairing_file_mtime = None
+                mtime = None
+
+            if (
+                mtime is not None
+                and pairing_file_mtime is not None
+                and mtime == pairing_file_mtime
+            ):
+                return False, pairing_enabled
+
+            pairing_file_mtime = mtime
+            new_enabled: bool = pairing_state.get("enabled", False)
+            new_sequence: int = pairing_state.get("sequence", 0)
+
+            if new_sequence < pairing_sequence:
+                logger.warning(
+                    "Ignoring stale pairing state: enabled=%s -> %s (seq: %s -> %s)",
+                    pairing_enabled,
+                    new_enabled,
+                    pairing_sequence,
+                    new_sequence,
+                )
+                return False, pairing_enabled
+
+            if new_enabled == pairing_enabled and new_sequence == pairing_sequence:
+                return False, pairing_enabled
+
+            logger.info(
+                f"Pairing mode changed: enabled={pairing_enabled} -> {new_enabled} "
+                f"(seq: {pairing_sequence} -> {new_sequence})"
+            )
+
+            pairing_enabled = new_enabled
+            pairing_sequence = new_sequence
+            return True, pairing_enabled
+
+        except Exception as exc:
+            logger.error(f"Error checking pairing change: {exc}", exc_info=True)
+            return False, pairing_enabled
+
     def update_live_state(address: str, state: int) -> None:
         nonlocal state_sequence
         state_sequence += 1
@@ -304,14 +367,28 @@ def aggregator_process(
                 for address, state in live_states.items()
             }
 
+        def get_pairing_status() -> dict[str, Any]:
+            state = pairing_mode_state.load(use_cache=True)
+            return {
+                "enabled": pairing_enabled,
+                "scanner_running": scanner_running,
+                "source": state.get("source", "unknown"),
+                "sequence": pairing_sequence,
+                "updated_at": state.get("updated_at", ""),
+            }
+
         control_server = RuntimeControlServer(
             on_config_updated=handle_config_updated,
             get_connected_devices=get_connected_devices,
             get_device_states=get_device_states,
+            get_pairing_status=get_pairing_status,
         )
 
         def should_scan() -> bool:
             nonlocal next_background_scan_at
+
+            if not pairing_enabled:
+                return False
 
             now = time.monotonic()
             if not connected_clients:
@@ -416,9 +493,15 @@ def aggregator_process(
         # Initial setup
         refresh_mapping_cache()
         check_mode_change()  # Ensure we're in sync with current mode
+        check_pairing_change()  # Ensure we're in sync with current pairing state
         publish_report(reducer.build_report())
         await control_server.start()
-        await ensure_scanner_running()
+
+        if pairing_enabled:
+            await ensure_scanner_running()
+            logger.info("Scanner started (pairing enabled at startup)")
+        else:
+            logger.info("Scanner not started (pairing disabled at startup)")
 
         try:
             while not stop_event.is_set():
@@ -448,14 +531,29 @@ def aggregator_process(
                 
                 # Check for mode changes
                 check_mode_change()
-                
-                # Keep scanning only while actively discovering/connecting or shortly after activity.
+
+                # Check for pairing mode changes
+                pairing_changed, now_enabled = check_pairing_change()
+                if pairing_changed:
+                    if not now_enabled:
+                        await stop_scanner()
+                        pending_connects.clear()
+                        retry_after.clear()
+                        logger.info(
+                            "Pairing disabled - scanner stopped, pending connects cleared. "
+                            f"Active connections preserved: {len(connected_clients)}"
+                        )
+                    else:
+                        extend_scan_window()
+                        logger.info("Pairing enabled - scanner will start")
+
+                # Keep scanning only while pairing is enabled and conditions are met.
                 if not stop_event.is_set():
                     if should_scan():
                         await ensure_scanner_running()
                     else:
                         await stop_scanner()
-                
+
                 await asyncio.sleep(0.5)
 
         finally:

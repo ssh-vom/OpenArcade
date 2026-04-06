@@ -12,6 +12,7 @@ DEFAULT_RUNTIME_SOCKET_PATH = "/tmp/openarcade-runtime.sock"
 MESSAGE_TYPE_CONFIG_UPDATED = "config_updated"
 MESSAGE_TYPE_GET_CONNECTED_DEVICES = "get_connected_devices"
 MESSAGE_TYPE_GET_DEVICE_STATES = "get_device_states"
+MESSAGE_TYPE_GET_PAIRING_STATUS = "get_pairing_status"
 
 
 def resolve_runtime_socket_path() -> str:
@@ -95,6 +96,27 @@ def get_device_states(
         normalized[current_device_id] = dict(state)
 
     return normalized
+
+
+def get_pairing_status(socket_path: str | None = None) -> dict[str, Any] | None:
+    response = send_runtime_message(
+        {"type": MESSAGE_TYPE_GET_PAIRING_STATUS},
+        socket_path=socket_path,
+    )
+    if not response or response.get("ok") is not True:
+        return None
+
+    pairing = response.get("pairing")
+    if not isinstance(pairing, dict):
+        return None
+
+    return {
+        "enabled": pairing.get("enabled", False),
+        "scanner_running": pairing.get("scanner_running", False),
+        "source": pairing.get("source", "unknown"),
+        "sequence": pairing.get("sequence", 0),
+        "updated_at": pairing.get("updated_at", ""),
+    }
 
 
 def _read_line(client: socket.socket) -> bytes | None:
