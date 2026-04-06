@@ -14,8 +14,16 @@ import AnalogPicker from "./AnalogPicker.jsx";
  * - Left: Visual input selector (keyboard/controller/analog)
  * - Right: Configuration panel (type selector, settings, actions)
  */
-export default function ButtonMappingModal({ button, onSave, onCancel, onClear }) {
-  const [inputType, setInputType] = useState(button.type || HID_INPUT_TYPES.GAMEPAD);
+export default function ButtonMappingModal({
+  button,
+  preferredInputType = HID_INPUT_TYPES.GAMEPAD,
+  allowedInputTypes = [HID_INPUT_TYPES.GAMEPAD, HID_INPUT_TYPES.KEYBOARD],
+  onSave,
+  onCancel,
+  onClear,
+}) {
+  const initialType = allowedInputTypes.includes(button.type) ? button.type : preferredInputType;
+  const [inputType, setInputType] = useState(initialType);
   const [selectedInput, setSelectedInput] = useState(button.input || "");
   const [action, setAction] = useState(button.action || "");
   const [analogConfig, setAnalogConfig] = useState(button.analogConfig || {
@@ -172,7 +180,7 @@ export default function ButtonMappingModal({ button, onSave, onCancel, onClear }
                     { type: HID_INPUT_TYPES.GAMEPAD, ...getTypeConfig(HID_INPUT_TYPES.GAMEPAD) },
                     { type: HID_INPUT_TYPES.KEYBOARD, ...getTypeConfig(HID_INPUT_TYPES.KEYBOARD) },
                     { type: HID_INPUT_TYPES.ANALOG, ...getTypeConfig(HID_INPUT_TYPES.ANALOG) },
-                  ].map(({ type, color, icon, label }) => {
+                  ].filter(({ type }) => allowedInputTypes.includes(type)).map(({ type, color, icon, label }) => {
                     const isActive = inputType === type;
                     return (
                       <button

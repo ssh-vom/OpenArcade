@@ -13,6 +13,8 @@ export default function D2ConfigPanel({
     pressedButtons = [],
     onToggleMappingMode,
     mappingStatus = null,
+    editingMode = "keyboard",
+    onEditingModeChange,
 }) {
     const pressedButtonSet = new Set(pressedButtons);
 
@@ -119,6 +121,39 @@ export default function D2ConfigPanel({
 
             {/* Mapping Mode Section */}
             <div className="p-6">
+                <div className="mb-5">
+                    <div 
+                        className="text-[10px] font-semibold text-[#707070] uppercase tracking-[0.12em] mb-2"
+                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                    >
+                        Editing Bank
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { value: "keyboard", label: "KB" },
+                            { value: "gamepad_pc", label: "PC" },
+                            { value: "gamepad_switch_hori", label: "SW" },
+                        ].map((option) => {
+                            const active = editingMode === option.value;
+                            return (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => onEditingModeChange?.(option.value)}
+                                    className="py-2.5 rounded-xl text-xs font-semibold tracking-wide border transition-all duration-200 cursor-pointer"
+                                    style={{
+                                        fontFamily: "'IBM Plex Mono', monospace",
+                                        background: active ? 'rgba(81, 128, 193, 0.14)' : '#CCCCCC',
+                                        borderColor: active ? '#5180C1' : '#A0A0A0',
+                                        color: active ? '#5180C1' : '#555555',
+                                    }}
+                                >
+                                    {option.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
                 <button
                     onClick={() => onToggleMappingMode && onToggleMappingMode()}
                     className={`w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide border-2 transition-all duration-200 cursor-pointer ${

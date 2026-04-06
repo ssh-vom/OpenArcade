@@ -189,6 +189,8 @@ class MockConfigClient {
                 activeProfile.modes || {
                     keyboard: { output: "hid_keyboard", mapping: {} },
                     gamepad: { output: "hid_gamepad", mapping: {} },
+                    gamepad_pc: { output: "hid_gamepad_pc", mapping: {} },
+                    gamepad_switch_hori: { output: "hid_gamepad_switch_hori", mapping: {} },
                 },
             ),
             ui: { layout: deepClone(activeProfile.ui?.layout || {}) },
@@ -276,6 +278,8 @@ class MockConfigClient {
                     modes: {
                         keyboard: { output: "hid_keyboard", mapping: {} },
                         gamepad: { output: "hid_gamepad", mapping: {} },
+                        gamepad_pc: { output: "hid_gamepad_pc", mapping: {} },
+                        gamepad_switch_hori: { output: "hid_gamepad_switch_hori", mapping: {} },
                     },
                     ui: {
                         layout: deepClone(DEFAULT_LAYOUT),
@@ -319,6 +323,8 @@ class MockConfigClient {
                         device.modes || {
                             keyboard: { output: "hid_keyboard", mapping: {} },
                             gamepad: { output: "hid_gamepad", mapping: {} },
+                            gamepad_pc: { output: "hid_gamepad_pc", mapping: {} },
+                            gamepad_switch_hori: { output: "hid_gamepad_switch_hori", mapping: {} },
                         },
                     ui: device.ui || { layout: {} },
                 };

@@ -175,6 +175,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     const [pressedControlIds, setPressedControlIds] = useState([]);
     const [pressedButtons, setPressedButtons] = useState([]);
     const [activeProfile, setActiveProfile] = useState(null);
+    const [editingMode, setEditingMode] = useState("keyboard");
     const [profilesRefreshKey, setProfilesRefreshKey] = useState(0);
     const [showOnlyConnected, setShowOnlyConnected] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -225,7 +226,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         ? modules.filter((m) => m.connected !== false)
         : modules;
     const currentModule = modules[safeCurrentModuleIndex] || defaultModules[0];
-    const currentMappings = useMemo(() => currentModule?.mappings || {}, [currentModule?.mappings]);
+    const currentMappings = useMemo(
+        () => currentModule?.mappingBanks?.[editingMode] || {},
+        [currentModule?.mappingBanks, editingMode],
+    );
     const cameraControl = useCameraController({ currentModuleIndex: safeCurrentModuleIndex, modules, enabled: viewMode === '3d' });
 
     useEffect(() => {
@@ -268,6 +272,20 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         mockClientRef.current = new MockConfigClient();
     }
     const activeClient = configClient || mockClientRef.current;
+
+    const normalizeEditingMode = useCallback((mode) => {
+        if (mode === "keyboard" || mode === "gamepad_pc" || mode === "gamepad_switch_hori") {
+            return mode;
+        }
+        if (mode === "gamepad") {
+            return "gamepad_pc";
+        }
+        return "keyboard";
+    }, []);
+
+    const preferredInputTypeForMode = useCallback((mode) => (
+        mode === "keyboard" ? HID_INPUT_TYPES.KEYBOARD : HID_INPUT_TYPES.GAMEPAD
+    ), []);
     
     // Track page visibility to pause polling when tab is hidden (saves battery/CPU)
     const isVisibleRef = useRef(true);
@@ -309,8 +327,15 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 ...defaultLayout,
                 ...(resolvedLayout || {}),
             };
-            const keyboardMappingConfig = deviceActiveProfile?.modes?.keyboard?.mapping || {};
-            const gamepadMappingConfig = deviceActiveProfile?.modes?.gamepad?.mapping || {};
+            const profileModes = deviceActiveProfile?.modes || {};
+            const keyboardMappingConfig = profileModes?.keyboard?.mapping || {};
+            const legacyGamepadMappingConfig = profileModes?.gamepad?.mapping || {};
+            const gamepadPcMappingConfig = Object.keys(profileModes?.gamepad_pc?.mapping || {}).length > 0
+                ? (profileModes?.gamepad_pc?.mapping || {})
+                : legacyGamepadMappingConfig;
+            const gamepadSwitchMappingConfig = Object.keys(profileModes?.gamepad_switch_hori?.mapping || {}).length > 0
+                ? (profileModes?.gamepad_switch_hori?.mapping || {})
+                : legacyGamepadMappingConfig;
             const plateId = deviceActiveProfile?.plate_id || DEFAULT_PLATE_ID;
             const resolvedPath = getPlateControllerModel(plateId);
             const reverseLayout = Object.entries(layout).reduce((acc, [buttonName, controlId]) => {
@@ -321,8 +346,12 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 return acc;
             }, {});
 
-            const mappings = {};
-            const applyMappingConfig = (mappingConfig, type) => {
+            const mappingBanks = {
+                keyboard: {},
+                gamepad_pc: {},
+                gamepad_switch_hori: {},
+            };
+            const applyMappingConfig = (targetMappings, mappingConfig, type) => {
                 Object.entries(mappingConfig).forEach(([controlId, mapping]) => {
                     const buttonName = reverseLayout[String(controlId)];
                     if (!buttonName) return;
@@ -332,7 +361,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                         const inputValue = getInputForKeycode(keycodeName);
                         if (!inputValue) return;
 
-                        mappings[buttonName] = {
+                        targetMappings[buttonName] = {
                             type: HID_INPUT_TYPES.KEYBOARD,
                             input: inputValue,
                             label: getInputLabel(HID_INPUT_TYPES.KEYBOARD, inputValue),
@@ -344,7 +373,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                     const gamepadInput = typeof mapping === "object" ? mapping?.gamepad_input : null;
                     if (!gamepadInput) return;
 
-                    mappings[buttonName] = {
+                    targetMappings[buttonName] = {
                         type: HID_INPUT_TYPES.GAMEPAD,
                         input: gamepadInput,
                         label: getInputLabel(HID_INPUT_TYPES.GAMEPAD, gamepadInput),
@@ -353,15 +382,16 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 });
             };
 
-            applyMappingConfig(keyboardMappingConfig, HID_INPUT_TYPES.KEYBOARD);
-            applyMappingConfig(gamepadMappingConfig, HID_INPUT_TYPES.GAMEPAD);
+            applyMappingConfig(mappingBanks.keyboard, keyboardMappingConfig, HID_INPUT_TYPES.KEYBOARD);
+            applyMappingConfig(mappingBanks.gamepad_pc, gamepadPcMappingConfig, HID_INPUT_TYPES.GAMEPAD);
+            applyMappingConfig(mappingBanks.gamepad_switch_hori, gamepadSwitchMappingConfig, HID_INPUT_TYPES.GAMEPAD);
 
             return {
                 id: deviceId,
                 name: deviceConfig?.name || deviceId,
                 deviceId,
                 path: resolvedPath,
-                mappings,
+                mappingBanks,
                 position: positions[index % positions.length],
                 deviceLayout: layout,
                 connected: deviceConfig?.connected !== false,
@@ -378,9 +408,12 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 const [, selectedConfig] = selectedEntry;
                 const profMap = selectedConfig?.profiles || {};
                 const apId = selectedConfig?.active_profile;
-                setActiveProfile(apId && profMap[apId] ? profMap[apId] : null);
+                const nextActiveProfile = apId && profMap[apId] ? profMap[apId] : null;
+                setActiveProfile(nextActiveProfile);
+                setEditingMode(normalizeEditingMode(nextActiveProfile?.active_mode));
             } else {
                 setActiveProfile(null);
+                setEditingMode("keyboard");
             }
             return;
         }
@@ -389,7 +422,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         const fallbackIndex = defaultModules.findIndex((module) => module.deviceId === selectedDeviceId);
         setCurrentModuleIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
         setActiveProfile(null);
-    }, [defaultLayout, defaultModules, getInputForKeycode, getInputLabel]);
+        setEditingMode("keyboard");
+    }, [defaultLayout, defaultModules, getInputForKeycode, getInputLabel, normalizeEditingMode]);
     const refreshDevices = useCallback(async () => {
         const devices = await activeClient.listDevices();
         applyDeviceConfigs(devices);
@@ -506,17 +540,23 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     const saveMapping = (buttonName, config) => {
         setModules(prev => prev.map((mod, idx) => {
             if (idx === safeCurrentModuleIndex) {
-                const newMappings = { ...mod.mappings };
+                const nextBanks = {
+                    keyboard: { ...(mod.mappingBanks?.keyboard || {}) },
+                    gamepad_pc: { ...(mod.mappingBanks?.gamepad_pc || {}) },
+                    gamepad_switch_hori: { ...(mod.mappingBanks?.gamepad_switch_hori || {}) },
+                };
+                const targetBank = { ...(nextBanks[editingMode] || {}) };
+
                 if (config && (config.type || config.input || config.action)) {
-                    // New HID configuration
-                    newMappings[buttonName] = config;
+                    targetBank[buttonName] = config;
                 } else if (typeof config === 'string') {
-                    // Legacy format
-                    newMappings[buttonName] = config;
+                    targetBank[buttonName] = config;
                 } else {
-                    delete newMappings[buttonName];
+                    delete targetBank[buttonName];
                 }
-                return { ...mod, mappings: newMappings, mappedButtons: Object.keys(newMappings).length };
+
+                nextBanks[editingMode] = targetBank;
+                return { ...mod, mappingBanks: nextBanks };
             }
             return mod;
         }));
@@ -532,9 +572,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             return;
         }
 
-        // Determine the mode and mapping value based on input type
-        let mode, mappingValue;
-        
+        let mode = editingMode;
+        let mappingValue;
+
         if (config.type === HID_INPUT_TYPES.KEYBOARD) {
             mode = "keyboard";
             const keycodeName = getKeycodeForInput(config.input);
@@ -543,11 +583,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             }
             mappingValue = { keycode: keycodeName };
         } else if (config.type === HID_INPUT_TYPES.GAMEPAD) {
-            mode = "gamepad";
-            // For gamepad, the input value is the gamepad input name directly
             mappingValue = { gamepad_input: config.input };
         } else {
-            // Unsupported type for now
             return;
         }
 
@@ -740,7 +777,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     const clearAllMappings = () => {
         setModules(prev => prev.map((mod, idx) => {
             if (idx === safeCurrentModuleIndex) {
-                return { ...mod, mappings: {}, mappedButtons: 0 };
+                const nextBanks = {
+                    keyboard: { ...(mod.mappingBanks?.keyboard || {}) },
+                    gamepad_pc: { ...(mod.mappingBanks?.gamepad_pc || {}) },
+                    gamepad_switch_hori: { ...(mod.mappingBanks?.gamepad_switch_hori || {}) },
+                };
+                nextBanks[editingMode] = {};
+                return { ...mod, mappingBanks: nextBanks };
             }
             return mod;
         }));
@@ -756,36 +799,28 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
 
                 const layout = module.deviceLayout || defaultLayout;
                 
-                // Save mappings for each mode separately
-                const keyboardMappings = [];
-                const gamepadMappings = [];
-                
-                for (const [buttonName, mapping] of Object.entries(module.mappings)) {
-                    const controlId = getControlIdForButton(layout, buttonName);
-                    if (!controlId) {
-                        continue;
-                    }
-                    
-                    if (mapping?.type === HID_INPUT_TYPES.KEYBOARD) {
-                        const keycodeName = getKeycodeForInput(mapping.input);
-                        if (keycodeName) {
-                            keyboardMappings.push({ controlId, value: { keycode: keycodeName } });
+                const mappingBanks = module.mappingBanks || {};
+                const saveBank = async (mode, bankMappings) => {
+                    for (const [buttonName, mapping] of Object.entries(bankMappings || {})) {
+                        const controlId = getControlIdForButton(layout, buttonName);
+                        if (!controlId) {
+                            continue;
                         }
-                    } else if (mapping?.type === HID_INPUT_TYPES.GAMEPAD) {
-                        // For gamepad, the input value is the gamepad input name
-                        gamepadMappings.push({ controlId, value: { gamepad_input: mapping.input } });
+
+                        if (mapping?.type === HID_INPUT_TYPES.KEYBOARD) {
+                            const keycodeName = getKeycodeForInput(mapping.input);
+                            if (keycodeName) {
+                                await activeClient.setMapping(module.deviceId, "keyboard", controlId, { keycode: keycodeName });
+                            }
+                        } else if (mapping?.type === HID_INPUT_TYPES.GAMEPAD) {
+                            await activeClient.setMapping(module.deviceId, mode, controlId, { gamepad_input: mapping.input });
+                        }
                     }
-                }
-                
-                // Save keyboard mappings
-                for (const { controlId, value } of keyboardMappings) {
-                    await activeClient.setMapping(module.deviceId, "keyboard", controlId, value);
-                }
-                
-                // Save gamepad mappings  
-                for (const { controlId, value } of gamepadMappings) {
-                    await activeClient.setMapping(module.deviceId, "gamepad", controlId, value);
-                }
+                };
+
+                await saveBank("keyboard", mappingBanks.keyboard);
+                await saveBank("gamepad_pc", mappingBanks.gamepad_pc);
+                await saveBank("gamepad_switch_hori", mappingBanks.gamepad_switch_hori);
                 
                 // Note: We no longer call setActiveMode here, as the HID mode is now
                 // controlled by the GPIO button on the Raspberry Pi, not by software.
@@ -822,7 +857,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 controllerName="OpenArcade Controller v1.0"
                 moduleCount={modules.length}
                 currentModule={safeCurrentModuleIndex}
-                modules={modules.map(m => ({ ...m, mappedButtons: Object.keys(m.mappings).length }))}
+                modules={modules.map(m => ({ ...m, mappedButtons: Object.keys(m.mappingBanks?.[editingMode] || {}).length }))}
                 onModuleChange={handleModuleChange}
                 isConnected={modules.some((module) => module.connected !== false)}
                 viewMode={viewMode}
@@ -1015,7 +1050,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                                 position={module.position}
                                                 viewMode={viewMode}
                                                 isActive={isCurrentModule}
-                                                mappings={module.mappings}
+                                                mappings={module.mappingBanks?.[editingMode] || {}}
                                                 mappingFilter={mappingFilter}
                                                 pressedButtons={isCurrentModule ? pressedButtons : []}
                                                 pressedButtonsRef={isCurrentModule ? pressedButtonsForVisualsRef : null}
@@ -1124,6 +1159,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                         pressedButtons={pressedButtons}
                                         onToggleMappingMode={toggleMappingMode}
                                         mappingStatus={mappingStatus}
+                                        editingMode={editingMode}
+                                        onEditingModeChange={setEditingMode}
                                     />
                                 </div>
                             </div>
@@ -1192,6 +1229,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 ) : (
                     <HIDButtonMappingModal
                         button={selectedButton}
+                        preferredInputType={preferredInputTypeForMode(editingMode)}
+                        allowedInputTypes={editingMode === "keyboard"
+                            ? [HID_INPUT_TYPES.KEYBOARD]
+                            : [HID_INPUT_TYPES.GAMEPAD]}
                         onSave={saveMapping}
                         onCancel={() => setSelectedButton(null)}
                         onClear={clearMapping}
