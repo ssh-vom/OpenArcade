@@ -24,6 +24,7 @@ DEFAULT_GADGET_SCRIPT = "/opt/openarcade/app/firmware/rpi/hidscript.sh"
 GADGET_SCRIPT_ENV_VAR = "OPENARCADE_GADGET_SCRIPT"
 GADGET_POLL_INTERVAL_ENV_VAR = "OPENARCADE_GADGET_POLL_INTERVAL"
 DEFAULT_GADGET_POLL_INTERVAL = 0.5
+PRE_REBUILD_SETTLE_SECONDS = 1.0
 
 MODE_TO_PERSONA = {
     "keyboard": "pc",
@@ -116,6 +117,12 @@ def gadget_mode_manager_main() -> int:
                         ready=False,
                         mode_sequence=sequence,
                     )
+                    logger.info(
+                        "Waiting %.2fs for HID writer/runtime to release old gadget endpoints before rebuilding persona %s",
+                        PRE_REBUILD_SETTLE_SECONDS,
+                        target_persona,
+                    )
+                    time.sleep(PRE_REBUILD_SETTLE_SECONDS)
                     build_gadget(target_persona, script_path)
                     wait_for_persona_device(target_persona)
                     logger.info(
