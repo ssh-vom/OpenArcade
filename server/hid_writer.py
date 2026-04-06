@@ -123,14 +123,14 @@ def hid_writer_process(
                 current_device_path = path
                 use_mock = False
                 inode_info = f"inode={path_stat.st_ino} dev={path_stat.st_dev}"
-                logger.info("Opened HID interface for %s mode: %s (%s)", mode, path, inode_info)
+                logger.debug("Opened HID interface for %s mode: %s (%s)", mode, path, inode_info)
                 # Send an immediate neutral report when a freshly enumerated HID
                 # device is opened so the host/browser sees at least one input
                 # report even before any button state changes occur.
                 try:
                     neutral = _trim_report_for_mode(mode, _neutral_report_for_mode(mode))
                     handle.write(neutral)
-                    logger.info(
+                    logger.debug(
                         "Sent initial neutral report for %s mode after open: %s",
                         mode,
                         neutral[:8].hex(),
@@ -164,7 +164,7 @@ def hid_writer_process(
             and persona == required_persona
             and mode_sequence >= last_mode_sequence
         )
-        logger.info(
+        logger.debug(
             "Gadget readiness check mode=%s required_persona=%s persona=%s ready=%s mode_sequence=%s last_mode_sequence=%s result=%s",
             mode,
             required_persona,
@@ -216,12 +216,12 @@ def hid_writer_process(
             return True
 
         if target_device is None:
-            logger.warning("No HID device available for %s mode; waiting for gadget readiness/re-enumeration", mode)
+            logger.debug("No HID device available for %s mode; waiting for gadget readiness/re-enumeration", mode)
             return False
 
         try:
             target_device.write(target_report)
-            logger.info(
+            logger.debug(
                 "HID write ok mode=%s path=%s bytes=%s",
                 mode,
                 current_device_path,
