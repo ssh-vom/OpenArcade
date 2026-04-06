@@ -64,14 +64,16 @@ static void nimble_host_task(void *param) {
   vTaskDelete(NULL);
 }
 
+#define CONTROLLER_POLL_INTERVAL_MS 1
+
 static const controller_button_config_t controller_buttons[] = {
-    {BUTTON1_GPIO, true, 20, 800}, {BUTTON2_GPIO, true, 20, 800},
-    {BUTTON3_GPIO, true, 20, 800}, {BUTTON4_GPIO, true, 20, 800},
-    {BUTTON5_GPIO, true, 20, 800}, {BUTTON6_GPIO, true, 20, 800},
-    {BUTTON7_GPIO, true, 20, 800}, {BUTTON8_GPIO, true, 20, 800},
-    {JOYSTICK_L, true, 15, 0},     {JOYSTICK_R, true, 15, 0},
-    {JOYSTICK_U, true, 15, 0},     {JOYSTICK_D, true, 15, 0},
-    {BUTTON_SEL, true, 30, 1500},  {BUTTON_START, true, 30, 1500},
+    {BUTTON1_GPIO, true, 5, 800},  {BUTTON2_GPIO, true, 5, 800},
+    {BUTTON3_GPIO, true, 5, 800},  {BUTTON4_GPIO, true, 5, 800},
+    {BUTTON5_GPIO, true, 5, 800},  {BUTTON6_GPIO, true, 5, 800},
+    {BUTTON7_GPIO, true, 5, 800},  {BUTTON8_GPIO, true, 5, 800},
+    {JOYSTICK_L, true, 3, 0},      {JOYSTICK_R, true, 3, 0},
+    {JOYSTICK_U, true, 3, 0},      {JOYSTICK_D, true, 3, 0},
+    {BUTTON_SEL, true, 12, 1500},  {BUTTON_START, true, 12, 1500},
     {BUTTON_PAIR, true, 50, 3000},
 };
 
@@ -96,7 +98,7 @@ static void controller_task(void *param) {
     }
 
     prev_state = st;
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(CONTROLLER_POLL_INTERVAL_MS));
   }
 }
 

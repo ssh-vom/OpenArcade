@@ -7,7 +7,7 @@
 
 /* Low-latency controller-friendly params */
 #define CONN_ITVL_MIN 6 // 7.5 ms
-#define CONN_ITVL_MAX 12
+#define CONN_ITVL_MAX 6
 #define SLAVE_LATENCY 0
 #define SUP_TIMEOUT 100 // 1s
 #define ADV_DURATION_MS 180000
