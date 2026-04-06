@@ -17,6 +17,7 @@ from runtime.report_builder import (
 
 
 logger = logging.getLogger("OpenArcade")
+SWITCH_TIMING_DEBUG = os.environ.get("OPENARCADE_SWITCH_TIMING_DEBUG", "").lower() in {"1", "true", "yes", "on"}
 
 REPORT_LENGTH_BY_MODE: dict[HIDMode, int] = {
     "keyboard": 8,
@@ -79,6 +80,8 @@ def hid_writer_process(
 
     report_array = mailbox["report_array"]
     report_version = mailbox["report_version"]
+    last_input_event_shared = mailbox["last_input_event_at"]
+    report_published_at = mailbox["report_published_at"]
     report_event = mailbox["report_event"]
 
     hid_mode_state = HIDModeState()
@@ -101,6 +104,12 @@ def hid_writer_process(
     cached_gadget_ready = False
     cached_gadget_persona: GadgetPersona | None = None
     cached_gadget_mode_sequence = -1
+    writer_debug_last_log_at = time.monotonic()
+    writer_debug_samples = 0
+    writer_debug_publish_to_write_total_ms = 0.0
+    writer_debug_publish_to_write_max_ms = 0.0
+    writer_debug_input_to_write_total_ms = 0.0
+    writer_debug_input_to_write_max_ms = 0.0
 
     def close_all_devices() -> None:
         nonlocal current_device, current_device_path
@@ -337,6 +346,52 @@ def hid_writer_process(
         if write_report(current_mode, report_to_write):
             pending_report = None
             last_write_at = time.monotonic()
+            if SWITCH_TIMING_DEBUG and current_mode == "gamepad_switch_hori":
+                published_at = report_published_at.value
+                input_event_at = last_input_event_shared.value
+                wrote_at = time.perf_counter()
+                publish_to_write_ms = 0.0
+                input_to_write_ms = 0.0
+                if published_at > 0:
+                    publish_to_write_ms = (wrote_at - published_at) * 1000.0
+                if input_event_at > 0:
+                    input_to_write_ms = (wrote_at - input_event_at) * 1000.0
+                writer_debug_samples += 1
+                writer_debug_publish_to_write_total_ms += publish_to_write_ms
+                writer_debug_publish_to_write_max_ms = max(
+                    writer_debug_publish_to_write_max_ms,
+                    publish_to_write_ms,
+                )
+                writer_debug_input_to_write_total_ms += input_to_write_ms
+                writer_debug_input_to_write_max_ms = max(
+                    writer_debug_input_to_write_max_ms,
+                    input_to_write_ms,
+                )
+                now = time.monotonic()
+                if (now - writer_debug_last_log_at) >= 1.0:
+                    avg_publish_to_write_ms = (
+                        writer_debug_publish_to_write_total_ms / writer_debug_samples
+                        if writer_debug_samples else 0.0
+                    )
+                    avg_input_to_write_ms = (
+                        writer_debug_input_to_write_total_ms / writer_debug_samples
+                        if writer_debug_samples else 0.0
+                    )
+                    logger.info(
+                        "[SWITCH_TIMING][WRITER] samples=%s avg_publish_to_write_ms=%.3f max_publish_to_write_ms=%.3f avg_input_to_write_ms=%.3f max_input_to_write_ms=%.3f last_report=%s",
+                        writer_debug_samples,
+                        avg_publish_to_write_ms,
+                        writer_debug_publish_to_write_max_ms,
+                        avg_input_to_write_ms,
+                        writer_debug_input_to_write_max_ms,
+                        report_to_write[:8].hex(),
+                    )
+                    writer_debug_last_log_at = now
+                    writer_debug_samples = 0
+                    writer_debug_publish_to_write_total_ms = 0.0
+                    writer_debug_publish_to_write_max_ms = 0.0
+                    writer_debug_input_to_write_total_ms = 0.0
+                    writer_debug_input_to_write_max_ms = 0.0
         else:
             pending_report = report_to_write
 

@@ -58,6 +58,7 @@ def aggregator_process(
 
     report_array = mailbox["report_array"]
     report_version = mailbox["report_version"]
+    last_input_event_shared = mailbox["last_input_event_at"]
     report_published_at = mailbox["report_published_at"]
     report_event = mailbox["report_event"]
     
@@ -73,6 +74,12 @@ def aggregator_process(
     live_states: dict[str, dict[str, Any]] = {}
     state_sequence = 0
     last_input_event_at = 0.0
+    agg_debug_last_log_at = time.monotonic()
+    agg_debug_samples = 0
+    agg_debug_reduce_total_ms = 0.0
+    agg_debug_reduce_max_ms = 0.0
+    agg_debug_input_to_publish_total_ms = 0.0
+    agg_debug_input_to_publish_max_ms = 0.0
     scan_until = time.monotonic() + CONNECTED_SCAN_SETTLE_SECONDS
     next_background_scan_at = scan_until + BACKGROUND_SCAN_INTERVAL_SECONDS
 
@@ -113,15 +120,41 @@ def aggregator_process(
         report_event.set()
 
         if SWITCH_TIMING_DEBUG and current_mode == "gamepad_switch_hori":
+            nonlocal agg_debug_last_log_at, agg_debug_samples
+            nonlocal agg_debug_reduce_total_ms, agg_debug_reduce_max_ms
+            nonlocal agg_debug_input_to_publish_total_ms, agg_debug_input_to_publish_max_ms
             latency_ms = 0.0
             if last_input_event_at > 0:
                 latency_ms = (published_at - last_input_event_at) * 1000.0
-            logger.info(
-                "[SWITCH_TIMING][AGG] version=%s input_to_publish_ms=%.3f report=%s",
-                version,
-                latency_ms,
-                report[:8].hex(),
-            )
+            agg_debug_samples += 1
+            agg_debug_input_to_publish_total_ms += latency_ms
+            agg_debug_input_to_publish_max_ms = max(agg_debug_input_to_publish_max_ms, latency_ms)
+            now = time.monotonic()
+            if (now - agg_debug_last_log_at) >= 1.0:
+                avg_input_to_publish_ms = (
+                    agg_debug_input_to_publish_total_ms / agg_debug_samples
+                    if agg_debug_samples else 0.0
+                )
+                avg_reduce_ms = (
+                    agg_debug_reduce_total_ms / agg_debug_samples
+                    if agg_debug_samples else 0.0
+                )
+                logger.info(
+                    "[SWITCH_TIMING][AGG] samples=%s avg_reduce_ms=%.3f max_reduce_ms=%.3f avg_input_to_publish_ms=%.3f max_input_to_publish_ms=%.3f last_version=%s last_report=%s",
+                    agg_debug_samples,
+                    avg_reduce_ms,
+                    agg_debug_reduce_max_ms,
+                    avg_input_to_publish_ms,
+                    agg_debug_input_to_publish_max_ms,
+                    version,
+                    report[:8].hex(),
+                )
+                agg_debug_last_log_at = now
+                agg_debug_samples = 0
+                agg_debug_reduce_total_ms = 0.0
+                agg_debug_reduce_max_ms = 0.0
+                agg_debug_input_to_publish_total_ms = 0.0
+                agg_debug_input_to_publish_max_ms = 0.0
 
     def refresh_mapping_cache(force: bool = False) -> None:
         nonlocal config_mtime
@@ -214,16 +247,24 @@ def aggregator_process(
 
     def make_notification_handler(address: str):
         def handler(_sender: Any, data: bytearray) -> None:
-            nonlocal last_input_event_at
+            nonlocal last_input_event_at, agg_debug_reduce_total_ms, agg_debug_reduce_max_ms
             if len(data) < 4:
                 return
             state = struct.unpack("<I", data[:4])[0]
             if device_states.get(address) == state:
                 return
             last_input_event_at = time.perf_counter()
+            with last_input_event_shared.get_lock():
+                last_input_event_shared.value = last_input_event_at
             device_states[address] = state
             update_live_state(address, state)
-            publish_report(reducer.update_device_state(address, state))
+            reduce_started_at = time.perf_counter()
+            report = reducer.update_device_state(address, state)
+            reduce_ms = (time.perf_counter() - reduce_started_at) * 1000.0
+            if SWITCH_TIMING_DEBUG and current_mode == "gamepad_switch_hori":
+                agg_debug_reduce_total_ms += reduce_ms
+                agg_debug_reduce_max_ms = max(agg_debug_reduce_max_ms, reduce_ms)
+            publish_report(report)
         return handler
 
     def detection_callback(device: Any, advertisement_data: Any) -> None:
