@@ -159,19 +159,62 @@ setup_switch_hori_persona() {
     echo 0 > functions/hid.usb0/protocol
     echo 0 > functions/hid.usb0/subclass
     echo 64 > functions/hid.usb0/report_length
+    # Use interval=1 for 1ms polling (matches GP2040-CE)
     if [ -f functions/hid.usb0/interval ]; then
-        echo 5 > functions/hid.usb0/interval
+        echo 1 > functions/hid.usb0/interval
     fi
     if [ -f functions/hid.usb0/no_out_endpoint ]; then
         echo 0 > functions/hid.usb0/no_out_endpoint
     fi
+    # HID Report Descriptor (86 bytes) - matches GP2040-CE working implementation
+    # Structure:
+    #   - 16 buttons (2 bytes)
+    #   - HAT switch (4 bits) + padding (4 bits) = 1 byte
+    #   - 4 axes: X, Y, Z, Rz (4 bytes)
+    #   - 1 vendor byte
+    #   - OUT report: 8 bytes vendor-defined
     echo -ne \
-'\x05\x01\x09\x05\xa1\x01\x15\x00\x25\x01\x35\x00\x45\x01\x75\x01'\
-'\x95\x0d\x05\x09\x19\x01\x29\x0d\x81\x02\x95\x03\x81\x01\x05\x01'\
-'\x25\x07\x46\x3b\x01\x75\x04\x95\x01\x65\x14\x09\x39\x81\x42\x65'\
-'\x00\x95\x01\x81\x01\x26\xff\x00\x46\xff\x00\x09\x30\x09\x31\x09'\
-'\x32\x09\x35\x75\x08\x95\x04\x81\x02\x06\x00\xff\x09\x20\x95\x01'\
-'\x81\x02\x0a\x21\x26\x95\x08\x91\x02\xc0' \
+'\x05\x01'\
+'\x09\x05'\
+'\xa1\x01'\
+'\x15\x00'\
+'\x25\x01'\
+'\x35\x00'\
+'\x45\x01'\
+'\x75\x01'\
+'\x95\x10'\
+'\x05\x09'\
+'\x19\x01'\
+'\x29\x10'\
+'\x81\x02'\
+'\x05\x01'\
+'\x25\x07'\
+'\x46\x3b\x01'\
+'\x75\x04'\
+'\x95\x01'\
+'\x65\x14'\
+'\x09\x39'\
+'\x81\x42'\
+'\x65\x00'\
+'\x95\x01'\
+'\x81\x01'\
+'\x26\xff\x00'\
+'\x46\xff\x00'\
+'\x09\x30'\
+'\x09\x31'\
+'\x09\x32'\
+'\x09\x35'\
+'\x75\x08'\
+'\x95\x04'\
+'\x81\x02'\
+'\x06\x00\xff'\
+'\x09\x20'\
+'\x95\x01'\
+'\x81\x02'\
+'\x0a\x21\x26'\
+'\x95\x08'\
+'\x91\x02'\
+'\xc0' \
 > functions/hid.usb0/report_desc
     ln -s functions/hid.usb0 configs/c.1/
 }
