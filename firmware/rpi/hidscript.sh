@@ -157,9 +157,10 @@ setup_switch_hori_persona() {
     # - iConfiguration = 0 (no configuration string)
     echo "HORI CO.,LTD." > strings/0x409/manufacturer
     echo "HORIPAD S" > strings/0x409/product
-    # configfs exposes serialnumber as a writable attribute file; explicitly
-    # clear it so the previous PC persona's serial cannot leak into Switch mode.
-    printf '' > strings/0x409/serialnumber
+    # configfs/sysfs attribute files treat a zero-byte write as a no-op, so
+    # `printf '' > .../serialnumber` does not actually clear a previously set
+    # value. Write an empty line instead so the attribute is updated.
+    echo > strings/0x409/serialnumber
     echo 500 > configs/c.1/MaxPower
 
     mkdir -p functions/hid.usb0
