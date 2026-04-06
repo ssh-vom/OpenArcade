@@ -209,6 +209,18 @@ setup_state_dir() {
 EOF
         chmod 0644 "$STATE_DIR/hid_mode.json"
     fi
+
+    if [[ ! -f "$STATE_DIR/pairing_mode.json" ]]; then
+        cat > "$STATE_DIR/pairing_mode.json" <<'EOF'
+{
+  "enabled": false,
+  "source": "default",
+  "sequence": 0,
+  "updated_at": "1970-01-01T00:00:00+00:00"
+}
+EOF
+        chmod 0644 "$STATE_DIR/pairing_mode.json"
+    fi
 }
 
 install_env_file() {

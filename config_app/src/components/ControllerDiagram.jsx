@@ -4,7 +4,8 @@ import { useState } from 'react';
  * ControllerDiagram - Interactive dual-analog gamepad visualization
  * 
  * SVG-based controller with clickable regions for each input.
- * Sticks show a submenu for selecting X-axis, Y-axis, or Click.
+ * Sticks show a submenu for selecting directional inputs (Left/Right/Up/Down) or Click.
+ * This supports digital-to-analog stick direction mapping (leverless-style).
  */
 
 // Button/input definitions with their visual positions
@@ -24,24 +25,24 @@ const CONTROLLER_INPUTS = {
   xb_right_bumper: { label: 'RB', type: 'shoulder' },
   xb_left_trigger: { label: 'LT', type: 'trigger', isAnalog: true },
   xb_right_trigger: { label: 'RT', type: 'trigger', isAnalog: true },
-  // Sticks
+  // Sticks - directional inputs for digital-to-analog mapping
+  xb_left_stick_left: { label: 'L Stick ←', type: 'stick_direction' },
+  xb_left_stick_right: { label: 'L Stick →', type: 'stick_direction' },
+  xb_left_stick_up: { label: 'L Stick ↑', type: 'stick_direction' },
+  xb_left_stick_down: { label: 'L Stick ↓', type: 'stick_direction' },
   xb_left_stick_button: { label: 'L3', type: 'stick_click' },
+  xb_right_stick_left: { label: 'R Stick ←', type: 'stick_direction' },
+  xb_right_stick_right: { label: 'R Stick →', type: 'stick_direction' },
+  xb_right_stick_up: { label: 'R Stick ↑', type: 'stick_direction' },
+  xb_right_stick_down: { label: 'R Stick ↓', type: 'stick_direction' },
   xb_right_stick_button: { label: 'R3', type: 'stick_click' },
-  xb_left_stick_left: { label: 'L Stick Left', type: 'stick_dir' },
-  xb_left_stick_right: { label: 'L Stick Right', type: 'stick_dir' },
-  xb_left_stick_up: { label: 'L Stick Up', type: 'stick_dir' },
-  xb_left_stick_down: { label: 'L Stick Down', type: 'stick_dir' },
-  xb_right_stick_left: { label: 'R Stick Left', type: 'stick_dir' },
-  xb_right_stick_right: { label: 'R Stick Right', type: 'stick_dir' },
-  xb_right_stick_up: { label: 'R Stick Up', type: 'stick_dir' },
-  xb_right_stick_down: { label: 'R Stick Down', type: 'stick_dir' },
   // Menu
   xb_menu: { label: 'Menu', type: 'menu' },
   xb_view: { label: 'View', type: 'menu' },
   xb_home: { label: 'Home', type: 'menu' },
 };
 
-// Stick submenu component
+// Stick submenu component - directional options for digital-to-analog mapping
 function StickSubmenu({ side, onSelect, onClose, accentColor }) {
   const isLeft = side === 'left';
   const prefix = isLeft ? 'xb_left_stick' : 'xb_right_stick';
@@ -273,8 +274,6 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
           <text x="200" y="145" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
             L
           </text>
-          {/* Analog indicator */}
-          <circle cx="218" cy="122" r="4" fill="#6B9BD1" style={{ pointerEvents: 'none' }} />
         </g>
 
         {/* Right Stick */}
@@ -300,7 +299,6 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
           <text x="340" y="205" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
             R
           </text>
-          <circle cx="358" cy="182" r="4" fill="#6B9BD1" style={{ pointerEvents: 'none' }} />
         </g>
 
         {/* D-Pad */}
