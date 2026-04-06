@@ -24,7 +24,11 @@ cleanup_gadget() {
         printf '' | tee "$GADGET_DIR/UDC" >/dev/null 2>&1 || true
     fi
 
-    find "$GADGET_DIR/configs" -type l -exec rm -f {} + 2>/dev/null || true
+    rm -f "$GADGET_DIR/configs/c.1/hid.usb0" 2>/dev/null || true
+    rm -f "$GADGET_DIR/configs/c.1/hid.usb1" 2>/dev/null || true
+    rm -f "$GADGET_DIR/configs/c.1/acm.usb0" 2>/dev/null || true
+    rm -f "$GADGET_DIR/configs/c.1/ecm.usb0" 2>/dev/null || true
+
     rmdir "$GADGET_DIR/functions/hid.usb0" 2>/dev/null || true
     rmdir "$GADGET_DIR/functions/hid.usb1" 2>/dev/null || true
     rmdir "$GADGET_DIR/functions/acm.usb0" 2>/dev/null || true
