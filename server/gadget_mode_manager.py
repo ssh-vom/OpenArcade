@@ -25,6 +25,8 @@ GADGET_SCRIPT_ENV_VAR = "OPENARCADE_GADGET_SCRIPT"
 GADGET_POLL_INTERVAL_ENV_VAR = "OPENARCADE_GADGET_POLL_INTERVAL"
 DEFAULT_GADGET_POLL_INTERVAL = 0.5
 PRE_REBUILD_SETTLE_SECONDS = 1.0
+POST_BIND_SETTLE_SECONDS_PC = 0.0
+POST_BIND_SETTLE_SECONDS_SWITCH = 5.0
 
 MODE_TO_PERSONA = {
     "keyboard": "pc",
@@ -125,6 +127,18 @@ def gadget_mode_manager_main() -> int:
                     time.sleep(PRE_REBUILD_SETTLE_SECONDS)
                     build_gadget(target_persona, script_path)
                     wait_for_persona_device(target_persona)
+                    post_bind_settle_seconds = (
+                        POST_BIND_SETTLE_SECONDS_SWITCH
+                        if target_persona == "switch-hori"
+                        else POST_BIND_SETTLE_SECONDS_PC
+                    )
+                    if post_bind_settle_seconds > 0:
+                        logger.info(
+                            "Waiting %.2fs after binding gadget persona %s before marking ready",
+                            post_bind_settle_seconds,
+                            target_persona,
+                        )
+                        time.sleep(post_bind_settle_seconds)
                     logger.info(
                         "USB gadget persona changed: %s -> %s (mode=%s seq=%s)",
                         current_persona,
