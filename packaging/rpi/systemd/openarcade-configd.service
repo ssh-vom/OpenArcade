@@ -8,7 +8,7 @@ Type=simple
 EnvironmentFile=-/etc/openarcade/openarcade.env
 WorkingDirectory=/opt/openarcade/app/server
 ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/serial_config_service.py --device /dev/ttyGS0 --config $OPENARCADE_CONFIG_PATH
-Restart=on-failure
+Restart=always
 RestartSec=3
 TimeoutStopSec=10
 

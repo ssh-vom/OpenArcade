@@ -367,49 +367,54 @@ def run(
     store = DeviceConfigStore(path=config_path)
     store.load()
 
-    try:
-        fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY)
-    except OSError as exc:
-        print(f"Failed to open {device_path}: {exc}", file=sys.stderr)
-        return 1
+    while True:
+        try:
+            fd = os.open(device_path, os.O_RDWR | os.O_NOCTTY)
+        except OSError as exc:
+            print(f"Failed to open {device_path}: {exc}", file=sys.stderr)
+            return 1
 
-    try:
-        while True:
-            line = read_line(fd)
-            if line is None:
+        try:
+            while True:
+                line = read_line(fd)
+                if line is None:
+                    if verbose:
+                        print("Serial connection closed")
+                    break
+                if not line:
+                    continue
+
+                try:
+                    message = json.loads(line)
+                except json.JSONDecodeError:
+                    if verbose:
+                        print("Invalid JSON received")
+                    write_line(fd, {"ok": False, "error": "invalid_json"})
+                    continue
+
+                store.load()
                 if verbose:
-                    print("Serial connection closed")
-                break
-            if not line:
-                continue
+                    print(f"Received: {message}")
 
-            try:
-                message = json.loads(line)
-            except json.JSONDecodeError:
+                response, should_notify_runtime = handle_command(store, message)
+
                 if verbose:
-                    print("Invalid JSON received")
-                write_line(fd, {"ok": False, "error": "invalid_json"})
-                continue
+                    print(f"Responding: {response}")
 
-            store.load()
-            if verbose:
-                print(f"Received: {message}")
+                write_line(fd, response)
 
-            response, should_notify_runtime = handle_command(store, message)
+                if should_notify_runtime:
+                    runtime_notified = notify_runtime_config_updated()
+                    if verbose and not runtime_notified:
+                        print("Runtime update notification failed")
+        except KeyboardInterrupt:
+            os.close(fd)
+            return 0
+        finally:
+            os.close(fd)
 
-            if verbose:
-                print(f"Responding: {response}")
-
-            write_line(fd, response)
-
-            if should_notify_runtime:
-                runtime_notified = notify_runtime_config_updated()
-                if verbose and not runtime_notified:
-                    print("Runtime update notification failed")
-    except KeyboardInterrupt:
-        return 0
-    finally:
-        os.close(fd)
+        if verbose:
+            print(f"Reopening serial device {device_path}")
 
     return 0
 
