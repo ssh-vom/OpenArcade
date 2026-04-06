@@ -41,7 +41,7 @@ REOPEN_SETTLE_SECONDS = 0.6
 SWITCH_REPORT_REFRESH_SECONDS = 0.005
 DEFAULT_REPORT_WAIT_SECONDS = 0.5
 MODE_STATE_POLL_SECONDS = 0.1
-GADGET_STATE_REFRESH_SECONDS = 0.1
+GADGET_STATE_REFRESH_SECONDS = 0.25
 MODE_TO_REQUIRED_PERSONA: dict[HIDMode, GadgetPersona] = {
     "keyboard": "pc",
     "gamepad_pc": "pc",
@@ -110,6 +110,9 @@ def hid_writer_process(
     writer_debug_publish_to_write_max_ms = 0.0
     writer_debug_input_to_write_total_ms = 0.0
     writer_debug_input_to_write_max_ms = 0.0
+    current_report_version = 0
+    last_written_report_version = 0
+    next_switch_refresh_at = time.monotonic()
 
     def close_all_devices() -> None:
         nonlocal current_device, current_device_path
@@ -220,30 +223,28 @@ def hid_writer_process(
             return current_device
         return open_mode_device(mode)
 
-    def write_report(mode: HIDMode, report: bytes) -> bool:
-        nonlocal current_device, current_device_path
-        target_report = _trim_report_for_mode(mode, report)
-        target_device = ensure_mode_device(mode)
+    def _emit_mock_report(mode: HIDMode, target_report: bytes) -> bool:
         tag = MODE_TAGS[mode]
+        if mode == "keyboard":
+            keys = [f"0x{key:02X}" for key in target_report[2:] if key != 0]
+            output = f"\r[{tag}] Mod: 0x{target_report[0]:02X} | Keys: {keys}" + " " * 20
+        else:
+            buttons = target_report[0] | (target_report[1] << 8)
+            dpad = target_report[2]
+            output = f"\r[{tag}] Buttons: 0x{buttons:04X} | HAT: {dpad}" + " " * 20
+        sys.stdout.write(output)
+        sys.stdout.flush()
+        return True
 
-        if use_mock and target_device is None:
-            if mode == "keyboard":
-                keys = [f"0x{key:02X}" for key in target_report[2:] if key != 0]
-                output = f"\r[{tag}] Mod: 0x{target_report[0]:02X} | Keys: {keys}" + " " * 20
-            else:
-                buttons = target_report[0] | (target_report[1] << 8)
-                dpad = target_report[2]
-                output = f"\r[{tag}] Buttons: 0x{buttons:04X} | HAT: {dpad}" + " " * 20
-            sys.stdout.write(output)
-            sys.stdout.flush()
-            return True
-
-        if target_device is None:
-            logger.debug("No HID device available for %s mode; waiting for gadget readiness/re-enumeration", mode)
+    def _write_to_current_device(mode: HIDMode, target_report: bytes) -> bool:
+        nonlocal current_device, current_device_path
+        if use_mock and current_device is None:
+            return _emit_mock_report(mode, target_report)
+        if current_device is None:
+            logger.debug("No HID device open for %s mode; waiting for reopen", mode)
             return False
-
         try:
-            target_device.write(target_report)
+            current_device.write(target_report)
             logger.debug(
                 "HID write ok mode=%s path=%s bytes=%s",
                 mode,
@@ -261,9 +262,21 @@ def hid_writer_process(
                     except OSError:
                         pass
             current_device = None
+            current_device_path = None
             refresh_gadget_state(force=True)
-            time.sleep(0.02)
+            time.sleep(0.005)
             return False
+
+    def write_report(mode: HIDMode, report: bytes, ensure_device: bool = True) -> bool:
+        target_report = _trim_report_for_mode(mode, report)
+        if ensure_device:
+            target_device = ensure_mode_device(mode)
+            if use_mock and target_device is None:
+                return _emit_mock_report(mode, target_report)
+            if target_device is None:
+                logger.debug("No HID device available for %s mode; waiting for gadget readiness/re-enumeration", mode)
+                return False
+        return _write_to_current_device(mode, target_report)
 
     # Best-effort initial open, but only after gadget manager has marked the persona ready.
     refresh_gadget_state(force=True)
@@ -314,7 +327,10 @@ def hid_writer_process(
                     current_mode = new_mode
                     current_report = _neutral_report_for_mode(current_mode)
                     pending_report = current_report
+                    current_report_version = 0
+                    last_written_report_version = 0
                     last_write_at = 0.0
+                    next_switch_refresh_at = time.monotonic()
                     last_mode_sequence = mode_sequence
                     refresh_gadget_state(force=True)
                     time.sleep(REOPEN_SETTLE_SECONDS)
@@ -326,72 +342,89 @@ def hid_writer_process(
             logger.error("Error checking HID mode: %s", exc, exc_info=True)
 
         current_version = report_version.value
-        if current_version != last_seen_version:
+        new_report_available = current_version != last_seen_version
+        if new_report_available:
             last_seen_version = current_version
             current_report = bytes(report_array)
+            current_report_version = current_version
             pending_report = current_report
 
-        report_to_write = pending_report
-        should_refresh_switch_report = (
-            report_to_write is None
-            and current_mode == "gamepad_switch_hori"
-            and (time.monotonic() - last_write_at) >= SWITCH_REPORT_REFRESH_SECONDS
-        )
-        if should_refresh_switch_report:
-            report_to_write = current_report
+        now = time.monotonic()
+        if current_mode == "gamepad_switch_hori":
+            if current_device is None or current_device.closed:
+                ensure_mode_device(current_mode)
 
+            should_write_changed_report = pending_report is not None
+            should_refresh_switch_report = now >= next_switch_refresh_at
+            if not should_write_changed_report and not should_refresh_switch_report:
+                continue
+
+            report_to_write = pending_report if pending_report is not None else current_report
+            write_version = current_report_version if pending_report is not None else last_written_report_version
+            wrote = _write_to_current_device(current_mode, _trim_report_for_mode(current_mode, report_to_write))
+            if wrote:
+                last_write_at = time.monotonic()
+                next_switch_refresh_at = last_write_at + SWITCH_REPORT_REFRESH_SECONDS
+                if pending_report is not None:
+                    pending_report = None
+                    last_written_report_version = write_version
+                    if SWITCH_TIMING_DEBUG and write_version > 0:
+                        published_at = report_published_at.value
+                        input_event_at = last_input_event_shared.value
+                        wrote_at = time.perf_counter()
+                        publish_to_write_ms = 0.0
+                        input_to_write_ms = 0.0
+                        if published_at > 0:
+                            publish_to_write_ms = (wrote_at - published_at) * 1000.0
+                        if input_event_at > 0:
+                            input_to_write_ms = (wrote_at - input_event_at) * 1000.0
+                        writer_debug_samples += 1
+                        writer_debug_publish_to_write_total_ms += publish_to_write_ms
+                        writer_debug_publish_to_write_max_ms = max(
+                            writer_debug_publish_to_write_max_ms,
+                            publish_to_write_ms,
+                        )
+                        writer_debug_input_to_write_total_ms += input_to_write_ms
+                        writer_debug_input_to_write_max_ms = max(
+                            writer_debug_input_to_write_max_ms,
+                            input_to_write_ms,
+                        )
+                        if (now - writer_debug_last_log_at) >= 1.0:
+                            avg_publish_to_write_ms = (
+                                writer_debug_publish_to_write_total_ms / writer_debug_samples
+                                if writer_debug_samples else 0.0
+                            )
+                            avg_input_to_write_ms = (
+                                writer_debug_input_to_write_total_ms / writer_debug_samples
+                                if writer_debug_samples else 0.0
+                            )
+                            logger.info(
+                                "[SWITCH_TIMING][WRITER] samples=%s avg_publish_to_write_ms=%.3f max_publish_to_write_ms=%.3f avg_input_to_write_ms=%.3f max_input_to_write_ms=%.3f last_version=%s last_report=%s",
+                                writer_debug_samples,
+                                avg_publish_to_write_ms,
+                                writer_debug_publish_to_write_max_ms,
+                                avg_input_to_write_ms,
+                                writer_debug_input_to_write_max_ms,
+                                write_version,
+                                report_to_write[:8].hex(),
+                            )
+                            writer_debug_last_log_at = now
+                            writer_debug_samples = 0
+                            writer_debug_publish_to_write_total_ms = 0.0
+                            writer_debug_publish_to_write_max_ms = 0.0
+                            writer_debug_input_to_write_total_ms = 0.0
+                            writer_debug_input_to_write_max_ms = 0.0
+            else:
+                pending_report = report_to_write
+            continue
+
+        report_to_write = pending_report
         if report_to_write is None:
             continue
 
         if write_report(current_mode, report_to_write):
             pending_report = None
             last_write_at = time.monotonic()
-            if SWITCH_TIMING_DEBUG and current_mode == "gamepad_switch_hori":
-                published_at = report_published_at.value
-                input_event_at = last_input_event_shared.value
-                wrote_at = time.perf_counter()
-                publish_to_write_ms = 0.0
-                input_to_write_ms = 0.0
-                if published_at > 0:
-                    publish_to_write_ms = (wrote_at - published_at) * 1000.0
-                if input_event_at > 0:
-                    input_to_write_ms = (wrote_at - input_event_at) * 1000.0
-                writer_debug_samples += 1
-                writer_debug_publish_to_write_total_ms += publish_to_write_ms
-                writer_debug_publish_to_write_max_ms = max(
-                    writer_debug_publish_to_write_max_ms,
-                    publish_to_write_ms,
-                )
-                writer_debug_input_to_write_total_ms += input_to_write_ms
-                writer_debug_input_to_write_max_ms = max(
-                    writer_debug_input_to_write_max_ms,
-                    input_to_write_ms,
-                )
-                now = time.monotonic()
-                if (now - writer_debug_last_log_at) >= 1.0:
-                    avg_publish_to_write_ms = (
-                        writer_debug_publish_to_write_total_ms / writer_debug_samples
-                        if writer_debug_samples else 0.0
-                    )
-                    avg_input_to_write_ms = (
-                        writer_debug_input_to_write_total_ms / writer_debug_samples
-                        if writer_debug_samples else 0.0
-                    )
-                    logger.info(
-                        "[SWITCH_TIMING][WRITER] samples=%s avg_publish_to_write_ms=%.3f max_publish_to_write_ms=%.3f avg_input_to_write_ms=%.3f max_input_to_write_ms=%.3f last_report=%s",
-                        writer_debug_samples,
-                        avg_publish_to_write_ms,
-                        writer_debug_publish_to_write_max_ms,
-                        avg_input_to_write_ms,
-                        writer_debug_input_to_write_max_ms,
-                        report_to_write[:8].hex(),
-                    )
-                    writer_debug_last_log_at = now
-                    writer_debug_samples = 0
-                    writer_debug_publish_to_write_total_ms = 0.0
-                    writer_debug_publish_to_write_max_ms = 0.0
-                    writer_debug_input_to_write_total_ms = 0.0
-                    writer_debug_input_to_write_max_ms = 0.0
         else:
             pending_report = report_to_write
 
