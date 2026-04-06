@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import stat
 import sys
 import time
 from typing import Any
@@ -33,6 +34,8 @@ MODE_TAGS: dict[HIDMode, str] = {
     "gamepad_pc": "GP",
     "gamepad_switch_hori": "SW",
 }
+
+REOPEN_SETTLE_SECONDS = 0.6
 
 
 def set_cpu_affinity(core_id: int) -> None:
@@ -95,20 +98,18 @@ def hid_writer_process(
         nonlocal use_mock, current_device, current_device_path
 
         for path in MODE_DEVICE_CANDIDATES[mode]:
-            handle = opened_devices.get(path)
-            if handle is not None and not handle.closed:
-                current_device = handle
-                current_device_path = path
-                use_mock = False
-                return handle
-
             try:
                 handle = open(path, "wb", buffering=0)
                 opened_devices[path] = handle
                 current_device = handle
                 current_device_path = path
                 use_mock = False
-                logger.info("Opened HID interface for %s mode: %s", mode, path)
+                try:
+                    path_stat = os.stat(path)
+                    inode_info = f"inode={path_stat.st_ino} dev={path_stat.st_dev}"
+                except OSError:
+                    inode_info = "inode=unknown"
+                logger.info("Opened HID interface for %s mode: %s (%s)", mode, path, inode_info)
                 return handle
             except (FileNotFoundError, PermissionError, OSError) as exc:
                 logger.debug("HID path not ready for %s mode (%s): %s", mode, path, exc)
@@ -119,11 +120,22 @@ def hid_writer_process(
         current_device_path = None
         return None
 
+    def _device_node_matches_current_path(path: str) -> bool:
+        try:
+            path_stat = os.stat(path)
+        except OSError:
+            return False
+        return stat.S_ISCHR(path_stat.st_mode)
+
     def ensure_mode_device(mode: HIDMode):
-        if current_device_path in MODE_DEVICE_CANDIDATES[mode]:
-            handle = opened_devices.get(current_device_path or "")
-            if handle is not None and not handle.closed:
-                return handle
+        if (
+            current_device_path in MODE_DEVICE_CANDIDATES[mode]
+            and current_device is not None
+            and not current_device.closed
+            and current_device_path is not None
+            and _device_node_matches_current_path(current_device_path)
+        ):
+            return current_device
         return open_mode_device(mode)
 
     def write_report(mode: HIDMode, report: bytes) -> bool:
@@ -150,6 +162,12 @@ def hid_writer_process(
 
         try:
             target_device.write(target_report)
+            logger.info(
+                "HID write ok mode=%s path=%s bytes=%s",
+                mode,
+                current_device_path,
+                target_report[:8].hex(),
+            )
             return True
         except Exception as exc:
             logger.warning("HID write error (%s @ %s): %s", mode, current_device_path, exc)
@@ -205,6 +223,7 @@ def hid_writer_process(
                 close_all_devices()
                 current_mode = new_mode
                 last_mode_sequence = mode_sequence
+                time.sleep(REOPEN_SETTLE_SECONDS)
                 open_mode_device(current_mode)
         except Exception as exc:
             logger.error("Error checking HID mode: %s", exc, exc_info=True)
