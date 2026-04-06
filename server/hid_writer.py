@@ -106,16 +106,22 @@ def hid_writer_process(
 
         for path in MODE_DEVICE_CANDIDATES[mode]:
             try:
-                handle = open(path, "wb", buffering=0)
+                path_stat = os.stat(path)
+                if not stat.S_ISCHR(path_stat.st_mode):
+                    logger.warning(
+                        "Refusing to open non-character HID path for %s mode: %s (mode=%o)",
+                        mode,
+                        path,
+                        path_stat.st_mode,
+                    )
+                    continue
+                fd = os.open(path, os.O_WRONLY | os.O_NONBLOCK)
+                handle = os.fdopen(fd, "wb", buffering=0)
                 opened_devices[path] = handle
                 current_device = handle
                 current_device_path = path
                 use_mock = False
-                try:
-                    path_stat = os.stat(path)
-                    inode_info = f"inode={path_stat.st_ino} dev={path_stat.st_dev}"
-                except OSError:
-                    inode_info = "inode=unknown"
+                inode_info = f"inode={path_stat.st_ino} dev={path_stat.st_dev}"
                 logger.info("Opened HID interface for %s mode: %s (%s)", mode, path, inode_info)
                 return handle
             except (FileNotFoundError, PermissionError, OSError) as exc:

@@ -58,9 +58,15 @@ def wait_for_persona_device(persona: str, timeout: float = 5.0) -> None:
     else:
         required_paths = (Path("/dev/hidg0"),)
 
+    def _is_char_device(path: Path) -> bool:
+        try:
+            return path.exists() and path.is_char_device()
+        except OSError:
+            return False
+
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        if all(path.exists() for path in required_paths):
+        if all(_is_char_device(path) for path in required_paths):
             logger.info(
                 "USB gadget persona %s is ready (%s)",
                 persona,
@@ -70,7 +76,7 @@ def wait_for_persona_device(persona: str, timeout: float = 5.0) -> None:
         time.sleep(0.1)
 
     logger.warning(
-        "Timed out waiting for gadget persona %s device nodes: %s",
+        "Timed out waiting for gadget persona %s character device nodes: %s",
         persona,
         ", ".join(str(path) for path in required_paths),
     )
