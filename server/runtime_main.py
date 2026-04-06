@@ -46,6 +46,7 @@ def main() -> int:
     # Use a 64-byte buffer so Switch-mode gadget transport can share the same mailbox.
     report_array = multiprocessing.Array("B", 64, lock=False)
     report_version = multiprocessing.Value("i", 0, lock=True)  # Version counter
+    report_published_at = multiprocessing.Value("d", 0.0, lock=True)
     report_event = multiprocessing.Event()  # Signals new data available
     
     stop_event = multiprocessing.Event()
@@ -63,6 +64,7 @@ def main() -> int:
     shared_mailbox = {
         "report_array": report_array,
         "report_version": report_version,
+        "report_published_at": report_published_at,
         "report_event": report_event,
     }
 

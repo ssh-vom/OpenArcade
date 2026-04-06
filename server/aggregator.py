@@ -27,6 +27,7 @@ TARGET_DEVICE_NAME = "NimBLE_GATT"
 CONNECTED_SCAN_SETTLE_SECONDS = 5.0
 BACKGROUND_SCAN_INTERVAL_SECONDS = 15.0
 BACKGROUND_SCAN_DURATION_SECONDS = 1.0
+SWITCH_TIMING_DEBUG = os.environ.get("OPENARCADE_SWITCH_TIMING_DEBUG", "").lower() in {"1", "true", "yes", "on"}
 
 
 def set_cpu_affinity(core_id: int) -> None:
@@ -57,6 +58,7 @@ def aggregator_process(
 
     report_array = mailbox["report_array"]
     report_version = mailbox["report_version"]
+    report_published_at = mailbox["report_published_at"]
     report_event = mailbox["report_event"]
     
     # Track last published report for deduplication
@@ -70,6 +72,7 @@ def aggregator_process(
     device_states: dict[str, int] = {}
     live_states: dict[str, dict[str, Any]] = {}
     state_sequence = 0
+    last_input_event_at = 0.0
     scan_until = time.monotonic() + CONNECTED_SCAN_SETTLE_SECONDS
     next_background_scan_at = scan_until + BACKGROUND_SCAN_INTERVAL_SECONDS
 
@@ -93,15 +96,32 @@ def aggregator_process(
         if report == last_published_report:
             return
         last_published_report = report
-        
+
+        published_at = time.perf_counter()
+
         # Write to shared memory and clear any trailing bytes from a prior report.
         for i in range(len(report_array)):
             report_array[i] = report[i] if i < len(report) else 0
-        
+
+        with report_published_at.get_lock():
+            report_published_at.value = published_at
+
         # Increment version and signal writer
         with report_version.get_lock():
             report_version.value += 1
+            version = report_version.value
         report_event.set()
+
+        if SWITCH_TIMING_DEBUG and current_mode == "gamepad_switch_hori":
+            latency_ms = 0.0
+            if last_input_event_at > 0:
+                latency_ms = (published_at - last_input_event_at) * 1000.0
+            logger.info(
+                "[SWITCH_TIMING][AGG] version=%s input_to_publish_ms=%.3f report=%s",
+                version,
+                latency_ms,
+                report[:8].hex(),
+            )
 
     def refresh_mapping_cache(force: bool = False) -> None:
         nonlocal config_mtime
@@ -194,11 +214,13 @@ def aggregator_process(
 
     def make_notification_handler(address: str):
         def handler(_sender: Any, data: bytearray) -> None:
+            nonlocal last_input_event_at
             if len(data) < 4:
                 return
             state = struct.unpack("<I", data[:4])[0]
             if device_states.get(address) == state:
                 return
+            last_input_event_at = time.perf_counter()
             device_states[address] = state
             update_live_state(address, state)
             publish_report(reducer.update_device_state(address, state))
