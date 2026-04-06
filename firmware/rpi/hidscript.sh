@@ -143,37 +143,41 @@ setup_pc_persona() {
 }
 
 setup_switch_hori_persona() {
-    echo "[*] Setting up USB Nintendo Switch HORI gadget..."
+    echo "[*] Setting up USB Nintendo Switch HORIPAD-compatible gadget..."
     init_common_gadget
 
+    # Emulate the regular wired HORIPAD-for-Switch identity rather than the
+    # Pokkén controller identity so browser/controller databases (e.g. Joypad)
+    # and host OSes see a mainstream HORIPAD-class device.
+    echo 0x0572 > bcdDevice
     echo 0x0f0d > idVendor
-    echo 0x0092 > idProduct
-    # Match the observed HORI Pokken device more closely:
+    echo 0x00c1 > idProduct
+    # Match HORIPAD-style device identity:
     # - iSerial = 0 (no serialnumber string)
     # - iConfiguration = 0 (no configuration string)
     echo "HORI CO.,LTD." > strings/0x409/manufacturer
-    echo "POKKEN CONTROLLER" > strings/0x409/product
+    echo "HORIPAD S" > strings/0x409/product
     echo 500 > configs/c.1/MaxPower
 
     mkdir -p functions/hid.usb0
     echo 0 > functions/hid.usb0/protocol
     echo 0 > functions/hid.usb0/subclass
-    # HID report is 8 bytes (not 64 - that's the USB endpoint packet size)
+    # HID report is 8 bytes (USB interrupt endpoint packet size remains 64)
     echo 8 > functions/hid.usb0/report_length
-    # Use interval=1 for 1ms polling (matches GP2040-CE)
+    # Real HORI Switch-class devices commonly enumerate with bInterval=5.
     if [ -f functions/hid.usb0/interval ]; then
-        echo 1 > functions/hid.usb0/interval
+        echo 5 > functions/hid.usb0/interval
     fi
     if [ -f functions/hid.usb0/no_out_endpoint ]; then
         echo 0 > functions/hid.usb0/no_out_endpoint
     fi
-    # HID Report Descriptor (86 bytes) - matches GP2040-CE working implementation
-    # Structure:
-    #   - 16 buttons (2 bytes)
-    #   - HAT switch (4 bits) + padding (4 bits) = 1 byte
-    #   - 4 axes: X, Y, Z, Rz (4 bytes)
+    # Keep the simple Switch-compatible HORI-style report layout:
+    #   - 16 button bits
+    #   - HAT switch + padding
+    #   - 4 axes: X, Y, Z, Rz
     #   - 1 vendor byte
-    #   - OUT report: 8 bytes vendor-defined
+    #   - 8-byte OUT report capability
+    # This is a pragmatic compatibility profile while presenting HORIPAD USB identity.
     echo -ne \
 '\x05\x01'\
 '\x09\x05'\
@@ -259,7 +263,7 @@ main() {
         echo "    - Keyboard HID: /dev/hidg0"
         echo "    - Gamepad HID: /dev/hidg1"
     else
-        echo "[✓] USB Switch HORI gadget setup complete"
+        echo "[✓] USB Switch HORIPAD-compatible gadget setup complete"
         echo "    - Controller HID: /dev/hidg0"
     fi
 }

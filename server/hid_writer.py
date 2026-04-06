@@ -27,7 +27,7 @@ REPORT_LENGTH_BY_MODE: dict[HIDMode, int] = {
 MODE_DEVICE_CANDIDATES: dict[HIDMode, tuple[str, ...]] = {
     "keyboard": ("/dev/hidg0",),
     "gamepad_pc": ("/dev/hidg1",),
-    "gamepad_switch_hori": ("/dev/hidg0", "/dev/hidg1"),
+    "gamepad_switch_hori": ("/dev/hidg0",),
 }
 
 MODE_TAGS: dict[HIDMode, str] = {
