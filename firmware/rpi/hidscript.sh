@@ -157,6 +157,9 @@ setup_switch_hori_persona() {
     # - iConfiguration = 0 (no configuration string)
     echo "HORI CO.,LTD." > strings/0x409/manufacturer
     echo "HORIPAD S" > strings/0x409/product
+    # configfs exposes serialnumber as a writable attribute file; explicitly
+    # clear it so the previous PC persona's serial cannot leak into Switch mode.
+    printf '' > strings/0x409/serialnumber
     echo 500 > configs/c.1/MaxPower
 
     mkdir -p functions/hid.usb0
@@ -171,13 +174,14 @@ setup_switch_hori_persona() {
     if [ -f functions/hid.usb0/no_out_endpoint ]; then
         echo 0 > functions/hid.usb0/no_out_endpoint
     fi
-    # Keep the simple Switch-compatible HORI-style report layout:
-    #   - 16 button bits
+    # HORIPAD-like report layout:
+    #   - 14 buttons + 2 bits padding (matches common host-visible HORIPAD shape)
     #   - HAT switch + padding
     #   - 4 axes: X, Y, Z, Rz
     #   - 1 vendor byte
     #   - 8-byte OUT report capability
-    # This is a pragmatic compatibility profile while presenting HORIPAD USB identity.
+    # This keeps the report compact while aligning better with the regular
+    # wired HORIPAD's host-visible button count.
     echo -ne \
 '\x05\x01'\
 '\x09\x05'\
@@ -187,11 +191,14 @@ setup_switch_hori_persona() {
 '\x35\x00'\
 '\x45\x01'\
 '\x75\x01'\
-'\x95\x10'\
+'\x95\x0e'\
 '\x05\x09'\
 '\x19\x01'\
-'\x29\x10'\
+'\x29\x0e'\
 '\x81\x02'\
+'\x75\x01'\
+'\x95\x02'\
+'\x81\x01'\
 '\x05\x01'\
 '\x25\x07'\
 '\x46\x3b\x01'\
