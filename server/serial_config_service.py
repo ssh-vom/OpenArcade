@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import select
 import sys
 import time
 from typing import Any
@@ -390,6 +391,19 @@ def run(
 
             try:
                 while True:
+                    state = gadget_state.load()
+                    serial_enabled = (
+                        state.get("persona") == "pc" and bool(state.get("ready"))
+                    )
+                    if not serial_enabled:
+                        if verbose:
+                            print("Serial persona disabled; closing serial device")
+                        break
+
+                    readable, _, _ = select.select([fd], [], [], 0.25)
+                    if not readable:
+                        continue
+
                     line = read_line(fd)
                     if line is None:
                         if verbose:
