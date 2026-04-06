@@ -27,10 +27,14 @@ const CONTROLLER_INPUTS = {
   // Sticks
   xb_left_stick_button: { label: 'L3', type: 'stick_click' },
   xb_right_stick_button: { label: 'R3', type: 'stick_click' },
-  xb_left_stick_x: { label: 'L Stick X', type: 'stick_axis', isAnalog: true },
-  xb_left_stick_y: { label: 'L Stick Y', type: 'stick_axis', isAnalog: true },
-  xb_right_stick_x: { label: 'R Stick X', type: 'stick_axis', isAnalog: true },
-  xb_right_stick_y: { label: 'R Stick Y', type: 'stick_axis', isAnalog: true },
+  xb_left_stick_left: { label: 'L Stick Left', type: 'stick_dir' },
+  xb_left_stick_right: { label: 'L Stick Right', type: 'stick_dir' },
+  xb_left_stick_up: { label: 'L Stick Up', type: 'stick_dir' },
+  xb_left_stick_down: { label: 'L Stick Down', type: 'stick_dir' },
+  xb_right_stick_left: { label: 'R Stick Left', type: 'stick_dir' },
+  xb_right_stick_right: { label: 'R Stick Right', type: 'stick_dir' },
+  xb_right_stick_up: { label: 'R Stick Up', type: 'stick_dir' },
+  xb_right_stick_down: { label: 'R Stick Down', type: 'stick_dir' },
   // Menu
   xb_menu: { label: 'Menu', type: 'menu' },
   xb_view: { label: 'View', type: 'menu' },
@@ -43,8 +47,10 @@ function StickSubmenu({ side, onSelect, onClose, accentColor }) {
   const prefix = isLeft ? 'xb_left_stick' : 'xb_right_stick';
   
   const options = [
-    { id: `${prefix}_x`, label: 'X Axis', icon: '↔' },
-    { id: `${prefix}_y`, label: 'Y Axis', icon: '↕' },
+    { id: `${prefix}_left`, label: 'Left', icon: '←' },
+    { id: `${prefix}_right`, label: 'Right', icon: '→' },
+    { id: `${prefix}_up`, label: 'Up', icon: '↑' },
+    { id: `${prefix}_down`, label: 'Down', icon: '↓' },
     { id: `${prefix}_button`, label: 'Click', icon: '⏺' },
   ];
 
@@ -260,8 +266,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onClick={(e) => handleStickClick('left', e)}
             onMouseEnter={() => setHoveredInput('left_stick')}
             onMouseLeave={() => setHoveredInput(null)}
-            fill={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
-            stroke={activeStick === 'left' || ['xb_left_stick_x', 'xb_left_stick_y', 'xb_left_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
+            fill={activeStick === 'left' || ['xb_left_stick_left', 'xb_left_stick_right', 'xb_left_stick_up', 'xb_left_stick_down', 'xb_left_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
+            stroke={activeStick === 'left' || ['xb_left_stick_left', 'xb_left_stick_right', 'xb_left_stick_up', 'xb_left_stick_down', 'xb_left_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
             strokeWidth={activeStick === 'left' ? 3 : 2}
           />
           <text x="200" y="145" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>
@@ -287,8 +293,8 @@ export default function ControllerDiagram({ selectedInput, onSelect, accentColor
             onClick={(e) => handleStickClick('right', e)}
             onMouseEnter={() => setHoveredInput('right_stick')}
             onMouseLeave={() => setHoveredInput(null)}
-            fill={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
-            stroke={activeStick === 'right' || ['xb_right_stick_x', 'xb_right_stick_y', 'xb_right_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
+            fill={activeStick === 'right' || ['xb_right_stick_left', 'xb_right_stick_right', 'xb_right_stick_up', 'xb_right_stick_down', 'xb_right_stick_button'].includes(selectedInput) ? `${accentColor}25` : '#CCCCCC'}
+            stroke={activeStick === 'right' || ['xb_right_stick_left', 'xb_right_stick_right', 'xb_right_stick_up', 'xb_right_stick_down', 'xb_right_stick_button'].includes(selectedInput) ? accentColor : '#707070'}
             strokeWidth={activeStick === 'right' ? 3 : 2}
           />
           <text x="340" y="205" textAnchor="middle" fontSize="11" fontWeight="600" fill="#555555" style={{ fontFamily: 'IBM Plex Mono', pointerEvents: 'none' }}>

@@ -33,12 +33,10 @@ export default function ButtonMappingModal({
     direction: 'bidirectional'
   });
 
-  // Check if selected input is analog
+  // Check if selected input is analog (triggers only now, stick directions are digital)
   const isAnalogInput = inputType === HID_INPUT_TYPES.ANALOG ||
     (inputType === HID_INPUT_TYPES.GAMEPAD && (
-      selectedInput?.includes('trigger') ||
-      selectedInput?.includes('stick_x') ||
-      selectedInput?.includes('stick_y')
+      selectedInput?.includes('trigger')
     ));
 
   const getTypeConfig = (type) => {
