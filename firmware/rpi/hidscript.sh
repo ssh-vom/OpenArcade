@@ -158,7 +158,8 @@ setup_switch_hori_persona() {
     mkdir -p functions/hid.usb0
     echo 0 > functions/hid.usb0/protocol
     echo 0 > functions/hid.usb0/subclass
-    echo 64 > functions/hid.usb0/report_length
+    # HID report is 8 bytes (not 64 - that's the USB endpoint packet size)
+    echo 8 > functions/hid.usb0/report_length
     # Use interval=1 for 1ms polling (matches GP2040-CE)
     if [ -f functions/hid.usb0/interval ]; then
         echo 1 > functions/hid.usb0/interval

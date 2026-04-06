@@ -21,7 +21,7 @@ logger = logging.getLogger("OpenArcade")
 REPORT_LENGTH_BY_MODE: dict[HIDMode, int] = {
     "keyboard": 8,
     "gamepad_pc": 8,
-    "gamepad_switch_hori": 64,
+    "gamepad_switch_hori": 8,  # 8-byte HID report (USB endpoint size is 64, but report is 8)
 }
 
 MODE_DEVICE_CANDIDATES: dict[HIDMode, tuple[str, ...]] = {
