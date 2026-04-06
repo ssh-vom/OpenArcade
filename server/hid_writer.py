@@ -7,6 +7,7 @@ import sys
 import time
 from typing import Any
 
+from gadget_state import GadgetPersona, GadgetState
 from hid_mode_state import HIDMode, HIDModeState
 from runtime.report_builder import (
     build_gamepad_pc_report,
@@ -36,6 +37,11 @@ MODE_TAGS: dict[HIDMode, str] = {
 }
 
 REOPEN_SETTLE_SECONDS = 0.6
+MODE_TO_REQUIRED_PERSONA: dict[HIDMode, GadgetPersona] = {
+    "keyboard": "pc",
+    "gamepad_pc": "pc",
+    "gamepad_switch_hori": "switch-hori",
+}
 
 
 def set_cpu_affinity(core_id: int) -> None:
@@ -72,6 +78,7 @@ def hid_writer_process(
     report_event = mailbox["report_event"]
 
     hid_mode_state = HIDModeState()
+    gadget_state = GadgetState()
     initial_mode_state = hid_mode_state.load()
     current_mode: HIDMode = initial_mode_state["active_mode"]
     last_mode_sequence = initial_mode_state["sequence"]
@@ -120,6 +127,29 @@ def hid_writer_process(
         current_device_path = None
         return None
 
+    def gadget_ready_for_mode(mode: HIDMode) -> bool:
+        state = gadget_state.load()
+        required_persona = MODE_TO_REQUIRED_PERSONA[mode]
+        ready = bool(state.get("ready"))
+        persona = state.get("persona")
+        mode_sequence = int(state.get("mode_sequence", -1))
+        is_ready = (
+            ready
+            and persona == required_persona
+            and mode_sequence >= last_mode_sequence
+        )
+        logger.info(
+            "Gadget readiness check mode=%s required_persona=%s persona=%s ready=%s mode_sequence=%s last_mode_sequence=%s result=%s",
+            mode,
+            required_persona,
+            persona,
+            ready,
+            mode_sequence,
+            last_mode_sequence,
+            is_ready,
+        )
+        return is_ready
+
     def _device_node_matches_current_path(path: str) -> bool:
         try:
             path_stat = os.stat(path)
@@ -128,6 +158,9 @@ def hid_writer_process(
         return stat.S_ISCHR(path_stat.st_mode)
 
     def ensure_mode_device(mode: HIDMode):
+        if not gadget_ready_for_mode(mode):
+            close_all_devices()
+            return None
         if (
             current_device_path in MODE_DEVICE_CANDIDATES[mode]
             and current_device is not None
@@ -157,7 +190,7 @@ def hid_writer_process(
             return True
 
         if target_device is None:
-            logger.warning("No HID device available for %s mode; waiting for re-enumeration", mode)
+            logger.warning("No HID device available for %s mode; waiting for gadget readiness/re-enumeration", mode)
             return False
 
         try:
@@ -182,8 +215,9 @@ def hid_writer_process(
             time.sleep(0.2)
             return False
 
-    # Best-effort initial open.
-    open_mode_device(current_mode)
+    # Best-effort initial open, but only after gadget manager has marked the persona ready.
+    if gadget_ready_for_mode(current_mode):
+        open_mode_device(current_mode)
     if current_device is None:
         logger.warning("No HID interfaces available on startup. Writer will retry dynamically.")
 
@@ -224,7 +258,10 @@ def hid_writer_process(
                 current_mode = new_mode
                 last_mode_sequence = mode_sequence
                 time.sleep(REOPEN_SETTLE_SECONDS)
-                open_mode_device(current_mode)
+                if gadget_ready_for_mode(current_mode):
+                    open_mode_device(current_mode)
+                else:
+                    logger.info("Deferring HID reopen until gadget manager marks persona ready for mode=%s", current_mode)
         except Exception as exc:
             logger.error("Error checking HID mode: %s", exc, exc_info=True)
 

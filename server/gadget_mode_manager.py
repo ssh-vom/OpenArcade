@@ -9,6 +9,7 @@ import threading
 import time
 from pathlib import Path
 
+from gadget_state import GadgetState
 from hid_mode_state import HIDModeState
 
 
@@ -79,6 +80,7 @@ def gadget_mode_manager_main() -> int:
     script_path = resolve_gadget_script()
     poll_interval = resolve_poll_interval()
     hid_mode_state = HIDModeState()
+    gadget_state = GadgetState()
     stop_event = threading.Event()
 
     def _handle_signal(_signum: int, _frame: object) -> None:
@@ -90,6 +92,7 @@ def gadget_mode_manager_main() -> int:
     current_persona: str | None = None
     last_sequence = -1
     hid_mode_state.ensure_initialized()
+    gadget_state.ensure_initialized()
 
     logger.info("Starting gadget mode manager with script %s", script_path)
 
@@ -102,6 +105,11 @@ def gadget_mode_manager_main() -> int:
 
             if target_persona != current_persona or sequence != last_sequence:
                 if target_persona != current_persona:
+                    gadget_state.save(
+                        persona=target_persona,
+                        ready=False,
+                        mode_sequence=sequence,
+                    )
                     build_gadget(target_persona, script_path)
                     wait_for_persona_device(target_persona)
                     logger.info(
@@ -112,6 +120,12 @@ def gadget_mode_manager_main() -> int:
                         sequence,
                     )
                     current_persona = target_persona
+
+                gadget_state.save(
+                    persona=target_persona,
+                    ready=True,
+                    mode_sequence=sequence,
+                )
                 last_sequence = sequence
         except subprocess.CalledProcessError as exc:
             logger.error("Gadget rebuild failed: %s", exc)
