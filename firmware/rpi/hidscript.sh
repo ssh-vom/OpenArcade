@@ -175,14 +175,12 @@ setup_switch_hori_persona() {
     if [ -f functions/hid.usb0/no_out_endpoint ]; then
         echo 0 > functions/hid.usb0/no_out_endpoint
     fi
-    # HORIPAD-like report layout:
-    #   - 14 buttons + 2 bits padding (matches common host-visible HORIPAD shape)
-    #   - HAT switch + padding
+    # Match the lsusb dump of a real HORIPAD S as closely as practical:
+    #   - 14 buttons + 2 padding bits
+    #   - HAT switch + 4 bits padding
     #   - 4 axes: X, Y, Z, Rz
-    #   - 1 vendor byte
-    #   - 8-byte OUT report capability
-    # This keeps the report compact while aligning better with the regular
-    # wired HORIPAD's host-visible button count.
+    #   - 1 trailing constant byte
+    # Report descriptor length: 80 bytes
     echo -ne \
 '\x05\x01'\
 '\x09\x05'\
@@ -197,7 +195,6 @@ setup_switch_hori_persona() {
 '\x19\x01'\
 '\x29\x0e'\
 '\x81\x02'\
-'\x75\x01'\
 '\x95\x02'\
 '\x81\x01'\
 '\x05\x01'\
@@ -220,13 +217,9 @@ setup_switch_hori_persona() {
 '\x75\x08'\
 '\x95\x04'\
 '\x81\x02'\
-'\x06\x00\xff'\
-'\x09\x20'\
+'\x75\x08'\
 '\x95\x01'\
-'\x81\x02'\
-'\x0a\x21\x26'\
-'\x95\x08'\
-'\x91\x02'\
+'\x81\x01'\
 '\xc0' \
 > functions/hid.usb0/report_desc
     ln -s functions/hid.usb0 configs/c.1/

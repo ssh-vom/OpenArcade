@@ -89,6 +89,7 @@ def hid_writer_process(
     current_device_path: str | None = None
     last_seen_version = 0
     pending_report: bytes | None = None
+    last_opened_mode: HIDMode | None = None
 
     def close_all_devices() -> None:
         nonlocal current_device, current_device_path
@@ -102,7 +103,7 @@ def hid_writer_process(
         current_device_path = None
 
     def open_mode_device(mode: HIDMode):
-        nonlocal use_mock, current_device, current_device_path
+        nonlocal use_mock, current_device, current_device_path, last_opened_mode
 
         for path in MODE_DEVICE_CANDIDATES[mode]:
             try:
@@ -123,6 +124,25 @@ def hid_writer_process(
                 use_mock = False
                 inode_info = f"inode={path_stat.st_ino} dev={path_stat.st_dev}"
                 logger.info("Opened HID interface for %s mode: %s (%s)", mode, path, inode_info)
+                # Send an immediate neutral report when a freshly enumerated HID
+                # device is opened so the host/browser sees at least one input
+                # report even before any button state changes occur.
+                try:
+                    neutral = _trim_report_for_mode(mode, _neutral_report_for_mode(mode))
+                    handle.write(neutral)
+                    logger.info(
+                        "Sent initial neutral report for %s mode after open: %s",
+                        mode,
+                        neutral[:8].hex(),
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to send initial neutral report for %s mode on %s: %s",
+                        mode,
+                        path,
+                        exc,
+                    )
+                last_opened_mode = mode
                 return handle
             except (FileNotFoundError, PermissionError, OSError) as exc:
                 logger.debug("HID path not ready for %s mode (%s): %s", mode, path, exc)
