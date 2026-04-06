@@ -21,11 +21,14 @@ cleanup_gadget() {
         # During rapid persona rebuilds the gadget may already be partially
         # torn down, and unbinding can return ENODEV. That should not abort
         # cleanup.
-        echo "" > "$GADGET_DIR/UDC" 2>/dev/null || true
+        printf '' | tee "$GADGET_DIR/UDC" >/dev/null 2>&1 || true
     fi
 
     find "$GADGET_DIR/configs" -type l -exec rm -f {} + 2>/dev/null || true
-    find "$GADGET_DIR/functions" -mindepth 1 -maxdepth 1 -type d -exec rmdir {} + 2>/dev/null || true
+    rmdir "$GADGET_DIR/functions/hid.usb0" 2>/dev/null || true
+    rmdir "$GADGET_DIR/functions/hid.usb1" 2>/dev/null || true
+    rmdir "$GADGET_DIR/functions/acm.usb0" 2>/dev/null || true
+    rmdir "$GADGET_DIR/functions/ecm.usb0" 2>/dev/null || true
     rm -rf "$GADGET_DIR/configs" "$GADGET_DIR/functions" "$GADGET_DIR/strings" 2>/dev/null || true
     rmdir --ignore-fail-on-non-empty "$GADGET_DIR" 2>/dev/null || true
     rm -rf "$GADGET_DIR" 2>/dev/null || true
