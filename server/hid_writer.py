@@ -39,6 +39,8 @@ MODE_TAGS: dict[HIDMode, str] = {
 REOPEN_SETTLE_SECONDS = 0.6
 SWITCH_REPORT_REFRESH_SECONDS = 0.005
 DEFAULT_REPORT_WAIT_SECONDS = 0.5
+MODE_STATE_POLL_SECONDS = 0.1
+GADGET_STATE_REFRESH_SECONDS = 0.1
 MODE_TO_REQUIRED_PERSONA: dict[HIDMode, GadgetPersona] = {
     "keyboard": "pc",
     "gamepad_pc": "pc",
@@ -94,6 +96,11 @@ def hid_writer_process(
     last_opened_mode: HIDMode | None = None
     current_report: bytes = _neutral_report_for_mode(current_mode)
     last_write_at = 0.0
+    last_mode_check_at = 0.0
+    last_gadget_state_check_at = 0.0
+    cached_gadget_ready = False
+    cached_gadget_persona: GadgetPersona | None = None
+    cached_gadget_mode_sequence = -1
 
     def close_all_devices() -> None:
         nonlocal current_device, current_device_path
@@ -157,35 +164,40 @@ def hid_writer_process(
         current_device_path = None
         return None
 
-    def gadget_ready_for_mode(mode: HIDMode) -> bool:
+    def refresh_gadget_state(force: bool = False) -> None:
+        nonlocal last_gadget_state_check_at
+        nonlocal cached_gadget_ready, cached_gadget_persona, cached_gadget_mode_sequence
+
+        now = time.monotonic()
+        if not force and (now - last_gadget_state_check_at) < GADGET_STATE_REFRESH_SECONDS:
+            return
+
         state = gadget_state.load()
-        required_persona = MODE_TO_REQUIRED_PERSONA[mode]
-        ready = bool(state.get("ready"))
+        cached_gadget_ready = bool(state.get("ready"))
         persona = state.get("persona")
-        mode_sequence = int(state.get("mode_sequence", -1))
+        cached_gadget_persona = persona if isinstance(persona, str) else None
+        cached_gadget_mode_sequence = int(state.get("mode_sequence", -1))
+        last_gadget_state_check_at = now
+
+    def gadget_ready_for_mode(mode: HIDMode, force_refresh: bool = False) -> bool:
+        refresh_gadget_state(force=force_refresh)
+        required_persona = MODE_TO_REQUIRED_PERSONA[mode]
         is_ready = (
-            ready
-            and persona == required_persona
-            and mode_sequence >= last_mode_sequence
+            cached_gadget_ready
+            and cached_gadget_persona == required_persona
+            and cached_gadget_mode_sequence >= last_mode_sequence
         )
         logger.debug(
             "Gadget readiness check mode=%s required_persona=%s persona=%s ready=%s mode_sequence=%s last_mode_sequence=%s result=%s",
             mode,
             required_persona,
-            persona,
-            ready,
-            mode_sequence,
+            cached_gadget_persona,
+            cached_gadget_ready,
+            cached_gadget_mode_sequence,
             last_mode_sequence,
             is_ready,
         )
         return is_ready
-
-    def _device_node_matches_current_path(path: str) -> bool:
-        try:
-            path_stat = os.stat(path)
-        except OSError:
-            return False
-        return stat.S_ISCHR(path_stat.st_mode)
 
     def ensure_mode_device(mode: HIDMode):
         if not gadget_ready_for_mode(mode):
@@ -195,8 +207,6 @@ def hid_writer_process(
             current_device_path in MODE_DEVICE_CANDIDATES[mode]
             and current_device is not None
             and not current_device.closed
-            and current_device_path is not None
-            and _device_node_matches_current_path(current_device_path)
         ):
             return current_device
         return open_mode_device(mode)
@@ -242,10 +252,12 @@ def hid_writer_process(
                     except OSError:
                         pass
             current_device = None
-            time.sleep(0.2)
+            refresh_gadget_state(force=True)
+            time.sleep(0.02)
             return False
 
     # Best-effort initial open, but only after gadget manager has marked the persona ready.
+    refresh_gadget_state(force=True)
     if gadget_ready_for_mode(current_mode):
         open_mode_device(current_mode)
     if current_device is None:
@@ -267,40 +279,40 @@ def hid_writer_process(
         report_event.clear()
 
         try:
-            mode_state = hid_mode_state.load()
-            mode_sequence = mode_state["sequence"]
-            new_mode: HIDMode = mode_state["active_mode"]
-            if mode_sequence < last_mode_sequence:
-                logger.warning(
-                    "Ignoring stale HID mode state in writer: %s -> %s (seq: %s -> %s)",
-                    current_mode,
-                    new_mode,
-                    last_mode_sequence,
-                    mode_sequence,
-                )
-            elif mode_sequence != last_mode_sequence or new_mode != current_mode:
-                logger.info(
-                    "HID writer detected mode change: %s -> %s (seq: %s -> %s)",
-                    current_mode,
-                    new_mode,
-                    last_mode_sequence,
-                    mode_sequence,
-                )
-                # Force all HID gadget file descriptors to be reopened after a mode
-                # change. This is especially important when transitioning into or out
-                # of Switch persona, because gadget re-enumeration destroys and recreates
-                # /dev/hidg* nodes and old file descriptors become stale.
-                close_all_devices()
-                current_mode = new_mode
-                current_report = _neutral_report_for_mode(current_mode)
-                pending_report = current_report
-                last_write_at = 0.0
-                last_mode_sequence = mode_sequence
-                time.sleep(REOPEN_SETTLE_SECONDS)
-                if gadget_ready_for_mode(current_mode):
-                    open_mode_device(current_mode)
-                else:
-                    logger.info("Deferring HID reopen until gadget manager marks persona ready for mode=%s", current_mode)
+            now = time.monotonic()
+            if (now - last_mode_check_at) >= MODE_STATE_POLL_SECONDS:
+                last_mode_check_at = now
+                mode_state = hid_mode_state.load()
+                mode_sequence = mode_state["sequence"]
+                new_mode: HIDMode = mode_state["active_mode"]
+                if mode_sequence < last_mode_sequence:
+                    logger.warning(
+                        "Ignoring stale HID mode state in writer: %s -> %s (seq: %s -> %s)",
+                        current_mode,
+                        new_mode,
+                        last_mode_sequence,
+                        mode_sequence,
+                    )
+                elif mode_sequence != last_mode_sequence or new_mode != current_mode:
+                    logger.info(
+                        "HID writer detected mode change: %s -> %s (seq: %s -> %s)",
+                        current_mode,
+                        new_mode,
+                        last_mode_sequence,
+                        mode_sequence,
+                    )
+                    close_all_devices()
+                    current_mode = new_mode
+                    current_report = _neutral_report_for_mode(current_mode)
+                    pending_report = current_report
+                    last_write_at = 0.0
+                    last_mode_sequence = mode_sequence
+                    refresh_gadget_state(force=True)
+                    time.sleep(REOPEN_SETTLE_SECONDS)
+                    if gadget_ready_for_mode(current_mode, force_refresh=True):
+                        open_mode_device(current_mode)
+                    else:
+                        logger.info("Deferring HID reopen until gadget manager marks persona ready for mode=%s", current_mode)
         except Exception as exc:
             logger.error("Error checking HID mode: %s", exc, exc_info=True)
 
