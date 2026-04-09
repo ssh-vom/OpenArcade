@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useMountEffect } from "./hooks/useMountEffect";
 import { OpenArcade3DView } from "./components/OpenArcade3DView"
 import BootSequence from "./components/BootSequence"
 import SerialConfigClient from "./services/SerialConfigClient";
@@ -73,17 +74,17 @@ function App() {
         setBootError(null);
     }, []);
 
-    // Cleanup on component unmount
-    useEffect(() => {
+    // Cleanup on component unmount - legitimate external sync
+    useMountEffect(() => {
         return () => {
             if (clientRef.current) {
                 clientRef.current.disconnect().catch(console.warn);
             }
         };
-    }, []);
+    });
 
-    // Handle page unload (refresh, close tab, navigate away)
-    useEffect(() => {
+    // Handle page unload (refresh, close tab, navigate away) - legitimate external sync
+    useMountEffect(() => {
         const handleBeforeUnload = () => {
             if (clientRef.current) {
                 clientRef.current.disconnect().catch(() => { });
@@ -95,7 +96,7 @@ function App() {
         return () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
-    }, []);
+    });
 
     if (bootPhase === "boot" || bootPhase === "connecting") {
         return (

@@ -1,8 +1,9 @@
 import { useGLTF, Html } from "@react-three/drei";
-import { useRef, memo, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
+import { useRef, memo, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ANALOG_INPUTS, GAMEPAD_INPUTS, HID_INPUT_TYPES, KEYBOARD_INPUTS, getInputLabel } from "../services/HIDManager.js";
+import { useMountEffect } from "../hooks/useMountEffect";
 
 // Shallow equality helpers for performant comparisons
 const shallowEqualArrays = (a, b) => {
@@ -111,6 +112,9 @@ const ChildModule = memo(function ChildModule({
     const mouse = useRef(new THREE.Vector2());
     const buttonMaterialState = useRef(new Map());
 
+    // Track previous pressed buttons for efficient updates
+    const prevPressedRef = useRef([]);
+
     function prepareHighlightMaterial(mesh) {
         const storeMaterial = (material) => {
             if (!material || buttonMaterialState.current.has(material.uuid)) {
@@ -143,12 +147,6 @@ const ChildModule = memo(function ChildModule({
     }
 
     const pressedButtonSet = useMemo(() => new Set(pressedButtons), [pressedButtons]);
-    
-    // Ref for immediate visual feedback (bypasses React render cycle)
-    const immediatePressedRef = useRef(new Set(pressedButtons));
-    useEffect(() => {
-        immediatePressedRef.current = new Set(pressedButtons);
-    }, [pressedButtons]);
 
     function applyHighlight(mesh, options = null) {
         const isJoystickHitbox = mesh.userData.isJoystickHitbox;
@@ -313,6 +311,7 @@ const ChildModule = memo(function ChildModule({
         }
     }
 
+    // Scene setup - runs once when moduleScene changes
     useLayoutEffect(() => {
         if (moduleScene) {
             buttonMeshes.current.clear();
@@ -409,14 +408,19 @@ const ChildModule = memo(function ChildModule({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- isJoystickModule is derived from path
     }, [moduleScene, path]);
 
-    useEffect(() => {
+    // Apply visual highlights in useFrame instead of useEffect - runs at 60fps
+    // This eliminates the need for syncing state to refs
+    useFrame(() => {
         const hoverColor = new THREE.Color("#5180C1");
         const armedColor = new THREE.Color("#6B9BD1");
         const pressedColor = new THREE.Color("#6B9BD1");
 
+        // Use the ref if provided (immediate mode), otherwise use state
+        const currentPressed = pressedButtonsRef?.current || pressedButtonSet;
+
         buttonMeshes.current.forEach((mesh) => {
             const groupName = mesh.userData.buttonGroup;
-            const isPressed = pressedButtonSet.has(groupName);
+            const isPressed = currentPressed.has ? currentPressed.has(groupName) : currentPressed.includes(groupName);
             const isArmed = viewMode === "2d" && armedButton && groupName === armedButton;
             const isHovered = viewMode === "2d" && hoveredButton && groupName === hoveredButton;
 
@@ -437,10 +441,10 @@ const ChildModule = memo(function ChildModule({
 
             applyHighlight(mesh);
         });
-    }, [armedButton, hoveredButton, pressedButtonSet, viewMode]);
+    });
 
-    // Attach mouse event listeners for raycasting
-    useEffect(() => {
+    // Attach mouse event listeners for raycasting - legitimate external sync
+    useMountEffect(() => {
         const canvas = gl.domElement;
         canvas.addEventListener('click', handleMouseClick);
         canvas.addEventListener('mousemove', handleMouseMove);
@@ -451,32 +455,11 @@ const ChildModule = memo(function ChildModule({
             canvas.removeEventListener('mousemove', handleMouseMove);
             canvas.removeEventListener('mouseleave', handleMouseLeave);
         };
-    }, [gl, handleMouseClick, handleMouseMove, handleMouseLeave]);
+    });
 
-    // Animation loop - runs at 60fps, reads from ref for immediate feedback
+    // Animation loop - runs at 60fps
     useFrame((state) => {
         if (!isActive) return;
-
-        // Use ref for immediate visual feedback (no React lag)
-        const currentPressed = pressedButtonsRef?.current || immediatePressedRef.current;
-        
-        if (currentPressed.size > 0) {
-            const pressedColor = new THREE.Color("#6B9BD1");
-            const pulse = 0.55 + Math.sin(state.clock.elapsedTime * 7) * 0.18;
-            const pulseOpacity = 0.65 + Math.sin(state.clock.elapsedTime * 7) * 0.08;
-
-            buttonMeshes.current.forEach((mesh) => {
-                const groupName = mesh.userData.buttonGroup;
-                if (!currentPressed.has(groupName)) {
-                    return;
-                }
-                applyHighlight(mesh, {
-                    color: pressedColor,
-                    intensity: pulse,
-                    opacity: pulseOpacity,
-                });
-            });
-        }
 
         frameCountRef.current++;
 
@@ -685,16 +668,21 @@ const ChildModule = memo(function ChildModule({
 
 function IndicatorRing({ buttonName, gltf }) {
     const [position, setPosition] = useState([0, 0, 0]);
+    const hasComputedRef = useRef(false);
 
-    useEffect(() => {
-        if (gltf && gltf.scene) {
-            gltf.scene.traverse((child) => {
-                if (child.name === buttonName) {
-                    setPosition([child.position.x, child.position.y + 0.05, child.position.z]);
-                }
-            });
+    // Compute position during render instead of in effect
+    if (gltf && gltf.scene && !hasComputedRef.current) {
+        let foundPosition = null;
+        gltf.scene.traverse((child) => {
+            if (child.name === buttonName && !foundPosition) {
+                foundPosition = [child.position.x, child.position.y + 0.05, child.position.z];
+            }
+        });
+        if (foundPosition) {
+            setPosition(foundPosition);
+            hasComputedRef.current = true;
         }
-    }, [buttonName, gltf]);
+    }
 
     return (
         <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
