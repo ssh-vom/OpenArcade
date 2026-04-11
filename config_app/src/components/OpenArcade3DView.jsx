@@ -153,7 +153,11 @@ function LiveInputIcon({ active }) {
 
 const LIVE_STATE_POLL_INTERVAL_MS = 120;
 
-const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDisconnect }) {
+const OpenArcade3DView = memo(function OpenArcade3DView({
+    configClient,
+    onDisconnect,
+    liteMode = false,
+}) {
     // ============================================================
     // 1. ALL STATE DECLARATIONS (must be unconditional)
     // ============================================================
@@ -426,6 +430,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     }, [viewMode]);
 
     const toggleViewMode = useCallback(() => {
+        if (liteMode) {
+            return;
+        }
+
         const newViewMode = viewMode === '3d' ? '2d' : '3d';
         setViewMode(newViewMode);
         if (activeSection !== "mappings" || newViewMode !== "2d") {
@@ -433,7 +441,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             setArmedButton(null);
             setMappingStatus(null);
         }
-    }, [viewMode, activeSection]);
+    }, [viewMode, activeSection, liteMode]);
 
     const toggleMappingMode = useCallback(() => {
         setIsMappingMode((previousValue) => {
@@ -878,6 +886,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 onRenameDevice={handleRenameDevice}
                 onRefreshDevices={handleRefreshDevices}
                 isRefreshing={isRefreshing}
+                showViewToggle={!liteMode}
             />
 
             <div className="flex flex-1 min-h-0">

@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef } from "react";
 import { useMountEffect } from "./hooks/useMountEffect";
-import { OpenArcade3DView } from "./components/OpenArcade3DView"
-import BootSequence from "./components/BootSequence"
+import { OpenArcade3DView } from "./components/OpenArcade3DView";
+import BootSequence from "./components/BootSequence";
 import SerialConfigClient from "./services/SerialConfigClient";
 import MockConfigClient from "./services/MockConfigClient.js";
-import './App.css'
+import "./App.css";
 
 function App() {
     const [bootPhase, setBootPhase] = useState("boot"); // boot -> connecting -> connected
@@ -17,7 +17,6 @@ function App() {
         setBootError(null);
 
         if (selection.type === "demo") {
-            // Use mock client for demo mode (no hardware required)
             const client = new MockConfigClient();
             await client.connect();
             clientRef.current = client;
@@ -35,9 +34,8 @@ function App() {
                 setConfigClient(client);
                 setBootPhase("connected");
             } catch (err) {
-                // Detect if port is already in use (another tab has it open)
                 const errorMessage = err?.message || "";
-                const isPortInUse = 
+                const isPortInUse =
                     err?.name === "PortInUseError" ||
                     errorMessage.includes("already open") ||
                     errorMessage.includes("in use") ||
@@ -48,13 +46,12 @@ function App() {
                 if (isPortInUse) {
                     setBootError("Device already in use. Close other OpenArcade tabs and try again.");
                 } else if (err?.name === "UserCancelledError" || errorMessage.includes("No device selected")) {
-                    // User cancelled the browser picker, go back to menu
                     setBootPhase("boot");
                     return;
                 } else {
                     setBootError(err?.message || "Failed to connect to device");
                 }
-                
+
                 setBootPhase("boot");
             }
         }
@@ -74,7 +71,6 @@ function App() {
         setBootError(null);
     }, []);
 
-    // Cleanup on component unmount - legitimate external sync
     useMountEffect(() => {
         return () => {
             if (clientRef.current) {
@@ -83,7 +79,6 @@ function App() {
         };
     });
 
-    // Handle page unload (refresh, close tab, navigate away) - legitimate external sync
     useMountEffect(() => {
         const handleBeforeUnload = () => {
             if (clientRef.current) {
@@ -92,7 +87,6 @@ function App() {
         };
 
         window.addEventListener("beforeunload", handleBeforeUnload);
-        
         return () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
@@ -100,14 +94,20 @@ function App() {
 
     if (bootPhase === "boot" || bootPhase === "connecting") {
         return (
-            <BootSequence 
+            <BootSequence
                 onBootComplete={handleBootComplete}
                 error={bootPhase === "connecting" ? bootError : null}
             />
         );
     }
 
-    return <OpenArcade3DView configClient={configClient} onDisconnect={handleDisconnect} />;
+    return (
+        <OpenArcade3DView
+            configClient={configClient}
+            onDisconnect={handleDisconnect}
+            liteMode={false}
+        />
+    );
 }
 
-export default App
+export default App;

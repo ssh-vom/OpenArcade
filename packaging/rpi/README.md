@@ -1,11 +1,14 @@
 # Raspberry Pi Zero 2 W Deployment
 
-OpenArcade is deployed on the Pi as four native systemd services:
+OpenArcade is deployed on the Pi as systemd services:
 
-- openarcade-gadget.service    — one-shot USB gadget setup (dwc2 / HID + CDC + USB Ethernet descriptors)
-- openarcade-subscriber.service — async BLE to HID runtime with HID output worker
-- openarcade-configd.service   — USB serial configuration service on /dev/ttyGS0
-- openarcade-display.service   — I2C SSD1306 status display (module count + Pi temp)
+- openarcade-gadget.service         — one-shot USB gadget setup (dwc2 / HID + CDC + USB Ethernet descriptors)
+- openarcade-gadget-manager.service — persona-aware gadget rebuild manager
+- openarcade-gpio.service           — GPIO button/chord handling for mode toggles
+- openarcade-subscriber.service     — async BLE to HID runtime with HID output worker
+- openarcade-configd.service        — USB serial configuration service on /dev/ttyGS0
+- openarcade-config-mode.service    — config-mode orchestrator (hotspot + local HTTP portal)
+- openarcade-display.service        — I2C SSD1306 status display
 
 ## Install
 
@@ -37,9 +40,11 @@ app directory and restart all services cleanly.
 ## Troubleshooting
 
 ### Service status
-    systemctl status openarcade-gadget.service
+    systemctl status openarcade-gadget-manager.service
+    systemctl status openarcade-gpio.service
     systemctl status openarcade-subscriber.service
     systemctl status openarcade-configd.service
+    systemctl status openarcade-config-mode.service
     systemctl status openarcade-display.service
 
 ### SSH over USB
@@ -48,8 +53,11 @@ you should see a new USB network interface when the Pi data port is connected. T
 hostname is `thiscoolpi.local` (configured by `OPENARCADE_HOSTNAME` in the env file).
 
 ### Live logs
+    journalctl -u openarcade-gadget-manager.service -f
+    journalctl -u openarcade-gpio.service -f
     journalctl -u openarcade-subscriber.service -f
     journalctl -u openarcade-configd.service -f
+    journalctl -u openarcade-config-mode.service -f
     journalctl -u openarcade-display.service -f
 
 ### Bluetooth not running

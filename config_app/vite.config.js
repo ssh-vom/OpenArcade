@@ -22,6 +22,10 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: {
+        index: resolve(__dirname, 'index.html'),
+        lite: resolve(__dirname, 'lite.html'),
+      },
       output: {
         manualChunks: {
           three: ['three'],

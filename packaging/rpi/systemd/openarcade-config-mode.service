@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenArcade config mode orchestrator (hotspot + local portal)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/openarcade/openarcade.env
+WorkingDirectory=/opt/openarcade/app/server
+ExecStart=/opt/openarcade/venv/bin/python /opt/openarcade/app/server/config_mode_orchestrator_service.py
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target
