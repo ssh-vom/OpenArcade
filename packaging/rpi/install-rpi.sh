@@ -22,6 +22,7 @@ SERVICE_NAMES=(
     openarcade-gpio.service
     openarcade-subscriber.service
     openarcade-configd.service
+    openarcade-config-mode.service
     openarcade-display.service
 )
 
@@ -101,6 +102,8 @@ install_os_packages() {
         avahi-daemon \
         bluez \
         bluez-tools \
+        dnsmasq \
+        hostapd \
         rfkill \
         openssh-server \
         python3 \
@@ -166,6 +169,12 @@ ensure_base_services() {
     systemctl restart avahi-daemon ssh
 }
 
+ensure_hotspot_services_disabled() {
+    # Config mode orchestrator starts/stops hostapd + dnsmasq directly.
+    systemctl disable hostapd dnsmasq 2>/dev/null || true
+    systemctl stop hostapd dnsmasq 2>/dev/null || true
+}
+
 copy_repo_tree() {
     rm -rf "$APP_DIR"
     mkdir -p "$APP_DIR"
@@ -221,6 +230,18 @@ EOF
 EOF
         chmod 0644 "$STATE_DIR/pairing_mode.json"
     fi
+
+    if [[ ! -f "$STATE_DIR/config_mode.json" ]]; then
+        cat > "$STATE_DIR/config_mode.json" <<'EOF'
+{
+  "enabled": false,
+  "source": "default",
+  "sequence": 0,
+  "updated_at": "1970-01-01T00:00:00+00:00"
+}
+EOF
+        chmod 0644 "$STATE_DIR/config_mode.json"
+    fi
 }
 
 install_env_file() {
@@ -269,6 +290,7 @@ start_services_if_ready() {
     systemctl restart openarcade-gpio.service
     systemctl restart openarcade-configd.service
     systemctl restart openarcade-subscriber.service
+    systemctl restart openarcade-config-mode.service
     systemctl restart openarcade-display.service
 }
 
@@ -284,6 +306,7 @@ Service status commands:
   systemctl status openarcade-gpio.service
   systemctl status openarcade-subscriber.service
   systemctl status openarcade-configd.service
+  systemctl status openarcade-config-mode.service
   systemctl status openarcade-display.service
 
 Log commands:
@@ -291,6 +314,7 @@ Log commands:
   journalctl -u openarcade-gpio.service -f
   journalctl -u openarcade-subscriber.service -f
   journalctl -u openarcade-configd.service -f
+  journalctl -u openarcade-config-mode.service -f
   journalctl -u openarcade-display.service -f
 
 Bluetooth debug commands:
@@ -320,6 +344,7 @@ main() {
     ensure_hostname
     ensure_ble_enabled
     ensure_base_services
+    ensure_hotspot_services_disabled
     install_systemd_units
     start_services_if_ready
     print_summary

@@ -1,60 +1,87 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useMountEffect } from "../hooks/useMountEffect";
 
 const TOTAL_SCAN_ROWS = 20;
 const SCAN_SPEED_MS = 55;
 const START_DELAY_MS = 300;
 
+// CSS animation for the boot scan - no JavaScript timers needed
+const bootAnimationStyles = `
+@keyframes scan-row-reveal {
+    from { opacity: 0; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scan-line-move {
+    0% { top: 4%; opacity: 0.9; }
+    100% { top: 96%; opacity: 0; }
+}
+
+@keyframes glow-pulse {
+    0%, 100% { opacity: 0.12; }
+    50% { opacity: 0.2; }
+}
+
+.scan-row {
+    opacity: 0;
+    animation: scan-row-reveal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.scan-line {
+    animation: scan-line-move ${TOTAL_SCAN_ROWS * SCAN_SPEED_MS}ms linear ${START_DELAY_MS}ms forwards;
+}
+
+.glow-orb {
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.menu-enter {
+    animation: fade-in-up 0.5s ease-out forwards;
+}
+
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+`;
+
 export default function BootSequence({ onBootComplete, error }) {
     const [phase, setPhase] = useState("boot");
-    const [scanProgress, setScanProgress] = useState(0);
     const [selectedIndex, setSelectedIndex] = useState(0);
-    const [hasWebSerial, setHasWebSerial] = useState(null);
+    const [hasWebSerial, setHasWebSerial] = useState(false);
 
-    // Check WebSerial availability once
-    useEffect(() => {
+    // Check WebSerial availability once on mount - legitimate external sync
+    useMountEffect(() => {
         setHasWebSerial("serial" in navigator);
+    });
+
+    // Handle boot completion via CSS animation end
+    const handleScanComplete = useCallback(() => {
+        setPhase("menu");
     }, []);
 
-    // Boot sequence: logo reveal -> menu
-    useEffect(() => {
-        if (phase !== "boot") return;
-
-        const startTimeout = setTimeout(() => {
-            let row = 0;
-            const scanInterval = setInterval(() => {
-                row++;
-                setScanProgress(row);
-                if (row >= TOTAL_SCAN_ROWS) {
-                    clearInterval(scanInterval);
-                    setTimeout(() => setPhase("menu"), 400);
-                }
-            }, SCAN_SPEED_MS);
-
-            return () => clearInterval(scanInterval);
-        }, START_DELAY_MS);
-
-        return () => clearTimeout(startTimeout);
-    }, [phase]);
-
-    // Keyboard navigation
-    useEffect(() => {
+    // Keyboard navigation - handled declaratively with useCallback, not effect
+    const handleKeyDown = useCallback((e) => {
         if (phase !== "menu") return;
         
-        const onKeyDown = (e) => {
-            const options = hasWebSerial ? 2 : 1;
-            if (e.key === "ArrowUp") {
-                setSelectedIndex((i) => Math.max(0, i - 1));
-            } else if (e.key === "ArrowDown") {
-                setSelectedIndex((i) => Math.min(options - 1, i + 1));
-            } else if (e.key === "Enter") {
-                selectOption(selectedIndex);
-            }
-        };
+        const options = hasWebSerial ? 2 : 1;
+        if (e.key === "ArrowUp") {
+            setSelectedIndex((i) => Math.max(0, i - 1));
+        } else if (e.key === "ArrowDown") {
+            setSelectedIndex((i) => Math.min(options - 1, i + 1));
+        } else if (e.key === "Enter") {
+            selectOption(selectedIndex);
+        }
+    }, [phase, hasWebSerial, selectedIndex]);
 
-        window.addEventListener("keydown", onKeyDown);
-        return () => window.removeEventListener("keydown", onKeyDown);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [phase, selectedIndex, hasWebSerial]);
+    // Attach keyboard listener at component level - not in effect
+    // Using React's onKeyDown on a focusable container would be better,
+    // but for global window events, we use the hook pattern
+    useMountEffect(() => {
+        const listener = (e) => handleKeyDown(e);
+        window.addEventListener("keydown", listener);
+        return () => window.removeEventListener("keydown", listener);
+    });
 
     const selectOption = useCallback((index) => {
         if (!hasWebSerial && index === 0) {
@@ -85,7 +112,11 @@ export default function BootSequence({ onBootComplete, error }) {
                 fontFamily: "'Space Grotesk', 'IBM Plex Mono', sans-serif",
                 background: "linear-gradient(180deg, #D9D9D9 0%, #CCCCCC 100%)"
             }}
+            tabIndex={0}
         >
+            {/* Inject animation styles */}
+            <style>{bootAnimationStyles}</style>
+            
             {/* Subtle grid background */}
             <div 
                 className="absolute inset-0 pointer-events-none opacity-40"
@@ -100,7 +131,7 @@ export default function BootSequence({ onBootComplete, error }) {
 
             {phase === "boot" && (
                 <div className="flex flex-col items-center z-10">
-                    {/* Logo container with smooth scan reveal */}
+                    {/* Logo container with CSS-driven scan reveal */}
                     <div 
                         className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-2xl flex items-center justify-center"
                         style={{ 
@@ -108,7 +139,7 @@ export default function BootSequence({ onBootComplete, error }) {
                             boxShadow: "0 4px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)"
                         }}
                     >
-                        {/* The logo with smooth row-by-row reveal */}
+                        {/* The logo with CSS row-by-row reveal */}
                         <div className="relative w-full h-full flex items-center justify-center p-8">
                             {/* Dimmed base logo */}
                             <img 
@@ -118,48 +149,38 @@ export default function BootSequence({ onBootComplete, error }) {
                                 style={{ opacity: 0.1, filter: "grayscale(100%)" }}
                             />
 
-                            {/* Revealed rows with smooth cascade */}
+                            {/* Revealed rows with CSS cascade */}
                             <div className="absolute inset-0 flex flex-col p-8">
-                                {Array.from({ length: TOTAL_SCAN_ROWS }).map((_, i) => {
-                                    const isRevealed = i < scanProgress;
-                                    const distance = scanProgress - i;
-                                    const opacity = isRevealed ? Math.min(1, 0.3 + distance * 0.15) : 0;
-                                    
-                                    return (
-                                        <div 
-                                            key={i}
-                                            className="flex-1 w-full overflow-hidden relative"
+                                {Array.from({ length: TOTAL_SCAN_ROWS }).map((_, i) => (
+                                    <div 
+                                        key={i}
+                                        className="flex-1 w-full overflow-hidden relative scan-row"
+                                        style={{
+                                            animationDelay: `${START_DELAY_MS + i * SCAN_SPEED_MS}ms`
+                                        }}
+                                    >
+                                        <img 
+                                            src="/logos/oa_block.png"
+                                            alt=""
+                                            className="absolute w-full object-contain"
                                             style={{
-                                                opacity: isRevealed ? 1 : 0,
-                                                transform: isRevealed ? "scale(1)" : "scale(0.98)",
-                                                transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                                                height: `${TOTAL_SCAN_ROWS * 100}%`,
+                                                top: `${-i * 100}%`,
+                                                filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12))"
                                             }}
-                                        >
-                                            <img 
-                                                src="/logos/oa_block.png"
-                                                alt=""
-                                                className="absolute w-full object-contain"
-                                                style={{
-                                                    height: `${TOTAL_SCAN_ROWS * 100}%`,
-                                                    top: `${-i * 100}%`,
-                                                    filter: "drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12))"
-                                                }}
-                                            />
-                                        </div>
-                                    );
-                                })}
+                                        />
+                                    </div>
+                                ))}
                             </div>
 
-                            {/* Smooth glow scan line with trail */}
+                            {/* CSS-driven glow scan line with trail */}
                             <div 
-                                className="absolute left-4 right-4 h-2 rounded-full pointer-events-none"
+                                className="absolute left-4 right-4 h-2 rounded-full pointer-events-none scan-line"
                                 style={{
-                                    top: `${4 + (scanProgress / TOTAL_SCAN_ROWS) * 92}%`,
                                     background: "linear-gradient(180deg, rgba(81, 128, 193, 0.8), rgba(81, 128, 193, 0.2))",
                                     boxShadow: "0 0 30px 4px rgba(81, 128, 193, 0.5), 0 -10px 40px 6px rgba(81, 128, 193, 0.2)",
-                                    opacity: scanProgress < TOTAL_SCAN_ROWS ? 0.9 : 0,
-                                    transition: "top 0.055s ease-out, opacity 0.5s ease-out"
                                 }}
+                                onAnimationEnd={handleScanComplete}
                             />
                         </div>
 
@@ -173,9 +194,7 @@ export default function BootSequence({ onBootComplete, error }) {
             )}
 
             {phase === "menu" && (
-                <div 
-                    className="flex flex-col items-center z-10 animate-in fade-in slide-in-from-bottom-4 duration-500"
-                >
+                <div className="flex flex-col items-center z-10 menu-enter">
                     {/* Logo header */}
                     <div className="w-20 h-20 mb-6 opacity-90">
                         <img 

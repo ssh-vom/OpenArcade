@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import PlateGalleryPanel from "./PlateGalleryPanel.jsx";
 import PlateTopPreview from "./PlateTopPreview.jsx";
 import { DEFAULT_PLATE_ID, PLATES, getPlateId, getPlateName } from "../lib/plateCatalog.js";
@@ -18,19 +18,15 @@ export default function ProfilesPanel({
     const [renameValue, setRenameValue] = useState("");
     const [switchingId, setSwitchingId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
-
-    const plateNameById = useMemo(() => {
-        const map = new Map();
-        PLATES.forEach((plate) => {
-            map.set(plate.id, plate.name);
-            (plate.legacy_ids || []).forEach((legacyId) => map.set(legacyId, plate.name));
-        });
-        return map;
-    }, []);
+    
+    const hasLoadedRef = useRef(false);
+    const prevDeviceIdRef = useRef(deviceId);
+    const prevRefreshKeyRef = useRef(refreshKey);
 
     const loadProfiles = useCallback(async () => {
         if (!deviceId || !configClient?.listProfiles) {
             setProfiles([]);
+            hasLoadedRef.current = true;
             return;
         }
 
@@ -43,12 +39,31 @@ export default function ProfilesPanel({
             setProfiles([]);
         } finally {
             setLoading(false);
+            hasLoadedRef.current = true;
         }
     }, [deviceId, configClient]);
 
+    // Load profiles when deviceId or refreshKey changes
     useEffect(() => {
-        loadProfiles();
-    }, [loadProfiles, deviceId, refreshKey]);
+        const needsLoad = !hasLoadedRef.current || 
+            deviceId !== prevDeviceIdRef.current || 
+            refreshKey !== prevRefreshKeyRef.current;
+        
+        if (needsLoad) {
+            prevDeviceIdRef.current = deviceId;
+            prevRefreshKeyRef.current = refreshKey;
+            loadProfiles();
+        }
+    }, [deviceId, refreshKey, loadProfiles]);
+
+    const plateNameById = useMemo(() => {
+        const map = new Map();
+        PLATES.forEach((plate) => {
+            map.set(plate.id, plate.name);
+            (plate.legacy_ids || []).forEach((legacyId) => map.set(legacyId, plate.name));
+        });
+        return map;
+    }, []);
 
     const handleCreateProfile = async () => {
         if (!deviceId || !configClient?.createProfile) {

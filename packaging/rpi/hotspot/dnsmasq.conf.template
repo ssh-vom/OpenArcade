@@ -1,0 +1,8 @@
+interface={{INTERFACE}}
+bind-interfaces
+domain-needed
+bogus-priv
+dhcp-range={{DHCP_START}},{{DHCP_END}},{{NETMASK}},24h
+dhcp-option=3,{{AP_IP}}
+dhcp-option=6,{{AP_IP}}
+address=/#/{{AP_IP}}

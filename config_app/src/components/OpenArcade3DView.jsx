@@ -42,14 +42,11 @@ function CameraSetter({ viewMode, currentModulePosition }) {
 
     useLayoutEffect(() => {
         if (viewMode === '2d') {
-            // Position camera above the current module in 2D mode
             camera.position.set(currentModulePosition[0], 5, currentModulePosition[2]);
             camera.rotation.set(-Math.PI / 2, 0, 0);
-            // eslint-disable-next-line react-hooks/immutability -- R3F camera manipulation in useLayoutEffect is the standard pattern
             camera.zoom = orthoZoom;
             camera.updateProjectionMatrix();
         } else {
-            // Reset to 3D view
             camera.position.set(0, 1.5, 3);
             camera.rotation.set(0, 0, 0);
             camera.zoom = 1;
@@ -66,12 +63,11 @@ const seededRandom = (seed) => {
     return x - Math.floor(x);
 };
 
-// Minimal Particle System Component — subtle warm particles for light theme
+// Minimal Particle System Component
 function Particles() {
     const particlesRef = useRef();
     const count = 30;
 
-    // Use lazy state initialization to generate positions once (avoids Math.random during render)
     const [positions] = useState(() => {
         const pos = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
@@ -119,7 +115,7 @@ function Particles() {
     );
 }
 
-// Sidebar nav icon components — New refined design
+// Sidebar nav icon components
 function MappingsIcon({ active }) {
     return (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -157,70 +153,59 @@ function LiveInputIcon({ active }) {
 
 const LIVE_STATE_POLL_INTERVAL_MS = 120;
 
-const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDisconnect /* eslint-disable-line no-unused-vars */ }) {
+const OpenArcade3DView = memo(function OpenArcade3DView({
+    configClient,
+    onDisconnect,
+    liteMode = false,
+}) {
+    // ============================================================
+    // 1. ALL STATE DECLARATIONS (must be unconditional)
+    // ============================================================
     const [selectedButton, setSelectedButton] = useState(null);
     const [activeSection, setActiveSection] = useState("mappings");
-    const defaultModules = useMemo(() => ([
-        { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/TP1_B_0_BUTTON.glb", mappings: {}, position: [-1.5, 0, 0] },
-        { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/TP1_A_0_JOYSTICK.glb", mappings: {}, position: [0, 0, 0] },
-    ]), []);
-    const [modules, setModules] = useState(defaultModules);
     const [currentModuleIndex, setCurrentModuleIndex] = useState(0);
-    const [loaded, setLoaded] = useState(false);
-    const [viewMode, setViewMode] = useState('2d'); // '3d' or '2d'
+    const [viewMode, setViewMode] = useState('2d');
     const [mappingFilter, setMappingFilter] = useState("all");
     const [isMappingMode, setIsMappingMode] = useState(false);
     const [armedButton, setArmedButton] = useState(null);
     const [mappingStatus, setMappingStatus] = useState(null);
     const [pressedControlIds, setPressedControlIds] = useState([]);
     const [pressedButtons, setPressedButtons] = useState([]);
-    const [activeProfile, setActiveProfile] = useState(null);
-    const [editingMode, setEditingMode] = useState("keyboard");
     const [profilesRefreshKey, setProfilesRefreshKey] = useState(0);
     const [showOnlyConnected, setShowOnlyConnected] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    
+    const defaultModules = useMemo(() => ([
+        { id: "OA-001", name: "Module A", deviceId: "OA-001", path: "/TP1_B_0_BUTTON.glb", mappings: {}, position: [-1.5, 0, 0] },
+        { id: "OA-002", name: "Module B", deviceId: "OA-002", path: "/TP1_A_0_JOYSTICK.glb", mappings: {}, position: [0, 0, 0] },
+    ]), []);
+    
+    const [modules, setModules] = useState(defaultModules);
+    const [activeProfile, setActiveProfile] = useState(null);
+    const [editingMode, setEditingMode] = useState("keyboard");
+    const [hasLoaded, setHasLoaded] = useState(false);
 
-    const triggerProfileRefresh = useCallback(() => setProfilesRefreshKey((k) => k + 1), []);
-    useEffect(() => {
-        const timer = setTimeout(() => setLoaded(true), 50);
-        return () => clearTimeout(timer);
-    }, []);
-
+    // ============================================================
+    // 2. ALL REF DECLARATIONS
+    // ============================================================
     const currentModuleDeviceIdRef = useRef(defaultModules[0]?.deviceId || null);
     const previousPressedControlIdsRef = useRef(new Set());
     const livePollInFlightRef = useRef(false);
     const sourceBindingInFlightRef = useRef(false);
-    const hasLoadedRef = useRef(false);
-    
-    // Ref for immediate visual feedback to 3D scene (bypasses React render cycle)
-    const pressedButtonsForVisualsRef = useRef([]);
-    // Preload textures to eliminate WebGL warnings
-    useEffect(() => {
-        // Force texture generation to prevent lazy initialization warnings
-        const dummyTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-        dummyTexture.generateMipmaps = false;
-        dummyTexture.needsUpdate = true;
+    const isVisibleRef = useRef(true);
+    const mockClientRef = useRef(null);
+    const lastRefreshedIndexRef = useRef(-1);
 
-        // Simple texture preloading using drei's preloader with Draco enabled
-        modules.forEach(module => {
-            useGLTF.preload(module.path, true);
-        });
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- Only preload once on mount, modules is stable
-    }, []);
+    // Initialize mock client once
+    if (!mockClientRef.current) {
+        mockClientRef.current = new MockConfigClient();
+    }
+    const activeClient = configClient || mockClientRef.current;
 
-    // Comprehensive cleanup when component unmounts or configClient changes
-    useEffect(() => {
-        return () => {
-            // Clear all intervals and timeouts
-            setPressedControlIds([]);
-            setPressedButtons([]);
-            pressedButtonsForVisualsRef.current = [];
-            previousPressedControlIdsRef.current = new Set();
-            livePollInFlightRef.current = false;
-            sourceBindingInFlightRef.current = false;
-        };
-    }, [configClient]);
-
+    // ============================================================
+    // 3. DERIVED VALUES (computed after state, before effects)
+    // ============================================================
+    const defaultLayout = DEFAULT_LAYOUT;
     const safeCurrentModuleIndex = currentModuleIndex < modules.length ? currentModuleIndex : 0;
     const visibleModules = showOnlyConnected
         ? modules.filter((m) => m.connected !== false)
@@ -232,20 +217,25 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     );
     const cameraControl = useCameraController({ currentModuleIndex: safeCurrentModuleIndex, modules, enabled: viewMode === '3d' });
 
-    useEffect(() => {
-        if (!showOnlyConnected) return;
-        const currentIsVisible = modules[safeCurrentModuleIndex]?.connected !== false;
-        if (!currentIsVisible) {
-            const firstVisible = modules.findIndex((m) => m.connected !== false);
-            if (firstVisible >= 0) setCurrentModuleIndex(firstVisible);
+    // Update deviceId ref (moved to render phase)
+    currentModuleDeviceIdRef.current = currentModule?.deviceId || null;
+
+    // ============================================================
+    // 4. CALLBACK DECLARATIONS (can use derived values)
+    // ============================================================
+    const normalizeEditingMode = useCallback((mode) => {
+        if (mode === "keyboard" || mode === "gamepad_pc" || mode === "gamepad_switch_hori") {
+            return mode;
         }
-    }, [showOnlyConnected, modules, safeCurrentModuleIndex]);
+        if (mode === "gamepad") {
+            return "gamepad_pc";
+        }
+        return "keyboard";
+    }, []);
 
-    useEffect(() => {
-        currentModuleDeviceIdRef.current = currentModule?.deviceId || null;
-    }, [currentModule]);
-
-    const defaultLayout = DEFAULT_LAYOUT;
+    const preferredInputTypeForMode = useCallback((mode) => (
+        mode === "keyboard" ? HID_INPUT_TYPES.KEYBOARD : HID_INPUT_TYPES.GAMEPAD
+    ), []);
 
     const getControlIdForButton = useCallback((deviceLayout, buttonName) => {
         if (deviceLayout && Object.prototype.hasOwnProperty.call(deviceLayout, buttonName)) {
@@ -266,36 +256,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         ));
         return match?.[0] || null;
     }, [defaultLayout]);
-
-    const mockClientRef = useRef(null);
-    if (!mockClientRef.current) {
-        mockClientRef.current = new MockConfigClient();
-    }
-    const activeClient = configClient || mockClientRef.current;
-
-    const normalizeEditingMode = useCallback((mode) => {
-        if (mode === "keyboard" || mode === "gamepad_pc" || mode === "gamepad_switch_hori") {
-            return mode;
-        }
-        if (mode === "gamepad") {
-            return "gamepad_pc";
-        }
-        return "keyboard";
-    }, []);
-
-    const preferredInputTypeForMode = useCallback((mode) => (
-        mode === "keyboard" ? HID_INPUT_TYPES.KEYBOARD : HID_INPUT_TYPES.GAMEPAD
-    ), []);
-    
-    // Track page visibility to pause polling when tab is hidden (saves battery/CPU)
-    const isVisibleRef = useRef(true);
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            isVisibleRef.current = !document.hidden;
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    }, []);
 
     const applyDeviceConfigs = useCallback((devices) => {
         const deviceEntries = Object.entries(devices || {});
@@ -423,10 +383,17 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         setCurrentModuleIndex(fallbackIndex >= 0 ? fallbackIndex : 0);
         setActiveProfile(null);
         setEditingMode("keyboard");
-    }, [defaultLayout, defaultModules, getInputForKeycode, getInputLabel, normalizeEditingMode]);
+    }, [defaultLayout, defaultModules, normalizeEditingMode]);
+
     const refreshDevices = useCallback(async () => {
-        const devices = await activeClient.listDevices();
-        applyDeviceConfigs(devices);
+        try {
+            const devices = await activeClient.listDevices();
+            applyDeviceConfigs(devices);
+            setHasLoaded(true);
+        } catch (error) {
+            console.warn("Failed to load devices:", error);
+            setHasLoaded(true);
+        }
     }, [activeClient, applyDeviceConfigs]);
 
     const handleRefreshDevices = useCallback(async () => {
@@ -450,42 +417,31 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             console.warn("Failed to rename device:", error);
         }
     }, [activeClient, refreshDevices]);
-    useEffect(() => {
-        let cancelled = false;
 
-        const loadDevices = async () => {
-            try {
-                await refreshDevices();
-                hasLoadedRef.current = true;
-            } catch (error) {
-                if (!cancelled) {
-                    console.warn("Failed to load devices:", error);
-                }
-            }
-        };
+    const triggerProfileRefresh = useCallback(() => setProfilesRefreshKey((k) => k + 1), []);
 
-        loadDevices();
-        return () => {
-            cancelled = true;
-        };
-    }, [refreshDevices]);
+    const handleSectionChange = useCallback((section) => {
+        setActiveSection(section);
+        if (section !== "mappings" || viewMode !== "2d") {
+            setIsMappingMode(false);
+            setArmedButton(null);
+            setMappingStatus(null);
+        }
+    }, [viewMode]);
 
-    useEffect(() => {
-        if (!hasLoadedRef.current) {
+    const toggleViewMode = useCallback(() => {
+        if (liteMode) {
             return;
         }
 
-        refreshDevices();
-    }, [safeCurrentModuleIndex, refreshDevices]);
-    useEffect(() => {
-        if (activeSection === "mappings" && viewMode === "2d") {
-            return;
+        const newViewMode = viewMode === '3d' ? '2d' : '3d';
+        setViewMode(newViewMode);
+        if (activeSection !== "mappings" || newViewMode !== "2d") {
+            setIsMappingMode(false);
+            setArmedButton(null);
+            setMappingStatus(null);
         }
-
-        setIsMappingMode(false);
-        setArmedButton(null);
-        setMappingStatus(null);
-    }, [activeSection, viewMode]);
+    }, [viewMode, activeSection, liteMode]);
 
     const toggleMappingMode = useCallback(() => {
         setIsMappingMode((previousValue) => {
@@ -512,16 +468,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             return;
         }
 
-        console.log(`handleButtonClick called: ${buttonName}, currentMappings:`, currentMappings);
-
         const buttonConfig = currentMappings[buttonName];
         if (buttonConfig && typeof buttonConfig === 'object') {
-            // New HID configuration format
-            console.log('Setting HID config for button:', buttonName);
             setSelectedButton({ name: buttonName, mesh, ...buttonConfig });
         } else {
-            // Legacy format for backward compatibility
-            console.log('Setting legacy config for button:', buttonName);
             setSelectedButton({ name: buttonName, mesh, action: buttonConfig || "" });
         }
     }, [currentMappings, isMappingMode, pressedControlIds, viewMode]);
@@ -533,11 +483,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         setMappingStatus(null);
     }, []);
 
-    const toggleViewMode = () => {
-        setViewMode(viewMode === '3d' ? '2d' : '3d');
-    };
-
-    const saveMapping = (buttonName, config) => {
+    const saveMapping = useCallback((buttonName, config) => {
         setModules(prev => prev.map((mod, idx) => {
             if (idx === safeCurrentModuleIndex) {
                 const nextBanks = {
@@ -592,18 +538,18 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             .catch((error) => {
                 console.warn("Failed to update mapping:", error);
             });
-    };
+    }, [safeCurrentModuleIndex, editingMode, currentModule, getControlIdForButton, activeClient]);
 
-    const clearMapping = (buttonName) => {
+    const clearMapping = useCallback((buttonName) => {
         saveMapping(buttonName, null);
-    };
+    }, [saveMapping]);
 
-    const handleModuleChange = (index) => {
+    const handleModuleChange = useCallback((index) => {
         setCurrentModuleIndex(index);
         setSelectedButton(null);
         setArmedButton(null);
         setMappingStatus(null);
-    };
+    }, []);
 
     const navigatePrev = useCallback(() => {
         setCurrentModuleIndex(prev => {
@@ -633,12 +579,150 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             return nextIdx;
         });
     }, [modules, showOnlyConnected]);
-    // Arrow key navigation in 2D view
+
+    const clearAllMappings = useCallback(() => {
+        setModules(prev => prev.map((mod, idx) => {
+            if (idx === safeCurrentModuleIndex) {
+                const nextBanks = {
+                    keyboard: { ...(mod.mappingBanks?.keyboard || {}) },
+                    gamepad_pc: { ...(mod.mappingBanks?.gamepad_pc || {}) },
+                    gamepad_switch_hori: { ...(mod.mappingBanks?.gamepad_switch_hori || {}) },
+                };
+                nextBanks[editingMode] = {};
+                return { ...mod, mappingBanks: nextBanks };
+            }
+            return mod;
+        }));
+        setSelectedButton(null);
+    }, [safeCurrentModuleIndex, editingMode]);
+
+    const saveToDevice = useCallback(async (moduleId) => {
+        const module = modules.find(mod => mod.id === moduleId);
+        if (module) {
+            try {
+                const layout = module.deviceLayout || defaultLayout;
+                
+                const mappingBanks = module.mappingBanks || {};
+                const saveBank = async (mode, bankMappings) => {
+                    for (const [buttonName, mapping] of Object.entries(bankMappings || {})) {
+                        const controlId = getControlIdForButton(layout, buttonName);
+                        if (!controlId) {
+                            continue;
+                        }
+
+                        if (mapping?.type === HID_INPUT_TYPES.KEYBOARD) {
+                            const keycodeName = getKeycodeForInput(mapping.input);
+                            if (keycodeName) {
+                                await activeClient.setMapping(module.deviceId, "keyboard", controlId, { keycode: keycodeName });
+                            }
+                        } else if (mapping?.type === HID_INPUT_TYPES.GAMEPAD) {
+                            await activeClient.setMapping(module.deviceId, mode, controlId, { gamepad_input: mapping.input });
+                        }
+                    }
+                };
+
+                await saveBank("keyboard", mappingBanks.keyboard);
+                await saveBank("gamepad_pc", mappingBanks.gamepad_pc);
+                await saveBank("gamepad_switch_hori", mappingBanks.gamepad_switch_hori);
+
+                console.log('Configuration saved successfully!');
+            } catch (error) {
+                console.error('Failed to save configuration:', error);
+            }
+        }
+    }, [modules, defaultLayout, getControlIdForButton, activeClient]);
+
+    // ============================================================
+    // 5. ALL EFFECTS (after all values and callbacks are defined)
+    // ============================================================
+    
+    // Data loading effect
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadDevices = async () => {
+            try {
+                if (!cancelled) {
+                    await refreshDevices();
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.warn("Failed to load devices:", error);
+                }
+            }
+        };
+
+        loadDevices();
+        return () => {
+            cancelled = true;
+        };
+    }, [refreshDevices]);
+
+    // Refresh when module index changes (after initial load)
+    useEffect(() => {
+        if (!hasLoaded) return;
+        if (safeCurrentModuleIndex === lastRefreshedIndexRef.current) return;
+        
+        lastRefreshedIndexRef.current = safeCurrentModuleIndex;
+        
+        let cancelled = false;
+        const doRefresh = async () => {
+            try {
+                const devices = await activeClient.listDevices();
+                if (!cancelled) {
+                    applyDeviceConfigs(devices);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.warn("Failed to refresh devices:", error);
+                }
+            }
+        };
+        doRefresh();
+        
+        return () => {
+            cancelled = true;
+        };
+    }, [safeCurrentModuleIndex, hasLoaded, activeClient, applyDeviceConfigs]);
+
+    // Cleanup effect
+    useEffect(() => {
+        return () => {
+            setPressedControlIds([]);
+            setPressedButtons([]);
+            previousPressedControlIdsRef.current = new Set();
+            livePollInFlightRef.current = false;
+            sourceBindingInFlightRef.current = false;
+        };
+    }, [configClient]);
+
+    // Page visibility tracking
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            isVisibleRef.current = !document.hidden;
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    // Handle showOnlyConnected filter change
+    useEffect(() => {
+        if (!showOnlyConnected) return;
+        
+        const currentIsVisible = modules[safeCurrentModuleIndex]?.connected !== false;
+        if (!currentIsVisible) {
+            const firstVisible = modules.findIndex((m) => m.connected !== false);
+            if (firstVisible >= 0 && firstVisible !== safeCurrentModuleIndex) {
+                setCurrentModuleIndex(firstVisible);
+            }
+        }
+    }, [showOnlyConnected, modules, safeCurrentModuleIndex]);
+
+    // Arrow key navigation
     useEffect(() => {
         if (viewMode !== '2d' || activeSection !== 'mappings') return;
 
         const handleKeyDown = (e) => {
-            // Don't navigate when a modal is open
             if (selectedButton) return;
 
             if (e.key === 'ArrowLeft') {
@@ -654,14 +738,12 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [viewMode, activeSection, selectedButton, navigatePrev, navigateNext]);
 
+    // Live state polling
     useEffect(() => {
         const currentDeviceId = currentModule?.deviceId;
         const currentLayout = currentModule?.deviceLayout || defaultLayout;
 
         if (activeSection !== 'mappings' || !currentDeviceId || typeof activeClient.getLiveState !== 'function') {
-            previousPressedControlIdsRef.current = new Set();
-            setPressedControlIds([]);
-            setPressedButtons([]);
             return;
         }
 
@@ -684,10 +766,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                     .map((controlId) => getButtonNameForControlId(currentLayout, controlId))
                     .filter(Boolean);
 
-                // IMMEDIATE: Update ref for 3D visual feedback (no React lag, 60fps)
-                pressedButtonsForVisualsRef.current = nextPressedButtons;
-
-                // THROTTLED: Only update React state if actually changed (prevents unnecessary re-renders)
                 if (!shallowEqualArrays(pressedControlIds, nextPressedControlIds)) {
                     setPressedControlIds(nextPressedControlIds);
                     setPressedButtons(nextPressedButtons);
@@ -759,82 +837,23 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
             window.clearInterval(intervalId);
             livePollInFlightRef.current = false;
             previousPressedControlIdsRef.current = new Set();
-            pressedButtonsForVisualsRef.current = [];
         };
-    }, [
-        activeClient,
-        activeSection,
-        armedButton,
-        currentModule?.deviceId,
-        currentModule?.deviceLayout,
-        defaultLayout,
-        getButtonNameForControlId,
-        isMappingMode,
-        refreshDevices,
-        pressedControlIds, // Needed for shallowEqual comparison
-    ]);
+    }, [activeClient, activeSection, armedButton, currentModule, defaultLayout, getButtonNameForControlId, isMappingMode, refreshDevices, pressedControlIds]);
 
-    const clearAllMappings = () => {
-        setModules(prev => prev.map((mod, idx) => {
-            if (idx === safeCurrentModuleIndex) {
-                const nextBanks = {
-                    keyboard: { ...(mod.mappingBanks?.keyboard || {}) },
-                    gamepad_pc: { ...(mod.mappingBanks?.gamepad_pc || {}) },
-                    gamepad_switch_hori: { ...(mod.mappingBanks?.gamepad_switch_hori || {}) },
-                };
-                nextBanks[editingMode] = {};
-                return { ...mod, mappingBanks: nextBanks };
-            }
-            return mod;
-        }));
-        setSelectedButton(null);
-    };
+    // Preload textures once on mount
+    useEffect(() => {
+        const dummyTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
+        dummyTexture.generateMipmaps = false;
+        dummyTexture.needsUpdate = true;
 
-    const saveToDevice = async (moduleId) => {
-        const module = modules.find(mod => mod.id === moduleId);
-        if (module) {
-            try {
-                // Show loading state (could add toast/loading indicator here)
-                console.log('Saving configuration to device...');
+        modules.forEach(module => {
+            useGLTF.preload(module.path, true);
+        });
+    }, []);
 
-                const layout = module.deviceLayout || defaultLayout;
-                
-                const mappingBanks = module.mappingBanks || {};
-                const saveBank = async (mode, bankMappings) => {
-                    for (const [buttonName, mapping] of Object.entries(bankMappings || {})) {
-                        const controlId = getControlIdForButton(layout, buttonName);
-                        if (!controlId) {
-                            continue;
-                        }
-
-                        if (mapping?.type === HID_INPUT_TYPES.KEYBOARD) {
-                            const keycodeName = getKeycodeForInput(mapping.input);
-                            if (keycodeName) {
-                                await activeClient.setMapping(module.deviceId, "keyboard", controlId, { keycode: keycodeName });
-                            }
-                        } else if (mapping?.type === HID_INPUT_TYPES.GAMEPAD) {
-                            await activeClient.setMapping(module.deviceId, mode, controlId, { gamepad_input: mapping.input });
-                        }
-                    }
-                };
-
-                await saveBank("keyboard", mappingBanks.keyboard);
-                await saveBank("gamepad_pc", mappingBanks.gamepad_pc);
-                await saveBank("gamepad_switch_hori", mappingBanks.gamepad_switch_hori);
-                
-                // Note: We no longer call setActiveMode here, as the HID mode is now
-                // controlled by the GPIO button on the Raspberry Pi, not by software.
-
-                console.log('Configuration saved successfully!');
-                // Could add success notification here
-
-            } catch (error) {
-                console.error('Failed to save configuration:', error);
-                // Could add error notification here
-            }
-        }
-    };
-
+    // ============================================================
+    // 6. RENDER
+    // ============================================================
     const navItems = [
         { id: "mappings", label: "Mappings", Icon: MappingsIcon },
         { id: "profiles", label: "Profiles", Icon: ProfilesIcon },
@@ -848,11 +867,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
     const hasNext = showOnlyConnected
         ? modules.slice(safeCurrentModuleIndex + 1).some((m) => m.connected !== false)
         : safeCurrentModuleIndex < modules.length - 1;
+
     return (
-        <div
-            className={`w-screen h-screen flex flex-col overflow-hidden bg-[#D9D9D9] transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
-        >
-            {/* Top Header */}
+        <div className="w-screen h-screen flex flex-col overflow-hidden bg-[#D9D9D9] animate-fade-in">
             <ControllerHUD
                 controllerName="OpenArcade Controller v1.0"
                 moduleCount={modules.length}
@@ -869,10 +886,10 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                 onRenameDevice={handleRenameDevice}
                 onRefreshDevices={handleRefreshDevices}
                 isRefreshing={isRefreshing}
+                showViewToggle={!liteMode}
             />
 
             <div className="flex flex-1 min-h-0">
-                {/* Left Sidebar Navigation — Always visible */}
                 <div
                     className="w-[72px] bg-[#CCCCCC] flex flex-col items-center pt-5 gap-2 shrink-0"
                     style={{
@@ -880,22 +897,18 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                         boxShadow: '1px 0 3px rgba(0, 0, 0, 0.04)'
                     }}
                 >
-                    {navItems.map((item, index) => (
+                    {navItems.map((item) => (
                         <button
                             key={item.id}
-                            onClick={() => setActiveSection(item.id)}
+                            onClick={() => handleSectionChange(item.id)}
                             className={`group relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-200 cursor-pointer border-none
                                 ${activeSection === item.id
                                     ? "bg-[#5180C1]/15"
                                     : "bg-transparent hover:bg-[#B8B8B8]"
                                 }`}
                             title={item.label}
-                            style={{
-                                animationDelay: `${index * 50}ms`
-                            }}
                         >
                             <item.Icon active={activeSection === item.id} />
-                            {/* Active indicator bar */}
                             {activeSection === item.id && (
                                 <div
                                     className="absolute -left-[1px] top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#5180C1] rounded-r-full"
@@ -905,10 +918,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                         </button>
                     ))}
 
-                    {/* Divider */}
                     <div className="w-8 h-px bg-[#A0A0A0] my-2" />
 
-                    {/* Version indicator at bottom */}
                     <div className="mt-auto mb-4">
                         <div
                             className="text-[9px] text-[#707070] font-medium tracking-wider text-center leading-tight"
@@ -919,12 +930,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                     </div>
                 </div>
 
-                {/* Main Content Area */}
                 {showMappingsView ? (
                     <>
-                        {/* Canvas Area with Blueprint grid */}
                         <div className="flex-1 relative animate-fade-in">
-                            {/* Blueprint grid overlay */}
                             <div
                                 className="absolute inset-0 pointer-events-none z-0"
                                 style={{
@@ -955,12 +963,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     }
                                 }}
                             >
-                                {/* --- Enhanced Lighting System for warm light theme --- */}
-
-                                {/* Ambient base light — warm tone */}
                                 <ambientLight intensity={1.1} color="#FFF8F0" />
-
-                                {/* Key Light - bright directional with shadows */}
                                 <directionalLight
                                     position={[5, 12, 8]}
                                     intensity={1.3}
@@ -975,22 +978,16 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     shadow-bias={0.0001}
                                     shadow-radius={3}
                                 />
-
-                                {/* Fill Light - soft violet tinted */}
                                 <directionalLight
                                     position={[-8, 6, 4]}
                                     intensity={0.4}
                                     color="#E8E0F0"
                                 />
-
-                                {/* Rim Light - back light for edge definition */}
                                 <directionalLight
                                     position={[0, 3, -10]}
                                     intensity={0.45}
                                     color="#F0E8E0"
                                 />
-
-                                {/* Accent Light 1 — subtle violet */}
                                 <pointLight
                                     position={[3, 4, 3]}
                                     intensity={0.3}
@@ -998,8 +995,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     distance={15}
                                     decay={2}
                                 />
-
-                                {/* Accent Light 2 — warm */}
                                 <pointLight
                                     position={[-4, 3, -2]}
                                     intensity={0.2}
@@ -1008,7 +1003,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     decay={2}
                                 />
 
-                                {/* --- Ground Plane --- */}
                                 <mesh
                                     rotation={[-Math.PI / 2, 0, 0]}
                                     position={[0, -0.5, 0]}
@@ -1018,7 +1012,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     <shadowMaterial opacity={0.08} />
                                 </mesh>
 
-                                {/* --- Subtle Grid — warm tones --- */}
                                 <gridHelper
                                     args={[40, 40, "#E4E0DC", "#EBE8E4"]}
                                     position={[0, -0.15, 0]}
@@ -1033,7 +1026,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     />
                                 </mesh>
 
-                                {/* --- Minimal Particle System --- */}
                                 <Particles />
 
                                 <Bounds clip observe={false} margin={1}>
@@ -1053,7 +1045,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                                 mappings={module.mappingBanks?.[editingMode] || {}}
                                                 mappingFilter={mappingFilter}
                                                 pressedButtons={isCurrentModule ? pressedButtons : []}
-                                                pressedButtonsRef={isCurrentModule ? pressedButtonsForVisualsRef : null}
                                                 armedButton={isCurrentModule ? armedButton : null}
                                                 isMappingMode={isCurrentModule ? isMappingMode : false}
                                                 key={module.deviceId || module.id}
@@ -1070,10 +1061,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                 )}
                             </Canvas>
 
-                            {/* Module navigation overlay — 2D view only */}
                             {viewMode === '2d' && modules.length > 1 && (
                                 <>
-                                    {/* Left arrow */}
                                     <button
                                         onClick={navigatePrev}
                                         disabled={!hasPrev}
@@ -1088,7 +1077,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                         </svg>
                                     </button>
 
-                                    {/* Right arrow */}
                                     <button
                                         onClick={navigateNext}
                                         disabled={!hasNext}
@@ -1103,7 +1091,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                         </svg>
                                     </button>
 
-                                    {/* Module indicator pills */}
                                     <div
                                         className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-[#CCCCCC]/90 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-[#A0A0A0]"
                                         style={{ boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)' }}
@@ -1142,7 +1129,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                             )}
                         </div>
 
-                        {/* Right Sidebar (Inspector) - Only visible in 2D view */}
                         {viewMode === '2d' && (
                             <div className="flex flex-col w-[320px] h-full shrink-0">
                                 <div className="flex-1 overflow-auto">
@@ -1187,7 +1173,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     Profiles are managed in 2D view
                                 </p>
                                 <button
-                                    onClick={() => setViewMode('2d')}
+                                    onClick={() => toggleViewMode()}
                                     className="px-4 py-2 bg-[#5180C1] text-white rounded-lg text-sm font-medium hover:bg-[#4070B0] transition-colors"
                                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                 >
@@ -1206,7 +1192,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                                     Live Input is available in 2D view
                                 </p>
                                 <button
-                                    onClick={() => setViewMode('2d')}
+                                    onClick={() => toggleViewMode()}
                                     className="px-4 py-2 bg-[#5180C1] text-white rounded-lg text-sm font-medium hover:bg-[#4070B0] transition-colors"
                                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                 >
@@ -1217,7 +1203,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({ configClient, onDiscon
                     )
                 )}
             </div>
-            {/* Modal Layer */}
+            
             {selectedButton && (
                 viewMode === '3d' ? (
                     <ButtonMappingModal
