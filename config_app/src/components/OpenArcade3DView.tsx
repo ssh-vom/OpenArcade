@@ -458,7 +458,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
             setMappingStatus(nextValue
                 ? { type: "info", message: "Select a UI button, then press its physical source." }
                 : null);
-            previousPressedControlIdsRef.current = new Set(pressedControlIds.map((controlId) => String(controlId)));
+            // Sync pressed state ref for mapping mode change
+            previousPressedControlIdsRef.current.clear();
+            pressedControlIds.forEach(id => previousPressedControlIdsRef.current.add(String(id)));
             return nextValue;
         });
     }, [pressedControlIds]);
@@ -471,7 +473,9 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
                 type: 'info',
                 message: `Waiting for a physical input to bind to ${buttonName}.`,
             });
-            previousPressedControlIdsRef.current = new Set(pressedControlIds.map((controlId) => String(controlId)));
+            // Reuse existing Set to reduce GC pressure
+            previousPressedControlIdsRef.current.clear();
+            pressedControlIds.forEach(id => previousPressedControlIdsRef.current.add(String(id)));
             return;
         }
 
@@ -556,7 +560,13 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
         setSelectedButton(null);
         setArmedButton(null);
         setMappingStatus(null);
-    }, []);
+
+        if (hasLoaded) {
+            activeClient.listDevices()
+                .then(applyDeviceConfigs)
+                .catch((error) => console.warn("Failed to refresh devices:", error));
+        }
+    }, [hasLoaded, activeClient, applyDeviceConfigs]);
 
     const navigatePrev = useCallback(() => {
         setCurrentModuleIndex(prev => {
@@ -605,37 +615,45 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
 
     const saveToDevice = useCallback(async (moduleId) => {
         const module = modules.find(mod => mod.id === moduleId);
-        if (module) {
-            try {
-                const layout = module.deviceLayout || defaultLayout;
-                
-                const mappingBanks = module.mappingBanks || {};
-                const saveBank = async (mode, bankMappings) => {
-                    for (const [buttonName, mapping] of Object.entries(bankMappings || {})) {
-                        const controlId = getControlIdForButton(layout, buttonName);
-                        if (!controlId) {
-                            continue;
-                        }
+        if (!module) return;
 
-                        if (mapping?.type === HID_INPUT_TYPES.KEYBOARD) {
-                            const keycodeName = getKeycodeForInput(mapping.input);
-                            if (keycodeName) {
-                                await activeClient.setMapping(module.deviceId, "keyboard", controlId, { keycode: keycodeName });
-                            }
-                        } else if (mapping?.type === HID_INPUT_TYPES.GAMEPAD) {
-                            await activeClient.setMapping(module.deviceId, mode, controlId, { gamepad_input: mapping.input });
+        try {
+            const layout = module.deviceLayout || defaultLayout;
+            const mappingBanks = module.mappingBanks || {};
+            
+            // Collect all mapping operations to run in parallel
+            const mappingPromises: Promise<unknown>[] = [];
+            
+            const collectMappingPromises = (mode: string, bankMappings: Record<string, { type?: string; input?: string }>) => {
+                for (const [buttonName, mapping] of Object.entries(bankMappings || {})) {
+                    const controlId = getControlIdForButton(layout, buttonName);
+                    if (!controlId) continue;
+
+                    if (mapping?.type === HID_INPUT_TYPES.KEYBOARD) {
+                        const keycodeName = getKeycodeForInput(mapping.input);
+                        if (keycodeName) {
+                            mappingPromises.push(
+                                activeClient.setMapping(module.deviceId, "keyboard", controlId, { keycode: keycodeName })
+                            );
                         }
+                    } else if (mapping?.type === HID_INPUT_TYPES.GAMEPAD) {
+                        mappingPromises.push(
+                            activeClient.setMapping(module.deviceId, mode, controlId, { gamepad_input: mapping.input })
+                        );
                     }
-                };
+                }
+            };
 
-                await saveBank("keyboard", mappingBanks.keyboard);
-                await saveBank("gamepad_pc", mappingBanks.gamepad_pc);
-                await saveBank("gamepad_switch_hori", mappingBanks.gamepad_switch_hori);
+            collectMappingPromises("keyboard", mappingBanks.keyboard);
+            collectMappingPromises("gamepad_pc", mappingBanks.gamepad_pc);
+            collectMappingPromises("gamepad_switch_hori", mappingBanks.gamepad_switch_hori);
 
-                console.log('Configuration saved successfully!');
-            } catch (error) {
-                console.error('Failed to save configuration:', error);
-            }
+            // Execute all mapping saves in parallel for better performance
+            await Promise.all(mappingPromises);
+
+            console.log('Configuration saved successfully!');
+        } catch (error) {
+            console.error('Failed to save configuration:', error);
         }
     }, [modules, defaultLayout, getControlIdForButton, activeClient]);
 
@@ -665,39 +683,12 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
         };
     }, [refreshDevices]);
 
-    // Refresh when module index changes (after initial load)
-    useEffect(() => {
-        if (!hasLoaded) return;
-        if (safeCurrentModuleIndex === lastRefreshedIndexRef.current) return;
-        
-        lastRefreshedIndexRef.current = safeCurrentModuleIndex;
-        
-        let cancelled = false;
-        const doRefresh = async () => {
-            try {
-                const devices = await activeClient.listDevices();
-                if (!cancelled) {
-                    applyDeviceConfigs(devices);
-                }
-            } catch (error) {
-                if (!cancelled) {
-                    console.warn("Failed to refresh devices:", error);
-                }
-            }
-        };
-        doRefresh();
-        
-        return () => {
-            cancelled = true;
-        };
-    }, [safeCurrentModuleIndex, hasLoaded, activeClient, applyDeviceConfigs]);
-
     // Cleanup effect
     useEffect(() => {
         return () => {
             setPressedControlIds([]);
             setPressedButtons([]);
-            previousPressedControlIdsRef.current = new Set();
+            previousPressedControlIdsRef.current.clear();
             livePollInFlightRef.current = false;
             sourceBindingInFlightRef.current = false;
         };
@@ -712,18 +703,8 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
-    // Handle showOnlyConnected filter change
-    useEffect(() => {
-        if (!showOnlyConnected) return;
-        
-        const currentIsVisible = modules[safeCurrentModuleIndex]?.connected !== false;
-        if (!currentIsVisible) {
-            const firstVisible = modules.findIndex((m) => m.connected !== false);
-            if (firstVisible >= 0 && firstVisible !== safeCurrentModuleIndex) {
-                setCurrentModuleIndex(firstVisible);
-            }
-        }
-    }, [showOnlyConnected, modules, safeCurrentModuleIndex]);
+
+    // Keeping navigation in event handlers, not effects
 
     // Arrow key navigation
     useEffect(() => {
@@ -769,18 +750,20 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
                 }
 
                 const nextPressedControlIds = (liveState?.pressed_control_ids || []).map((controlId) => String(controlId));
-                const nextPressedButtons = nextPressedControlIds
-                    .map((controlId) => getButtonNameForControlId(currentLayout, controlId))
-                    .filter(Boolean);
-
-                if (!shallowEqualArrays(pressedControlIds, nextPressedControlIds)) {
+                const hasChanged = !shallowEqualArrays(pressedControlIds, nextPressedControlIds);
+                
+                if (hasChanged) {
+                    const nextPressedButtons = nextPressedControlIds
+                        .map((controlId) => getButtonNameForControlId(currentLayout, controlId))
+                        .filter(Boolean);
                     setPressedControlIds(nextPressedControlIds);
                     setPressedButtons(nextPressedButtons);
+                    // Only update the ref Set when state actually changes - reduces GC pressure
+                    previousPressedControlIdsRef.current = new Set(nextPressedControlIds);
                 }
 
                 const previousPressed = previousPressedControlIdsRef.current;
                 const newlyPressedControlIds = nextPressedControlIds.filter((controlId) => !previousPressed.has(controlId));
-                previousPressedControlIdsRef.current = new Set(nextPressedControlIds);
 
                 if (!isMappingMode || !armedButton || sourceBindingInFlightRef.current) {
                     return;
@@ -843,7 +826,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
             cancelled = true;
             window.clearInterval(intervalId);
             livePollInFlightRef.current = false;
-            previousPressedControlIdsRef.current = new Set();
+            previousPressedControlIdsRef.current.clear();
         };
     }, [activeClient, activeSection, armedButton, currentModule, defaultLayout, getButtonNameForControlId, isMappingMode, refreshDevices, pressedControlIds]);
 
@@ -889,7 +872,22 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
                 onMappingFilterChange={setMappingFilter}
                 onToggleView={toggleViewMode}
                 showOnlyConnected={showOnlyConnected}
-                onToggleConnectedFilter={() => setShowOnlyConnected((v) => !v)}
+                onToggleConnectedFilter={() => {
+                    setShowOnlyConnected((v) => {
+                        const newValue = !v;
+                        // When enabling filter, navigate to first visible module if current is hidden
+                        if (newValue) {
+                            const currentVisible = modules[safeCurrentModuleIndex]?.connected !== false;
+                            if (!currentVisible) {
+                                const firstVisible = modules.findIndex((m) => m.connected !== false);
+                                if (firstVisible >= 0 && firstVisible !== safeCurrentModuleIndex) {
+                                    setCurrentModuleIndex(firstVisible);
+                                }
+                            }
+                        }
+                        return newValue;
+                    });
+                }}
                 onRenameDevice={handleRenameDevice}
                 onRefreshDevices={handleRefreshDevices}
                 isRefreshing={isRefreshing}

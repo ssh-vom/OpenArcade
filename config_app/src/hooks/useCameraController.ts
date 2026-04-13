@@ -15,29 +15,37 @@ export function useCameraController({
 }: UseCameraControllerOptions) {
     const targetRef = useRef(new THREE.Vector3(0, 0, 0));
     const cameraPositionRef = useRef(new THREE.Vector3(0, 2, 5));
-    const [animationStart, setAnimationStart] = useState(0);
+    const [animationTick, setAnimationTick] = useState(0);
+    const lastIndexRef = useRef(-1);
 
     useLayoutEffect(() => {
-        if (enabled && currentModuleIndex >= 0 && modules[currentModuleIndex]) {
-            const targetModule = modules[currentModuleIndex];
-            const targetPosition = new THREE.Vector3(...targetModule.position);
-            
-            targetRef.current.copy(targetPosition);
-            cameraPositionRef.current.set(
-                targetPosition.x,
-                targetPosition.y + 1.5,
-                targetPosition.z + 3
-            );
-            
-            // Always trigger animation with timestamp for uniqueness
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- useLayoutEffect is correct for synchronous animation trigger
-            setAnimationStart(Date.now());
+        if (!enabled || currentModuleIndex < 0 || !modules[currentModuleIndex]) {
+            return;
         }
+        
+        // Skip if same index - prevents unnecessary animations
+        if (currentModuleIndex === lastIndexRef.current) {
+            return;
+        }
+        lastIndexRef.current = currentModuleIndex;
+        
+        const targetModule = modules[currentModuleIndex];
+        const targetPosition = new THREE.Vector3(...targetModule.position);
+        
+        targetRef.current.copy(targetPosition);
+        cameraPositionRef.current.set(
+            targetPosition.x,
+            targetPosition.y + 1.5,
+            targetPosition.z + 3
+        );
+        
+        // Increment tick to trigger animation - lighter than Date.now()
+        setAnimationTick(t => t + 1);
     }, [currentModuleIndex, modules, enabled]);
 
     return {
         targetRef,
         cameraPositionRef,
-        animationStart
+        animationStart: animationTick, // Still a number, but small and sequential
     };
 }

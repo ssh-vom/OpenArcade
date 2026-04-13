@@ -417,13 +417,14 @@ const ChildModule = memo(function ChildModule({
         // eslint-disable-next-line react-hooks/exhaustive-deps -- isJoystickModule is derived from path
     }, [moduleScene, path]);
 
-    // Apply visual highlights in useFrame instead of useEffect - runs at 60fps
-    // This eliminates the need for syncing state to refs
-    useFrame(() => {
-        const hoverColor = new THREE.Color("#5180C1");
-        const armedColor = new THREE.Color("#6B9BD1");
-        const pressedColor = new THREE.Color("#6B9BD1");
+    // Pre-allocated color objects to avoid GC pressure in useFrame
+    const hoverColorRef = useRef(new THREE.Color("#5180C1"));
+    const armedColorRef = useRef(new THREE.Color("#6B9BD1"));
+    const pressedColorRef = useRef(new THREE.Color("#6B9BD1"));
 
+    // Apply visual highlights in useFrame - runs at 60fps
+    // Uses refs for colors and pressed state to avoid allocations
+    useFrame(() => {
         // Use the ref if provided (immediate mode), otherwise use state
         const currentPressed = pressedButtonsRef?.current || pressedButtonSet;
 
@@ -434,17 +435,17 @@ const ChildModule = memo(function ChildModule({
             const isHovered = viewMode === "2d" && hoveredButton && groupName === hoveredButton;
 
             if (isPressed) {
-                applyHighlight(mesh, { color: pressedColor, intensity: 0.55, opacity: 0.7 });
+                applyHighlight(mesh, { color: pressedColorRef.current, intensity: 0.55, opacity: 0.7 });
                 return;
             }
 
             if (isArmed) {
-                applyHighlight(mesh, { color: armedColor, intensity: 0.42, opacity: 0.52 });
+                applyHighlight(mesh, { color: armedColorRef.current, intensity: 0.42, opacity: 0.52 });
                 return;
             }
 
             if (isHovered) {
-                applyHighlight(mesh, { color: hoverColor, intensity: 0.45, opacity: 0.7 });
+                applyHighlight(mesh, { color: hoverColorRef.current, intensity: 0.45, opacity: 0.7 });
                 return;
             }
 
@@ -650,23 +651,19 @@ const ChildModule = memo(function ChildModule({
     );
 });
 
-function IndicatorRing({ buttonName, gltf }) {
-    const [position, setPosition] = useState([0, 0, 0]);
-    const hasComputedRef = useRef(false);
-
-    // Compute position during render instead of in effect
-    if (gltf && gltf.scene && !hasComputedRef.current) {
-        let foundPosition = null;
+function IndicatorRing({ buttonName, gltf }: { buttonName: string; gltf: { scene?: THREE.Scene } | null }) {
+    // Use useMemo to compute position once, avoiding setState during render
+    const position = useMemo(() => {
+        if (!gltf?.scene) return [0, 0, 0] as [number, number, number];
+        
+        let foundPosition: [number, number, number] | null = null;
         gltf.scene.traverse((child) => {
             if (child.name === buttonName && !foundPosition) {
                 foundPosition = [child.position.x, child.position.y + 0.05, child.position.z];
             }
         });
-        if (foundPosition) {
-            setPosition(foundPosition);
-            hasComputedRef.current = true;
-        }
-    }
+        return foundPosition || [0, 0, 0];
+    }, [buttonName, gltf]);
 
     return (
         <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>

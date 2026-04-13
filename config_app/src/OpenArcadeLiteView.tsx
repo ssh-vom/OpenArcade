@@ -557,7 +557,13 @@ const OpenArcadeLiteView = memo(function OpenArcadeLiteView({ configClient }: Op
         setSelectedButton(null);
         setArmedButton(null);
         setMappingStatus(null);
-    }, []);
+
+        if (hasLoaded) {
+            configClient?.listDevices()
+                .then(applyDeviceConfigs)
+                .catch((error) => console.warn("Failed to refresh devices:", error));
+        }
+    }, [hasLoaded, configClient, applyDeviceConfigs]);
 
     const saveMapping = useCallback((buttonName, config) => {
         setModules((previousModules) => previousModules.map((module, index) => {
@@ -695,32 +701,6 @@ const OpenArcadeLiteView = memo(function OpenArcadeLiteView({ configClient }: Op
     }, [refreshDevices]);
 
     useEffect(() => {
-        if (!hasLoaded) return;
-        if (safeCurrentModuleIndex === lastRefreshedIndexRef.current) return;
-
-        lastRefreshedIndexRef.current = safeCurrentModuleIndex;
-
-        let cancelled = false;
-        const doRefresh = async () => {
-            try {
-                const devices = await configClient.listDevices();
-                if (!cancelled) {
-                    applyDeviceConfigs(devices);
-                }
-            } catch (error) {
-                if (!cancelled) {
-                    console.warn("Failed to refresh devices:", error);
-                }
-            }
-        };
-
-        doRefresh();
-        return () => {
-            cancelled = true;
-        };
-    }, [safeCurrentModuleIndex, hasLoaded, configClient, applyDeviceConfigs]);
-
-    useEffect(() => {
         const handleVisibilityChange = () => {
             isVisibleRef.current = !document.hidden;
         };
@@ -729,17 +709,7 @@ const OpenArcadeLiteView = memo(function OpenArcadeLiteView({ configClient }: Op
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, []);
 
-    useEffect(() => {
-        if (!showOnlyConnected) return;
 
-        const currentVisible = modules[safeCurrentModuleIndex]?.connected !== false;
-        if (!currentVisible) {
-            const firstVisible = modules.findIndex((module) => module.connected !== false);
-            if (firstVisible >= 0 && firstVisible !== safeCurrentModuleIndex) {
-                setCurrentModuleIndex(firstVisible);
-            }
-        }
-    }, [showOnlyConnected, modules, safeCurrentModuleIndex]);
 
     useEffect(() => {
         const currentDeviceId = currentModule?.deviceId;
@@ -867,7 +837,22 @@ const OpenArcadeLiteView = memo(function OpenArcadeLiteView({ configClient }: Op
                 onMappingFilterChange={setMappingFilter}
                 onToggleView={() => { }}
                 showOnlyConnected={showOnlyConnected}
-                onToggleConnectedFilter={() => setShowOnlyConnected((value) => !value)}
+                onToggleConnectedFilter={() => {
+                    setShowOnlyConnected((value) => {
+                        const newValue = !value;
+                        // When enabling filter, navigate to first visible module if current is hidden
+                        if (newValue) {
+                            const currentVisible = modules[safeCurrentModuleIndex]?.connected !== false;
+                            if (!currentVisible) {
+                                const firstVisible = modules.findIndex((module) => module.connected !== false);
+                                if (firstVisible >= 0 && firstVisible !== safeCurrentModuleIndex) {
+                                    setCurrentModuleIndex(firstVisible);
+                                }
+                            }
+                        }
+                        return newValue;
+                    });
+                }}
                 onRenameDevice={handleRenameDevice}
                 onRefreshDevices={handleRefreshDevices}
                 isRefreshing={isRefreshing}

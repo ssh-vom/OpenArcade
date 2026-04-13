@@ -3,50 +3,54 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
+interface CameraControllerProps {
+    targetRef: React.MutableRefObject<THREE.Vector3>;
+    cameraPositionRef: React.MutableRefObject<THREE.Vector3>;
+    animationStart: number; // Tick counter - increments trigger new animations
+    duration?: number;
+}
+
 const CameraController = memo(function CameraController({
     targetRef,
     cameraPositionRef,
     animationStart,
     duration = 0.5
-}) {
+}: CameraControllerProps) {
     const { camera } = useThree();
     const startTimeRef = useRef(0);
     const startPositionRef = useRef(new THREE.Vector3());
     const startTargetRef = useRef(new THREE.Vector3());
-    const orbitControlsRef = useRef(null);
-    const [isAnimating, setIsAnimating] = useState(false);
+    const orbitControlsRef = useRef<typeof OrbitControls>(null);
+    const isAnimatingRef = useRef(false);
     const lastAnimationStart = useRef(0);
+    // Use state for enabled prop so OrbitControls updates when animation ends
+    const [controlsEnabled, setControlsEnabled] = useState(true);
 
     useLayoutEffect(() => {
-        // Only trigger if this is a new animation request
+        // Trigger on tick change (any non-zero value means animate)
         if (animationStart > 0 && animationStart !== lastAnimationStart.current) {
             lastAnimationStart.current = animationStart;
             
-            console.log('Animation triggered!', {
-                from: camera.position.clone(),
-                to: cameraPositionRef.current,
-                targetFrom: orbitControlsRef.current?.target?.clone(),
-                targetTo: targetRef.current
-            });
-            
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- useLayoutEffect is correct for synchronous animation start
-            setIsAnimating(true);
+            isAnimatingRef.current = true;
+            setControlsEnabled(false);
             startPositionRef.current.copy(camera.position);
             if (orbitControlsRef.current) {
                 startTargetRef.current.copy(orbitControlsRef.current.target);
             }
             startTimeRef.current = performance.now();
         }
-    }, [animationStart, camera, cameraPositionRef, targetRef]);
+    }, [animationStart, camera]);
 
     useFrame(() => {
-        if (!isAnimating) return;
+        if (!isAnimatingRef.current) return;
 
         const elapsed = performance.now() - startTimeRef.current;
         const progress = Math.min(elapsed / (duration * 1000), 1);
 
         if (progress >= 1) {
-            setIsAnimating(false);
+            isAnimatingRef.current = false;
+            // Re-enable controls when animation completes - triggers re-render
+            setControlsEnabled(true);
             if (orbitControlsRef.current) {
                 orbitControlsRef.current.target.copy(targetRef.current);
             }
@@ -74,7 +78,7 @@ const CameraController = memo(function CameraController({
     return <OrbitControls 
         ref={orbitControlsRef}
         makeDefault
-        enabled={!isAnimating}
+        enabled={controlsEnabled}
     />;
 });
 
