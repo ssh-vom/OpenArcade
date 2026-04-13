@@ -930,6 +930,7 @@ const OpenArcadeLiteView = memo(function OpenArcadeLiteView({ configClient }: Op
                             mappingStatus={mappingStatus}
                             editingMode={editingMode}
                             onEditingModeChange={setEditingMode}
+                            selectedButton={selectedButton?.name || null}
                         />
                     </>
                 ) : activeSection === "profiles" ? (

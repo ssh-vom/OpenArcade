@@ -1,68 +1,99 @@
-import { HID_INPUT_TYPES } from "../services/HIDManager";
+import { useMemo } from 'react';
+import {
+  getInputLabel,
+  getTypeIcon,
+  getTypeLabel,
+  getTypeStyleConfig,
+  type HidInputType,
+} from '@/services/HIDManager';
+import { formatButtonName } from '@/utils';
+import type { MappingConfig } from '@/types';
+
+interface MappingStatus {
+  type: 'error' | 'success' | 'info';
+  message: string;
+}
+
+interface D2ConfigPanelProps {
+  mappings: Record<string, MappingConfig>;
+  moduleName: string;
+  onSelectButton: (buttonName: string, event: React.MouseEvent | null) => void;
+  onClearAll: () => void;
+  moduleId: string;
+  onSaveToDevice: (moduleId: string) => void;
+  isConnected?: boolean;
+  isMappingMode?: boolean;
+  armedButton?: string | null;
+  pressedButtons?: string[];
+  onToggleMappingMode?: () => void;
+  mappingStatus?: MappingStatus | null;
+  editingMode?: string;
+  onEditingModeChange?: (mode: string) => void;
+  selectedButton?: string | null;
+}
 
 export default function D2ConfigPanel({
-    mappings,
-    moduleName,
-    onSelectButton,
-    onClearAll,
-    moduleId,
-    onSaveToDevice,
-    isConnected = true,
-    isMappingMode = false,
-    armedButton = null,
-    pressedButtons = [],
-    onToggleMappingMode,
-    mappingStatus = null,
-    editingMode = "keyboard",
-    onEditingModeChange,
-}) {
-    const pressedButtonSet = new Set(pressedButtons);
+  mappings,
+  moduleName,
+  onSelectButton,
+  onClearAll,
+  moduleId,
+  onSaveToDevice,
+  isConnected = true,
+  isMappingMode = false,
+  armedButton = null,
+  pressedButtons = [],
+  onToggleMappingMode,
+  mappingStatus = null,
+  editingMode = 'keyboard',
+  onEditingModeChange,
+  selectedButton = null,
+}: D2ConfigPanelProps) {
+  // Memoize the Set creation to avoid rebuilding on every render
+  const pressedButtonSet = useMemo(
+    () => new Set(pressedButtons),
+    [pressedButtons]
+  );
 
-    // Group mappings by input type
-    const groupedMappings = Object.entries(mappings).reduce((groups, [buttonName, config]) => {
-        const type = config?.type || 'unknown';
-        if (!groups[type]) {
-            groups[type] = [];
-        }
-        groups[type].push({ buttonName, config });
-        return groups;
-    }, {});
+  // Memoize mapping count to avoid recomputing
+  const mappingCount = useMemo(() => Object.keys(mappings).length, [mappings]);
+    
+  // Get config for currently selected button
+  const selectedConfig = selectedButton ? mappings[selectedButton] : null;
+  const isSelectedPressed = selectedButton
+    ? pressedButtonSet.has(selectedButton)
+    : false;
+  const isSelectedArmed = selectedButton === armedButton;
 
-    const getTypeIcon = (type) => {
-        switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'GP';
-            case HID_INPUT_TYPES.KEYBOARD: return 'KB';
-            case HID_INPUT_TYPES.ANALOG: return 'AX';
-            default: return '—';
-        }
-    };
+  // Compute raw mapping detail once for reuse
+  const rawMappingDetail = useMemo(() => {
+    if (!selectedConfig) return null;
+    if (
+      selectedConfig.input &&
+      selectedConfig.label &&
+      selectedConfig.input !== selectedConfig.label
+    ) {
+      return selectedConfig.input;
+    }
+    if (
+      typeof selectedConfig.action === 'string' &&
+      selectedConfig.action !== selectedConfig.label &&
+      selectedConfig.action !== selectedConfig.input
+    ) {
+      return selectedConfig.action;
+    }
+    return null;
+  }, [selectedConfig]);
 
-    const getTypeColor = (type) => {
-        switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#5180C1';
-            case HID_INPUT_TYPES.KEYBOARD: return '#4A90A4';
-            case HID_INPUT_TYPES.ANALOG: return '#6B9BD1';
-            default: return '#707070';
-        }
-    };
-
-    const getTypeBgClass = (type) => {
-        switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return { bg: 'rgba(81, 128, 193, 0.12)', border: 'rgba(81, 128, 193, 0.25)', text: '#5180C1' };
-            case HID_INPUT_TYPES.KEYBOARD: return { bg: 'rgba(74, 144, 164, 0.12)', border: 'rgba(74, 144, 164, 0.25)', text: '#4A90A4' };
-            case HID_INPUT_TYPES.ANALOG: return { bg: 'rgba(107, 155, 209, 0.12)', border: 'rgba(107, 155, 209, 0.25)', text: '#6B9BD1' };
-            default: return { bg: '#B8B8B8', border: '#A0A0A0', text: '#707070' };
-        }
-    };
-
-    const getTypeLabel = (type) => {
-        switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'Gamepad';
-            case HID_INPUT_TYPES.KEYBOARD: return 'Keyboard';
-            case HID_INPUT_TYPES.ANALOG: return 'Analog';
-            default: return 'Unknown';
-        }
-    };
+  const getMappedInputLabel = (config: MappingConfig | null): string => {
+    if (!config) return 'Unmapped';
+    if (config.label) return config.label;
+    if (config.type && config.input) {
+      return getInputLabel(config.type as HidInputType, config.input);
+    }
+    if (config.input) return config.input;
+    return 'Mapped';
+  };
 
     return (
         <div 
@@ -170,17 +201,17 @@ export default function D2ConfigPanel({
                 </button>
 
                 {/* Instructions card */}
-                <div 
-                    className="mt-5 rounded-xl px-5 py-4 text-sm leading-relaxed"
-                    style={{
-                        fontFamily: "'DM Sans', sans-serif",
-                        background: '#CCCCCC',
-                        border: '1px solid #B8B8B8',
-                        color: '#333333'
-                    }}
-                >
-                    {isMappingMode ? (
-                        armedButton ? (
+                {isMappingMode && (
+                    <div 
+                        className="mt-5 rounded-xl px-5 py-4 text-sm leading-relaxed"
+                        style={{
+                            fontFamily: "'DM Sans', sans-serif",
+                            background: '#CCCCCC',
+                            border: '1px solid #B8B8B8',
+                            color: '#333333'
+                        }}
+                    >
+                        {armedButton ? (
                             <>
                                 Waiting for physical input for{' '}
                                 <span 
@@ -196,11 +227,9 @@ export default function D2ConfigPanel({
                             </>
                         ) : (
                             "Select a UI button, then press the physical button you want to bind."
-                        )
-                    ) : (
-                        "Enable Mapping Mode to rebind physical controls to UI buttons."
-                    )}
-                </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Status message */}
                 {mappingStatus && (
@@ -235,162 +264,278 @@ export default function D2ConfigPanel({
             {/* Divider */}
             <div className="mx-6 h-px bg-[#B8B8B8]" />
 
-            {/* Mappings List */}
+            {/* Selected Button Inspector */}
             <div className="flex-1 p-6 overflow-y-auto panel-scroll">
-                {Object.keys(mappings).length === 0 ? (
+                {!selectedButton ? (
                     <div 
-                        className="py-10 px-6 text-center rounded-2xl"
+                        className="h-full flex flex-col items-center justify-center py-10 px-4 text-center rounded-2xl"
                         style={{
                             background: '#CCCCCC',
                             border: '2px dashed #A0A0A0'
                         }}
                     >
                         <div 
-                            className="text-[10px] tracking-[0.15em] uppercase mb-2 font-semibold text-[#707070]"
-                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                            className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
+                            style={{ background: 'rgba(81, 128, 193, 0.12)' }}
                         >
-                            No Mappings
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5180C1" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 16v-4M12 8h.01"/>
+                            </svg>
                         </div>
                         <div 
-                            className="text-sm text-[#555555] leading-relaxed"
+                            className="text-sm font-semibold text-[#333333] mb-1"
+                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                        >
+                            No Button Selected
+                        </div>
+                        <div 
+                            className="text-xs text-[#707070] leading-relaxed"
                             style={{ fontFamily: "'DM Sans', sans-serif" }}
                         >
-                            Click a button in the 2D view<br />to configure HID input.
+                            Click a button in the 2D view<br />to view or edit its mapping
+                        </div>
+                    </div>
+                ) : !selectedConfig ? (
+                    <div className="space-y-4">
+                        {/* Selected button header - unmapped */}
+                        <div 
+                            className="p-4 rounded-xl"
+                            style={{
+                                background: 'rgba(239, 68, 68, 0.06)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)'
+                            }}
+                        >
+                            <div className="flex items-center gap-3 mb-3">
+                                <div 
+                                    className="text-lg font-semibold text-[#333333]"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    {formatButtonName(selectedButton)}
+                                </div>
+                                {isSelectedPressed && (
+                                    <div 
+                                        className="text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider"
+                                        style={{
+                                            fontFamily: "'IBM Plex Mono', monospace",
+                                            background: 'rgba(16, 185, 129, 0.15)',
+                                            color: '#10B981'
+                                        }}
+                                    >
+                                        PRESSED
+                                    </div>
+                                )}
+                                {isSelectedArmed && (
+                                    <div 
+                                        className="text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider"
+                                        style={{
+                                            fontFamily: "'IBM Plex Mono', monospace",
+                                            background: 'rgba(74, 144, 164, 0.15)',
+                                            color: '#4A90A4'
+                                        }}
+                                    >
+                                        ARMED
+                                    </div>
+                                )}
+                            </div>
+                            <div 
+                                className="text-[10px] text-[#707070] mb-4"
+                                style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                            >
+                                {selectedButton}
+                            </div>
+                            
+                            <div 
+                                className="text-sm text-[#707070] text-center py-6"
+                                style={{ fontFamily: "'DM Sans', sans-serif" }}
+                            >
+                                No mapping configured
+                            </div>
+                            
+                            <button
+                                onClick={() => onSelectButton(selectedButton, null)}
+                                className="w-full py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150"
+                                style={{
+                                    fontFamily: "'Space Grotesk', sans-serif",
+                                    background: '#5180C1',
+                                    color: 'white',
+                                    border: 'none'
+                                }}
+                            >
+                                Configure Mapping
+                            </button>
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-6">
-                        {/* Type Groups */}
-                        {Object.entries(groupedMappings).map(([type, typeMappings]) => {
-                            const typeStyles = getTypeBgClass(type);
-                            const typeColor = getTypeColor(type);
-                            return (
-                                <div key={type}>
-                                    {/* Type header */}
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <span
-                                            className="inline-flex items-center justify-center w-8 h-7 rounded-lg text-[10px] font-bold tracking-wider"
-                                            style={{ 
-                                                background: typeStyles.bg,
-                                                border: `1px solid ${typeStyles.border}`,
-                                                color: typeStyles.text,
-                                                fontFamily: "'IBM Plex Mono', monospace"
-                                            }}
-                                        >
-                                            {getTypeIcon(type)}
-                                        </span>
-                                        <span 
-                                            className="text-sm font-semibold"
-                                            style={{ 
-                                                color: typeColor,
-                                                fontFamily: "'Space Grotesk', sans-serif"
-                                            }}
-                                        >
-                                            {getTypeLabel(type)}
-                                        </span>
-                                        <span 
-                                            className="text-[10px] text-[#707070] bg-[#B8B8B8] px-2.5 py-1 rounded-full font-medium ml-auto"
-                                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                        >
-                                            {typeMappings.length}
-                                        </span>
+                    <div className="space-y-4">
+                        {/* Selected button header - mapped */}
+                        <div 
+                            className="p-4 rounded-xl"
+                            style={{
+                                background: isSelectedArmed 
+                                    ? 'rgba(74, 144, 164, 0.08)'
+                                    : isSelectedPressed
+                                        ? 'rgba(16, 185, 129, 0.08)'
+                                        : 'rgba(81, 128, 193, 0.06)',
+                                border: isSelectedArmed
+                                    ? '2px solid rgba(74, 144, 164, 0.3)'
+                                    : isSelectedPressed
+                                        ? '2px solid rgba(16, 185, 129, 0.3)'
+                                        : '1px solid rgba(81, 128, 193, 0.2)'
+                            }}
+                        >
+                            <div className="flex items-center gap-3 mb-1">
+                                <div 
+                                    className="text-lg font-semibold text-[#333333]"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    {formatButtonName(selectedButton)}
+                                </div>
+                                {isSelectedPressed && (
+                                    <div 
+                                        className="text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider"
+                                        style={{
+                                            fontFamily: "'IBM Plex Mono', monospace",
+                                            background: 'rgba(16, 185, 129, 0.15)',
+                                            color: '#10B981'
+                                        }}
+                                    >
+                                        PRESSED
                                     </div>
+                                )}
+                                {isSelectedArmed && (
+                                    <div 
+                                        className="text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider"
+                                        style={{
+                                            fontFamily: "'IBM Plex Mono', monospace",
+                                            background: 'rgba(74, 144, 164, 0.15)',
+                                            color: '#4A90A4'
+                                        }}
+                                    >
+                                        ARMED
+                                    </div>
+                                )}
+                            </div>
+                            <div 
+                                className="text-[10px] text-[#707070]"
+                                style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                            >
+                                {selectedButton}
+                            </div>
+                        </div>
 
-                                    {/* Mapping cards */}
-                                    <div className="flex flex-col gap-3">
-                                        {typeMappings.map(({ buttonName, config }) => {
-                                            const isArmed = armedButton === buttonName;
-                                            const isPressed = pressedButtonSet.has(buttonName);
-
-                                            return (
-                                                <button
-                                                    key={buttonName}
-                                                    onClick={() => onSelectButton(buttonName, null)}
-                                                    className="w-full text-left p-4 rounded-xl cursor-pointer transition-all duration-150 border-none"
-                                                    style={{
-                                                        background: isArmed
-                                                            ? 'rgba(74, 144, 164, 0.08)'
-                                                            : isPressed
-                                                                ? 'rgba(16, 185, 129, 0.08)'
-                                                                : '#CCCCCC',
-                                                        border: isArmed
-                                                            ? '2px solid rgba(74, 144, 164, 0.3)'
-                                                            : isPressed
-                                                                ? '2px solid rgba(16, 185, 129, 0.3)'
-                                                                : '1px solid #A0A0A0',
-                                                        boxShadow: (isArmed || isPressed)
-                                                            ? `0 0 0 3px ${isArmed ? 'rgba(74, 144, 164, 0.1)' : 'rgba(16, 185, 129, 0.1)'}`
-                                                            : 'none'
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        if (!isArmed && !isPressed) {
-                                                            e.currentTarget.style.background = '#D9D9D9';
-                                                            e.currentTarget.style.borderColor = 'rgba(81, 128, 193, 0.3)';
-                                                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-                                                        }
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        if (!isArmed && !isPressed) {
-                                                            e.currentTarget.style.background = '#CCCCCC';
-                                                            e.currentTarget.style.borderColor = '#A0A0A0';
-                                                            e.currentTarget.style.boxShadow = 'none';
-                                                        }
-                                                    }}
-                                                >
-                                                    <div className="flex items-center justify-between gap-2 mb-2">
-                                                        <div 
-                                                            className="text-[11px] text-[#707070]"
-                                                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                                        >
-                                                            {buttonName}
-                                                        </div>
-                                                        {(isArmed || isPressed) && (
-                                                            <div 
-                                                                className="text-[9px] px-2.5 py-1 rounded-full font-bold tracking-wider"
-                                                                style={{
-                                                                    fontFamily: "'IBM Plex Mono', monospace",
-                                                                    background: isArmed ? 'rgba(74, 144, 164, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                                                                    color: isArmed ? '#4A90A4' : '#10B981'
-                                                                }}
-                                                            >
-                                                                {isArmed ? 'ARMED' : 'LIVE'}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2.5 text-sm text-[#333333]">
-                                                            <span
-                                                                className="text-[9px] font-bold tracking-wider"
-                                                                style={{ 
-                                                                    color: typeColor,
-                                                                    fontFamily: "'IBM Plex Mono', monospace"
-                                                                }}
-                                                            >
-                                                                {getTypeIcon(config.type)}
-                                                            </span>
-                                                            <span 
-                                                                className="font-medium"
-                                                                style={{ fontFamily: "'DM Sans', sans-serif" }}
-                                                            >
-                                                                {config.label || config.input}
-                                                            </span>
-                                                        </div>
-                                                        <div 
-                                                            className="text-[10px] text-[#555555] bg-[#B8B8B8] px-2.5 py-1 rounded-md"
-                                                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                                        >
-                                                            {typeof config.action === "string"
-                                                                ? config.action
-                                                                : config.action?.label || config.action?.input || "Mapped"}
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
+                        {/* Mapping details card */}
+                        <div 
+                            className="p-4 rounded-xl"
+                            style={{
+                                background: '#CCCCCC',
+                                border: '1px solid #A0A0A0'
+                            }}
+                        >
+                            <div 
+                                className="text-[10px] font-semibold text-[#707070] uppercase tracking-[0.12em] mb-3"
+                                style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                            >
+                                Current Mapping
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mb-4">
+                                <span
+                                    className="inline-flex items-center justify-center w-10 h-8 rounded-lg text-xs font-bold tracking-wider"
+                                    style={{ 
+                                        background: getTypeStyleConfig(selectedConfig.type).bg,
+                                        border: `1px solid ${getTypeStyleConfig(selectedConfig.type).border}`,
+                                        color: getTypeStyleConfig(selectedConfig.type).text,
+                                        fontFamily: "'IBM Plex Mono', monospace"
+                                    }}
+                                >
+                                    {getTypeIcon(selectedConfig.type)}
+                                </span>
+                                <div>
+                                    <div 
+                                        className="text-sm font-semibold text-[#333333]"
+                                        style={{ fontFamily: "'DM Sans', sans-serif" }}
+                                    >
+                                        {getMappedInputLabel(selectedConfig)}
+                                    </div>
+                                    <div 
+                                        className="text-[10px] text-[#707070]"
+                                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                    >
+                                        {getTypeLabel(selectedConfig.type)} input
                                     </div>
                                 </div>
-                            );
-                        })}
+                            </div>
+
+                            {rawMappingDetail && (
+                                <div 
+                                    className="text-[10px] text-[#555555] px-3 py-2 rounded-lg mb-4"
+                                    style={{ 
+                                        fontFamily: "'IBM Plex Mono', monospace",
+                                        background: 'rgba(160, 160, 160, 0.15)'
+                                    }}
+                                >
+                                    Raw: {rawMappingDetail}
+                                </div>
+                            )}
+
+                            <button
+                                onClick={() => onSelectButton(selectedButton, null)}
+                                className="w-full py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-150"
+                                style={{
+                                    fontFamily: "'Space Grotesk', sans-serif",
+                                    background: 'rgba(81, 128, 193, 0.14)',
+                                    color: '#5180C1',
+                                    border: '1px solid #5180C1'
+                                }}
+                            >
+                                Edit Mapping
+                            </button>
+                        </div>
+
+                        {/* Quick stats */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div 
+                                className="p-3 rounded-xl text-center"
+                                style={{
+                                    background: '#CCCCCC',
+                                    border: '1px solid #A0A0A0'
+                                }}
+                            >
+                                <div 
+                                    className="text-lg font-bold text-[#5180C1]"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    {mappingCount}
+                                </div>
+                                <div 
+                                    className="text-[10px] text-[#707070]"
+                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                >
+                                    Total Mapped
+                                </div>
+                            </div>
+                            <div 
+                                className="p-3 rounded-xl text-center"
+                                style={{
+                                    background: '#CCCCCC',
+                                    border: '1px solid #A0A0A0'
+                                }}
+                            >
+                                <div 
+                                    className="text-lg font-bold text-[#4A90A4]"
+                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                >
+                                    {pressedButtons.length}
+                                </div>
+                                <div 
+                                    className="text-[10px] text-[#707070]"
+                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                >
+                                    Active Now
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -404,7 +549,7 @@ export default function D2ConfigPanel({
                 }}
             >
                 <div className="flex gap-3">
-                    {Object.keys(mappings).length > 0 && (
+                    {mappingCount > 0 && (
                         <button
                             onClick={onClearAll}
                             className="flex-1 py-3.5 bg-[#D9D9D9] border-2 border-[#FECACA] rounded-xl text-[#EF4444] text-sm font-semibold cursor-pointer transition-all duration-150 hover:bg-[#FEF2F2] hover:border-[#EF4444]"

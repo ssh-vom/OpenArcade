@@ -2,7 +2,16 @@ import { useGLTF, Html } from "@react-three/drei";
 import { useRef, memo, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { ANALOG_INPUTS, GAMEPAD_INPUTS, HID_INPUT_TYPES, KEYBOARD_INPUTS, getInputLabel } from "../services/HIDManager";
+import {
+  ANALOG_INPUTS,
+  GAMEPAD_INPUTS,
+  HID_INPUT_TYPES,
+  KEYBOARD_INPUTS,
+  getInputLabel,
+  getTypeIcon,
+  getTypeColor,
+  getTypeBorderColor,
+} from "../services/HIDManager";
 import { useMountEffect } from "../hooks/useMountEffect";
 
 // Shallow equality helpers for performant comparisons
@@ -481,32 +490,7 @@ const ChildModule = memo(function ChildModule({
     });
 
     // New color scheme: Blue (Gamepad), Teal (Keyboard), Light Blue (Analog)
-    const getTypeIcon = (type) => {
-        switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'GP';
-            case HID_INPUT_TYPES.KEYBOARD: return 'KB';
-            case HID_INPUT_TYPES.ANALOG: return 'AX';
-            default: return '—';
-        }
-    };
 
-    const getTypeColor = (type) => {
-        switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return '#5180C1';   // Blue accent
-            case HID_INPUT_TYPES.KEYBOARD: return '#4A90A4'; // Teal
-            case HID_INPUT_TYPES.ANALOG: return '#6B9BD1';   // Light blue
-            default: return '#707070';
-        }
-    };
-
-    const getTypeBorderColor = (type) => {
-        switch (type) {
-            case HID_INPUT_TYPES.GAMEPAD: return 'rgba(81, 128, 193, 0.35)';
-            case HID_INPUT_TYPES.KEYBOARD: return 'rgba(74, 144, 164, 0.35)';
-            case HID_INPUT_TYPES.ANALOG: return 'rgba(107, 155, 209, 0.35)';
-            default: return 'rgba(112, 112, 112, 0.3)';
-        }
-    };
 
     const normalizedFilter = typeof mappingFilter === "string" ? mappingFilter.toLowerCase() : mappingFilter;
     const hoveredMapping = hoveredButton ? normalizeMapping(mappings[hoveredButton]) : null;
