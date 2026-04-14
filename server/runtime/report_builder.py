@@ -421,6 +421,4 @@ def build_gamepad_switch_hori_report(active_inputs: Iterable[str]) -> bytes:
     return bytes(report)
 
 
-def build_gamepad_report(active_inputs: Iterable[str]) -> bytes:
-    """Backward-compatible alias for the PC gamepad report builder."""
-    return build_gamepad_pc_report(active_inputs)
+
