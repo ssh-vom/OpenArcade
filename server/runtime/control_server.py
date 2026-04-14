@@ -7,10 +7,10 @@ import os
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from runtime_ipc import (
+from core.ipc import (
     MESSAGE_TYPE_CONFIG_UPDATED,
-    MESSAGE_TYPE_GET_DEVICE_STATES,
     MESSAGE_TYPE_GET_CONNECTED_DEVICES,
+    MESSAGE_TYPE_GET_DEVICE_STATES,
     MESSAGE_TYPE_GET_PAIRING_STATUS,
     resolve_runtime_socket_path,
 )

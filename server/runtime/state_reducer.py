@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Literal
 
-from constants import DEFAULT_GAMEPAD_MAPPING, DEFAULT_MAPPING
+from core.constants import DEFAULT_GAMEPAD_MAPPING, DEFAULT_MAPPING
 
 from .report_builder import (
     build_gamepad_pc_report,

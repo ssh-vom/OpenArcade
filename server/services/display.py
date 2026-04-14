@@ -10,10 +10,10 @@ import subprocess
 import threading
 from dataclasses import dataclass
 
-from config_mode_state import ConfigModeState
-from config_network_status import get_config_network_status
-from hid_mode_state import HIDModeState
-from runtime_ipc import get_connected_devices, get_pairing_status
+from config_mode.network import get_config_network_status
+from core.ipc import get_connected_devices, get_pairing_status
+from state.config_mode import ConfigModeState
+from state.hid_mode import HIDModeState
 
 
 logging.basicConfig(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from hotspot_manager import parse_ap_ip, resolve_hotspot_ap_addr, resolve_hotspot_ssid
+from config_mode.hotspot import parse_ap_ip, resolve_hotspot_ap_addr, resolve_hotspot_ssid
 
 
 OPENARCADE_CONFIG_PORTAL_PORT_ENV_VAR = "OPENARCADE_CONFIG_PORTAL_PORT"

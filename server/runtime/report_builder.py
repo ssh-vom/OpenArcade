@@ -3,14 +3,14 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
-import constants as const
-from constants import (
+import core.constants as const
+from core.constants import (
     DEFAULT_GAMEPAD_MAPPING,
     DEFAULT_MAPPING,
     GAMEPAD_INPUT_MAP,
     SWITCH_HORI_INPUT_MAP,
 )
-from default_descriptor import default_descriptor
+from core.defaults import default_descriptor
 
 
 KEYCODES = {

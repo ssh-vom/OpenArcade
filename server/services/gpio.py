@@ -426,9 +426,9 @@ class GPIOService:
 def gpio_service_main(stop_event: Any = None) -> None:
     import threading
 
-    from config_mode_state import ConfigModeState
-    from hid_mode_state import HIDModeState
-    from pairing_mode_state import PairingModeState
+    from state.config_mode import ConfigModeState
+    from state.hid_mode import HIDModeState
+    from state.pairing_mode import PairingModeState
 
     logger.info("GPIO Service Starting")
 

@@ -12,7 +12,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Literal, cast
 
-from state_manager import StateManager
+from core.state import StateManager
 
 
 logger = logging.getLogger("OpenArcade")

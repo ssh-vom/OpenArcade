@@ -7,15 +7,15 @@ import signal
 import threading
 from typing import Any
 
-from config_mode_state import ConfigModeState
-from config_portal_service import (
+from config_mode.hotspot import HotspotManager
+from config_mode.portal import (
     ConfigPortalService,
     resolve_portal_host,
     resolve_portal_index_file,
     resolve_portal_port,
     resolve_portal_static_dir,
 )
-from hotspot_manager import HotspotManager
+from state.config_mode import ConfigModeState
 
 
 logging.basicConfig(

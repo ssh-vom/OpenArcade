@@ -6,8 +6,8 @@ import multiprocessing
 import signal
 import time
 
-from aggregator import aggregator_process
-from hid_writer import hid_writer_process
+from runtime.aggregator import aggregator_process
+from runtime.hid_writer import hid_writer_process
 
 
 logging.basicConfig(

@@ -9,10 +9,8 @@ from typing import Any
 
 from bleak import BleakClient, BleakScanner
 
-from constants import CHAR_UUID, SCANNER_DELAY
-from device_config_store import DeviceConfigStore
-from hid_mode_state import HIDModeState
-from pairing_mode_state import PairingModeState
+from config.store import DeviceConfigStore
+from core.constants import CHAR_UUID, SCANNER_DELAY
 from runtime.control_server import RuntimeControlServer
 from runtime.report_builder import (
     build_gamepad_pc_report,
@@ -20,7 +18,9 @@ from runtime.report_builder import (
     build_keyboard_report,
     build_mapping_cache,
 )
-from runtime.state_reducer import StateReducer, HIDMode
+from runtime.state_reducer import HIDMode, StateReducer
+from state.hid_mode import HIDModeState
+from state.pairing_mode import PairingModeState
 
 
 logger = logging.getLogger("OpenArcade")

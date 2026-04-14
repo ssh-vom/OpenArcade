@@ -9,8 +9,8 @@ import threading
 import time
 from pathlib import Path
 
-from gadget_state import GadgetState
-from hid_mode_state import HIDModeState
+from state.gadget import GadgetState
+from state.hid_mode import HIDModeState
 
 
 logging.basicConfig(

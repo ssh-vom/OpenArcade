@@ -1,4 +1,4 @@
-from device_descriptor import (
+from core.descriptor import (
     ControlDescriptor,
     ControlType,
     DeviceDescriptor,

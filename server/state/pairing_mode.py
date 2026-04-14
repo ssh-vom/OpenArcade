@@ -12,7 +12,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any
 
-from state_manager import StateManager
+from core.state import StateManager
 
 
 OPENARCADE_PAIRING_MODE_PATH_ENV_VAR = "OPENARCADE_PAIRING_MODE_PATH"

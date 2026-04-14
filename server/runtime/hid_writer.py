@@ -7,13 +7,13 @@ import sys
 import time
 from typing import Any
 
-from gadget_state import GadgetPersona, GadgetState
-from hid_mode_state import HIDMode, HIDModeState
 from runtime.report_builder import (
     build_gamepad_pc_report,
     build_gamepad_switch_hori_report,
     build_keyboard_report,
 )
+from state.gadget import GadgetPersona, GadgetState
+from state.hid_mode import HIDMode, HIDModeState
 
 
 logger = logging.getLogger("OpenArcade")

@@ -11,9 +11,9 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlparse
 
-from config_command_service import handle_command
-from device_config_store import DeviceConfigStore
-from runtime_ipc import notify_runtime_config_updated
+from config.commands import handle_command
+from config.store import DeviceConfigStore
+from core.ipc import notify_runtime_config_updated
 
 
 logger = logging.getLogger("OpenArcade")

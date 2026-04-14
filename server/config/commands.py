@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from device_config_store import DeviceConfigStore
+from config.store import DeviceConfigStore
+from core.ipc import get_connected_devices, get_device_states
 from runtime.report_builder import build_control_maps, get_pressed_control_ids
-from runtime_ipc import get_connected_devices, get_device_states
 
 
 def _normalize_device_id(device_id: Any) -> str:
