@@ -293,6 +293,4 @@ class HIDModeState:
         new_mode = mode_cycle[(current_index + 1) % len(mode_cycle)]
         return self.save(new_mode, source=source)
 
-    def toggle_mode(self, source: str = "gpio") -> dict[str, Any]:
-        """Backward-compatible alias for cycling HID modes."""
-        return self.cycle_mode(source=source)
+
