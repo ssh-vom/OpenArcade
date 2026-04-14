@@ -7,19 +7,12 @@ configuration portal behavior should be enabled.
 
 from __future__ import annotations
 
-import json
-import logging
 import os
-import threading
-from contextlib import contextmanager
 from datetime import datetime, timezone
-from multiprocessing import current_process
-from typing import Any, Iterator
+from typing import Any
 
-import fcntl
+from state_manager import StateManager
 
-
-logger = logging.getLogger("OpenArcade")
 
 OPENARCADE_CONFIG_MODE_PATH_ENV_VAR = "OPENARCADE_CONFIG_MODE_PATH"
 DEFAULT_CONFIG_MODE_PATH = "/var/lib/openarcade/config_mode.json"
@@ -33,7 +26,7 @@ def resolve_config_mode_path() -> str:
     )
 
 
-class ConfigModeState:
+class ConfigModeState(StateManager):
     """
     Manages persistent config mode state across the system.
 
@@ -45,9 +38,7 @@ class ConfigModeState:
     """
 
     def __init__(self, path: str | None = None) -> None:
-        self.path = path or resolve_config_mode_path()
-        self._lock = threading.RLock()
-        self._cache: dict[str, Any] | None = None
+        super().__init__(path or resolve_config_mode_path())
 
     def _default_state(self) -> dict[str, Any]:
         return {
@@ -57,162 +48,37 @@ class ConfigModeState:
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
-    @property
-    def _lock_path(self) -> str:
-        return f"{self.path}.lock"
-
-    @contextmanager
-    def _file_lock(self) -> Iterator[None]:
-        directory = os.path.dirname(self._lock_path)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-
-        with open(self._lock_path, "a+", encoding="utf-8") as lock_file:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-            try:
-                yield
-            finally:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-
-    def _write_state_unlocked(self, state: dict[str, Any]) -> None:
-        directory = os.path.dirname(self.path)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-
-        previous_state: dict[str, Any] | None = None
-        try:
-            with open(self.path, "r", encoding="utf-8") as f:
-                raw_previous = json.load(f)
-            if isinstance(raw_previous, dict):
-                previous_state = raw_previous
-        except (FileNotFoundError, json.JSONDecodeError, OSError):
-            previous_state = None
-
-        tmp_path = f"{self.path}.{os.getpid()}.tmp"
-        try:
-            with open(tmp_path, "w", encoding="utf-8") as f:
-                json.dump(state, f, indent=2)
-                f.write("\n")
-
-            os.replace(tmp_path, self.path)
-            logger.info(
-                "Config mode state write pid=%s process=%s path=%s prev=%s new=%s",
-                os.getpid(),
-                current_process().name,
-                self.path,
-                previous_state,
-                state,
-            )
-        finally:
-            try:
-                if os.path.exists(tmp_path):
-                    os.unlink(tmp_path)
-            except OSError:
-                pass
-
-    def _normalize_state(self, state: Any) -> tuple[dict[str, Any], bool]:
+    def _normalize_state(self, state: Any) -> dict[str, Any]:
         if not isinstance(state, dict):
-            return self._default_state(), True
+            return self._default_state()
 
         normalized = dict(state)
-        changed = False
-
         if not isinstance(normalized.get("enabled"), bool):
             normalized["enabled"] = False
-            changed = True
         if "source" not in normalized:
             normalized["source"] = "unknown"
-            changed = True
         if not isinstance(normalized.get("sequence"), int):
             normalized["sequence"] = 0
-            changed = True
         if "updated_at" not in normalized:
             normalized["updated_at"] = datetime.now(timezone.utc).isoformat()
-            changed = True
+        return normalized
 
-        return normalized, changed
-
-    def load(self, use_cache: bool = False) -> dict[str, Any]:
-        with self._lock:
-            if use_cache and self._cache is not None:
-                return dict(self._cache)
-
-            if not os.path.exists(self.path):
-                state = (
-                    dict(self._cache)
-                    if self._cache is not None
-                    else self._default_state()
-                )
-                self._cache = state
-                return dict(state)
-
-            try:
-                with open(self.path, "r", encoding="utf-8") as f:
-                    raw_state = json.load(f)
-            except FileNotFoundError:
-                state = (
-                    dict(self._cache)
-                    if self._cache is not None
-                    else self._default_state()
-                )
-                self._cache = state
-                return dict(state)
-            except json.JSONDecodeError:
-                state = (
-                    dict(self._cache)
-                    if self._cache is not None
-                    else self._default_state()
-                )
-                self._cache = state
-                return dict(state)
-            except OSError:
-                if self._cache is not None:
-                    return dict(self._cache)
-                state = self._default_state()
-                self._cache = state
-                return dict(state)
-
-            state, _changed = self._normalize_state(raw_state)
-            self._cache = state
-            return dict(state)
-
-    def save(self, enabled: bool, source: str = "api") -> dict[str, Any]:
-        with self._lock:
-            with self._file_lock():
-                current = self.load(use_cache=False)
-                new_state = {
-                    "enabled": enabled,
-                    "source": source,
-                    "sequence": current.get("sequence", 0) + 1,
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                }
-                self._write_state_unlocked(new_state)
-
-            self._cache = new_state
-            return dict(new_state)
+    def save_enabled(self, enabled: bool, source: str = "api") -> dict[str, Any]:
+        """Save config mode enabled state."""
+        current = self.load(use_cache=False)
+        new_state = {
+            "enabled": enabled,
+            "source": source,
+            "sequence": current.get("sequence", 0) + 1,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        return self.save(new_state)
 
     def toggle(self, source: str = "gpio") -> dict[str, Any]:
-        return self.save(enabled=not self.is_enabled(), source=source)
+        """Toggle config mode enabled state."""
+        return self.save_enabled(enabled=not self.is_enabled(), source=source)
 
     def is_enabled(self, use_cache: bool = False) -> bool:
+        """Check if config mode is enabled."""
         state = self.load(use_cache=use_cache)
         return state.get("enabled", False)
-
-    def get_sequence(self, use_cache: bool = False) -> int:
-        state = self.load(use_cache=use_cache)
-        return state.get("sequence", 0)
-
-    def ensure_initialized(self) -> dict[str, Any]:
-        with self._lock:
-            with self._file_lock():
-                if os.path.exists(self.path):
-                    state = self.load(use_cache=False)
-                else:
-                    state = (
-                        dict(self._cache)
-                        if self._cache is not None
-                        else self._default_state()
-                    )
-                    self._write_state_unlocked(state)
-                    self._cache = state
-                return dict(state)

@@ -1,11 +1,18 @@
+"""
+Gadget State Manager
+
+Manages the USB gadget state (persona and readiness) that is shared
+between the gadget mode manager and the HID writer process.
+"""
+
 from __future__ import annotations
 
-import json
 import logging
 import os
-import threading
 from datetime import datetime, timezone
 from typing import Any, Literal, cast
+
+from state_manager import StateManager
 
 
 logger = logging.getLogger("OpenArcade")
@@ -24,11 +31,11 @@ def resolve_gadget_state_path() -> str:
     )
 
 
-class GadgetState:
+class GadgetState(StateManager):
+    """Manages persistent gadget state."""
+
     def __init__(self, path: str | None = None) -> None:
-        self.path = path or resolve_gadget_state_path()
-        self._lock = threading.RLock()
-        self._cache: dict[str, Any] | None = None
+        super().__init__(path or resolve_gadget_state_path())
 
     def _default_state(self) -> dict[str, Any]:
         return {
@@ -54,76 +61,32 @@ class GadgetState:
             normalized["updated_at"] = datetime.now(timezone.utc).isoformat()
         return normalized
 
-    def load(self, use_cache: bool = False) -> dict[str, Any]:
-        with self._lock:
-            if use_cache and self._cache is not None:
-                return dict(self._cache)
+    def _use_file_locking(self) -> bool:
+        """Gadget state is only accessed by single process, no locking needed."""
+        return False
 
-            try:
-                with open(self.path, "r", encoding="utf-8") as handle:
-                    raw_state = json.load(handle)
-            except (FileNotFoundError, json.JSONDecodeError, OSError):
-                state = self._default_state()
-                self._cache = state
-                return dict(state)
-
-            state = self._normalize_state(raw_state)
-            self._cache = state
-            return dict(state)
-
-    def save(
+    def save_state(
         self,
         persona: GadgetPersona,
         ready: bool,
         mode_sequence: int,
     ) -> dict[str, Any]:
-        with self._lock:
-            if persona not in VALID_GADGET_PERSONAS:
-                raise ValueError(f"Invalid gadget persona: {persona}")
+        """Save gadget state with logging."""
+        if persona not in VALID_GADGET_PERSONAS:
+            raise ValueError(f"Invalid gadget persona: {persona}")
 
-            state = {
-                "persona": cast(GadgetPersona, persona),
-                "ready": ready,
-                "mode_sequence": mode_sequence,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            }
-
-            directory = os.path.dirname(self.path)
-            if directory:
-                os.makedirs(directory, exist_ok=True)
-
-            tmp_path = f"{self.path}.{os.getpid()}.tmp"
-            try:
-                with open(tmp_path, "w", encoding="utf-8") as handle:
-                    json.dump(state, handle, indent=2)
-                    handle.write("\n")
-                os.replace(tmp_path, self.path)
-            finally:
-                try:
-                    if os.path.exists(tmp_path):
-                        os.unlink(tmp_path)
-                except OSError:
-                    pass
-
-            self._cache = state
-            logger.info(
-                "Gadget state updated persona=%s ready=%s mode_sequence=%s path=%s",
-                persona,
-                ready,
-                mode_sequence,
-                self.path,
-            )
-            return dict(state)
-
-    def ensure_initialized(self) -> dict[str, Any]:
-        with self._lock:
-            if os.path.exists(self.path):
-                state = self.load(use_cache=False)
-            else:
-                state = self._default_state()
-                self.save(
-                    persona=cast(GadgetPersona, state["persona"]),
-                    ready=bool(state["ready"]),
-                    mode_sequence=int(state["mode_sequence"]),
-                )
-            return dict(state)
+        state = {
+            "persona": cast(GadgetPersona, persona),
+            "ready": ready,
+            "mode_sequence": mode_sequence,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        result = self.save(state)
+        logger.info(
+            "Gadget state updated persona=%s ready=%s mode_sequence=%s path=%s",
+            persona,
+            ready,
+            mode_sequence,
+            self.path,
+        )
+        return result

@@ -114,7 +114,7 @@ def gadget_mode_manager_main() -> int:
 
             if target_persona != current_persona or sequence != last_sequence:
                 if target_persona != current_persona:
-                    gadget_state.save(
+                    gadget_state.save_state(
                         persona=target_persona,
                         ready=False,
                         mode_sequence=sequence,
@@ -148,7 +148,7 @@ def gadget_mode_manager_main() -> int:
                     )
                     current_persona = target_persona
 
-                gadget_state.save(
+                gadget_state.save_state(
                     persona=target_persona,
                     ready=True,
                     mode_sequence=sequence,
