@@ -121,9 +121,6 @@ const ChildModule = memo(function ChildModule({
     const mouse = useRef(new THREE.Vector2());
     const buttonMaterialState = useRef(new Map());
 
-    // Track previous pressed buttons for efficient updates
-    const prevPressedRef = useRef([]);
-
     function prepareHighlightMaterial(mesh) {
         const storeMaterial = (material) => {
             if (!material || buttonMaterialState.current.has(material.uuid)) {
@@ -489,9 +486,6 @@ const ChildModule = memo(function ChildModule({
             }
         }
     });
-
-    // New color scheme: Blue (Gamepad), Teal (Keyboard), Light Blue (Analog)
-
 
     const normalizedFilter = typeof mappingFilter === "string" ? mappingFilter.toLowerCase() : mappingFilter;
     const hoveredMapping = hoveredButton ? normalizeMapping(mappings[hoveredButton]) : null;

@@ -17,22 +17,3 @@ export function formatButtonName(buttonName: string | null | undefined): string 
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
-
-/**
- * Converts a string to title case.
- */
-export function toTitleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-/**
- * Converts snake_case or camelCase to kebab-case.
- */
-export function toKebabCase(str: string): string {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/_/g, '-')
-    .toLowerCase();
-}

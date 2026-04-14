@@ -32,6 +32,16 @@ interface D2ConfigPanelProps {
   selectedButton?: string | null;
 }
 
+function getMappedInputLabel(config: MappingConfig | null): string {
+  if (!config) return 'Unmapped';
+  if (config.label) return config.label;
+  if (config.type && config.input) {
+    return getInputLabel(config.type as HidInputType, config.input);
+  }
+  if (config.input) return config.input;
+  return 'Mapped';
+}
+
 export default function D2ConfigPanel({
   mappings,
   moduleName,
@@ -55,8 +65,7 @@ export default function D2ConfigPanel({
     [pressedButtons]
   );
 
-  // Memoize mapping count to avoid recomputing
-  const mappingCount = useMemo(() => Object.keys(mappings).length, [mappings]);
+  const mappingCount = Object.keys(mappings).length;
     
   // Get config for currently selected button
   const selectedConfig = selectedButton ? mappings[selectedButton] : null;
@@ -64,6 +73,14 @@ export default function D2ConfigPanel({
     ? pressedButtonSet.has(selectedButton)
     : false;
   const isSelectedArmed = selectedButton === armedButton;
+
+  const formattedButtonName = formatButtonName(selectedButton);
+  const selectedTypeStyle = selectedConfig
+    ? getTypeStyleConfig(selectedConfig.type)
+    : null;
+  const selectCurrentButton = () => {
+    if (selectedButton) onSelectButton(selectedButton, null);
+  };
 
   // Compute raw mapping detail once for reuse
   const rawMappingDetail = useMemo(() => {
@@ -85,15 +102,6 @@ export default function D2ConfigPanel({
     return null;
   }, [selectedConfig]);
 
-  const getMappedInputLabel = (config: MappingConfig | null): string => {
-    if (!config) return 'Unmapped';
-    if (config.label) return config.label;
-    if (config.type && config.input) {
-      return getInputLabel(config.type as HidInputType, config.input);
-    }
-    if (config.input) return config.input;
-    return 'Mapped';
-  };
 
     return (
         <div 
@@ -186,7 +194,7 @@ export default function D2ConfigPanel({
                     </div>
                 </div>
                 <button
-                    onClick={() => onToggleMappingMode && onToggleMappingMode()}
+                    onClick={onToggleMappingMode}
                     className={`w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide border-2 transition-all duration-200 cursor-pointer ${
                         isMappingMode
                             ? 'bg-[#5180C1] text-white border-[#5180C1]'
@@ -311,7 +319,7 @@ export default function D2ConfigPanel({
                                     className="text-lg font-semibold text-[#333333]"
                                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                 >
-                                    {formatButtonName(selectedButton)}
+                                    {formattedButtonName}
                                 </div>
                                 {isSelectedPressed && (
                                     <div 
@@ -353,7 +361,7 @@ export default function D2ConfigPanel({
                             </div>
                             
                             <button
-                                onClick={() => onSelectButton(selectedButton, null)}
+                                onClick={selectCurrentButton}
                                 className="w-full py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-150"
                                 style={{
                                     fontFamily: "'Space Grotesk', sans-serif",
@@ -389,7 +397,7 @@ export default function D2ConfigPanel({
                                     className="text-lg font-semibold text-[#333333]"
                                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                                 >
-                                    {formatButtonName(selectedButton)}
+                                    {formattedButtonName}
                                 </div>
                                 {isSelectedPressed && (
                                     <div 
@@ -443,9 +451,9 @@ export default function D2ConfigPanel({
                                 <span
                                     className="inline-flex items-center justify-center w-10 h-8 rounded-lg text-xs font-bold tracking-wider"
                                     style={{ 
-                                        background: getTypeStyleConfig(selectedConfig.type).bg,
-                                        border: `1px solid ${getTypeStyleConfig(selectedConfig.type).border}`,
-                                        color: getTypeStyleConfig(selectedConfig.type).text,
+                                        background: selectedTypeStyle?.bg,
+                                        border: `1px solid ${selectedTypeStyle?.border}`,
+                                        color: selectedTypeStyle?.text,
                                         fontFamily: "'IBM Plex Mono', monospace"
                                     }}
                                 >
@@ -480,7 +488,7 @@ export default function D2ConfigPanel({
                             )}
 
                             <button
-                                onClick={() => onSelectButton(selectedButton, null)}
+                                onClick={selectCurrentButton}
                                 className="w-full py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-150"
                                 style={{
                                     fontFamily: "'Space Grotesk', sans-serif",
@@ -495,46 +503,32 @@ export default function D2ConfigPanel({
 
                         {/* Quick stats */}
                         <div className="grid grid-cols-2 gap-3">
-                            <div 
-                                className="p-3 rounded-xl text-center"
-                                style={{
-                                    background: '#CCCCCC',
-                                    border: '1px solid #A0A0A0'
-                                }}
-                            >
-                                <div 
-                                    className="text-lg font-bold text-[#5180C1]"
-                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                            {[
+                                { value: mappingCount, color: '#5180C1', label: 'Total Mapped' },
+                                { value: pressedButtons.length, color: '#4A90A4', label: 'Active Now' },
+                            ].map((stat) => (
+                                <div
+                                    key={stat.label}
+                                    className="p-3 rounded-xl text-center"
+                                    style={{
+                                        background: '#CCCCCC',
+                                        border: '1px solid #A0A0A0'
+                                    }}
                                 >
-                                    {mappingCount}
+                                    <div
+                                        className="text-lg font-bold"
+                                        style={{ fontFamily: "'Space Grotesk', sans-serif", color: stat.color }}
+                                    >
+                                        {stat.value}
+                                    </div>
+                                    <div
+                                        className="text-[10px] text-[#707070]"
+                                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                                    >
+                                        {stat.label}
+                                    </div>
                                 </div>
-                                <div 
-                                    className="text-[10px] text-[#707070]"
-                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                >
-                                    Total Mapped
-                                </div>
-                            </div>
-                            <div 
-                                className="p-3 rounded-xl text-center"
-                                style={{
-                                    background: '#CCCCCC',
-                                    border: '1px solid #A0A0A0'
-                                }}
-                            >
-                                <div 
-                                    className="text-lg font-bold text-[#4A90A4]"
-                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                >
-                                    {pressedButtons.length}
-                                </div>
-                                <div 
-                                    className="text-[10px] text-[#707070]"
-                                    style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                                >
-                                    Active Now
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 )}
@@ -559,7 +553,7 @@ export default function D2ConfigPanel({
                         </button>
                     )}
                     <button
-                        onClick={() => onSaveToDevice && onSaveToDevice(moduleId)}
+                        onClick={() => onSaveToDevice(moduleId)}
                         className="flex-[2] py-3.5 bg-[#5180C1] hover:bg-[#4070B0] border-none rounded-xl text-white text-sm font-semibold cursor-pointer transition-all duration-150"
                         style={{ 
                             fontFamily: "'Space Grotesk', sans-serif",

@@ -204,61 +204,50 @@ function LiveInputLitePanel({ currentModule, pressedControlIds, pressedButtons }
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-[#A0A0A0] bg-[#CCCCCC] p-5">
-                    <div
-                        className="text-xs uppercase tracking-wide text-[#707070] mb-2"
-                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                    >
-                        Pressed UI Buttons
+                {[
+                    {
+                        title: "Pressed UI Buttons",
+                        emptyLabel: "No active buttons",
+                        items: pressedButtons,
+                        chipBg: "rgba(16, 185, 129, 0.15)",
+                        chipColor: "#10B981",
+                    },
+                    {
+                        title: "Pressed Physical Control IDs",
+                        emptyLabel: "No active controls",
+                        items: pressedControlIds,
+                        chipBg: "rgba(81, 128, 193, 0.15)",
+                        chipColor: "#5180C1",
+                    },
+                ].map((section) => (
+                    <div key={section.title} className="rounded-2xl border border-[#A0A0A0] bg-[#CCCCCC] p-5">
+                        <div
+                            className="text-xs uppercase tracking-wide text-[#707070] mb-2"
+                            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+                        >
+                            {section.title}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {section.items.length === 0 ? (
+                                <span className="text-sm text-[#707070]">{section.emptyLabel}</span>
+                            ) : (
+                                section.items.map((item) => (
+                                    <span
+                                        key={item}
+                                        className="px-2.5 py-1 rounded-full text-xs"
+                                        style={{
+                                            background: section.chipBg,
+                                            color: section.chipColor,
+                                            fontFamily: "'IBM Plex Mono', monospace",
+                                        }}
+                                    >
+                                        {item}
+                                    </span>
+                                ))
+                            )}
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {pressedButtons.length === 0 ? (
-                            <span className="text-sm text-[#707070]">No active buttons</span>
-                        ) : (
-                            pressedButtons.map((buttonName) => (
-                                <span
-                                    key={buttonName}
-                                    className="px-2.5 py-1 rounded-full text-xs"
-                                    style={{
-                                        background: "rgba(16, 185, 129, 0.15)",
-                                        color: "#10B981",
-                                        fontFamily: "'IBM Plex Mono', monospace",
-                                    }}
-                                >
-                                    {buttonName}
-                                </span>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                <div className="rounded-2xl border border-[#A0A0A0] bg-[#CCCCCC] p-5">
-                    <div
-                        className="text-xs uppercase tracking-wide text-[#707070] mb-2"
-                        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                    >
-                        Pressed Physical Control IDs
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {pressedControlIds.length === 0 ? (
-                            <span className="text-sm text-[#707070]">No active controls</span>
-                        ) : (
-                            pressedControlIds.map((controlId) => (
-                                <span
-                                    key={controlId}
-                                    className="px-2.5 py-1 rounded-full text-xs"
-                                    style={{
-                                        background: "rgba(81, 128, 193, 0.15)",
-                                        color: "#5180C1",
-                                        fontFamily: "'IBM Plex Mono', monospace",
-                                    }}
-                                >
-                                    {controlId}
-                                </span>
-                            ))
-                        )}
-                    </div>
-                </div>
+                ))}
             </div>
         </div>
     );
@@ -309,7 +298,6 @@ const OpenArcadeLiteView = memo(function OpenArcadeLiteView({ configClient }: Op
     const livePollInFlightRef = useRef(false);
     const sourceBindingInFlightRef = useRef(false);
     const isVisibleRef = useRef(true);
-    const lastRefreshedIndexRef = useRef(-1);
 
     const safeCurrentModuleIndex = currentModuleIndex < modules.length ? currentModuleIndex : 0;
     const currentModule = modules[safeCurrentModuleIndex] || defaultModules[0];

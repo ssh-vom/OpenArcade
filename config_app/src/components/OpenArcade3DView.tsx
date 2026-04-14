@@ -5,7 +5,6 @@ import { useCameraController } from "../hooks/useCameraController";
 import { useState, useEffect, useLayoutEffect, memo, useRef, useCallback, useMemo } from "react";
 import { useGLTF, Bounds } from "@react-three/drei";
 import ButtonMappingModal from "./ButtonMappingModal";
-import ButtonMappingsPanel from "./ButtonMappingsPanel";
 import HIDButtonMappingModal from "./HIDButtonMappingModal";
 import D2ConfigPanel from "./D2ConfigPanel";
 import ProfilesPanel from "./ProfilesPanel";
@@ -152,6 +151,25 @@ function LiveInputIcon({ active }) {
     );
 }
 
+function SwitchTo2DNotice({ message, onSwitch }) {
+    return (
+        <div className="flex-1 flex items-center justify-center bg-[#D9D9D9]">
+            <div className="text-center">
+                <p className="text-[#707070] text-sm mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    {message}
+                </p>
+                <button
+                    onClick={onSwitch}
+                    className="px-4 py-2 bg-[#5180C1] text-white rounded-lg text-sm font-medium hover:bg-[#4070B0] transition-colors"
+                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                    Switch to 2D
+                </button>
+            </div>
+        </div>
+    );
+}
+
 const LIVE_STATE_POLL_INTERVAL_MS = 120;
 
 interface OpenArcade3DViewProps {
@@ -162,7 +180,6 @@ interface OpenArcade3DViewProps {
 
 const OpenArcade3DView = memo(function OpenArcade3DView({
     configClient,
-    onDisconnect,
     liteMode = false,
 }: OpenArcade3DViewProps) {
     // ============================================================
@@ -201,7 +218,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
     const sourceBindingInFlightRef = useRef(false);
     const isVisibleRef = useRef(true);
     const mockClientRef = useRef(null);
-    const lastRefreshedIndexRef = useRef(-1);
 
     // Initialize mock client once
     if (!mockClientRef.current) {
@@ -832,10 +848,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
 
     // Preload textures once on mount
     useEffect(() => {
-        const dummyTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-        dummyTexture.generateMipmaps = false;
-        dummyTexture.needsUpdate = true;
-
         modules.forEach(module => {
             useGLTF.preload(module.path, true);
         });
@@ -1172,39 +1184,19 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
                             />
                         </div>
                     ) : (
-                        <div className="flex-1 flex items-center justify-center bg-[#D9D9D9]">
-                            <div className="text-center">
-                                <p className="text-[#707070] text-sm mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                                    Profiles are managed in 2D view
-                                </p>
-                                <button
-                                    onClick={() => toggleViewMode()}
-                                    className="px-4 py-2 bg-[#5180C1] text-white rounded-lg text-sm font-medium hover:bg-[#4070B0] transition-colors"
-                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                >
-                                    Switch to 2D
-                                </button>
-                            </div>
-                        </div>
+                        <SwitchTo2DNotice
+                            message="Profiles are managed in 2D view"
+                            onSwitch={toggleViewMode}
+                        />
                     )
                 ) : (
                     viewMode === '2d' ? (
                         <LiveInputPanel />
                     ) : (
-                        <div className="flex-1 flex items-center justify-center bg-[#D9D9D9]">
-                            <div className="text-center">
-                                <p className="text-[#707070] text-sm mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                                    Live Input is available in 2D view
-                                </p>
-                                <button
-                                    onClick={() => toggleViewMode()}
-                                    className="px-4 py-2 bg-[#5180C1] text-white rounded-lg text-sm font-medium hover:bg-[#4070B0] transition-colors"
-                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                                >
-                                    Switch to 2D
-                                </button>
-                            </div>
-                        </div>
+                        <SwitchTo2DNotice
+                            message="Live Input is available in 2D view"
+                            onSwitch={toggleViewMode}
+                        />
                     )
                 )}
             </div>
