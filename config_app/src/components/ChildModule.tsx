@@ -13,23 +13,7 @@ import {
   getTypeBorderColor,
 } from "../services/HIDManager";
 import { useMountEffect } from "../hooks/useMountEffect";
-
-// Shallow equality helpers for performant comparisons
-const shallowEqualArrays = (a, b) => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.length !== b.length) return false;
-  return a.every((v, i) => v === b[i]);
-};
-
-const shallowEqualObjects = (a, b) => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  return keysA.every(key => a[key] === b[key]);
-};
+import { shallowEqualArrays, shallowEqualObjects } from "../utils";
 
 const GAMEPAD_INPUT_KEYS = new Set(Object.keys(GAMEPAD_INPUTS));
 const KEYBOARD_INPUT_KEYS = new Set(Object.keys(KEYBOARD_INPUTS));

@@ -1,4 +1,5 @@
 import { INPUT_SCHEMA } from '@generated/input-schema';
+import { HID_INPUT_TYPES } from '@/constants';
 import type { InputType } from '@/types';
 
 export interface InputOption {
@@ -9,11 +10,7 @@ export interface InputOption {
   type?: 'bidirectional' | 'unidirectional';
 }
 
-export const HID_INPUT_TYPES = {
-  GAMEPAD: 'gamepad',
-  KEYBOARD: 'keyboard',
-  ANALOG: 'analog',
-} as const;
+export { HID_INPUT_TYPES };
 
 export const DEFAULT_LAYOUT = INPUT_SCHEMA.default_layout || {};
 export const DEFAULT_MAPPING = INPUT_SCHEMA.default_mapping || {};
