@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "open-arcade",
+  "compatibility_date": "2025-09-27",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "config_app"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
