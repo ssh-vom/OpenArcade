@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
+import { getInputLabel } from '@/domain/hid/input-resolver';
 import {
-  getInputLabel,
   getTypeIcon,
   getTypeLabel,
   getTypeStyleConfig,
-  type HidInputType,
-} from '@/services/HIDManager';
+} from '@/domain/hid/type-helpers';
+import type { HidInputType } from '@/constants';
 import { formatButtonName } from '@/utils';
 import type { MappingConfig } from '@/types';
 

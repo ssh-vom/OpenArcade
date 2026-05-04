@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import PlateGalleryPanel from "./PlateGalleryPanel";
 import PlateTopPreview from "./PlateTopPreview";
-import { DEFAULT_PLATE_ID, PLATES, getPlateId, getPlateName } from "../lib/plateCatalog";
+import { DEFAULT_PLATE_ID, PLATES, getPlateId, getPlateName } from "../domain/plate";
 
 export default function ProfilesPanel({
     deviceId,

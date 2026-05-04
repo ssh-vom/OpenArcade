@@ -1,9 +1,8 @@
-import { useState, useCallback, useRef } from "react";
-import { useMountEffect } from "./hooks/useMountEffect";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { OpenArcade3DView } from "./components/OpenArcade3DView";
 import BootSequence from "./components/BootSequence";
-import SerialConfigClient from "./services/SerialConfigClient";
-import MockConfigClient from "./services/MockConfigClient";
+import { SerialConfigClient } from "./services/config-client/serial-client";
+import { MockConfigClient } from "./services/config-client/mock-client";
 import type { BootSelection, ConnectionState, IConfigClient } from "./types";
 import "./App.css";
 
@@ -72,15 +71,15 @@ function App() {
         setBootError(null);
     }, []);
 
-    useMountEffect(() => {
+    useEffect(() => {
         return () => {
             if (clientRef.current) {
                 clientRef.current.disconnect().catch(console.warn);
             }
         };
-    });
+    }, []);
 
-    useMountEffect(() => {
+    useEffect(() => {
         const handleBeforeUnload = () => {
             if (clientRef.current) {
                 clientRef.current.disconnect().catch(() => { });
@@ -91,7 +90,7 @@ function App() {
         return () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
-    });
+    }, []);
 
     if (bootPhase === "boot" || bootPhase === "connecting") {
         return (

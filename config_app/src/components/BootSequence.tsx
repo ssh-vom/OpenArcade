@@ -1,5 +1,4 @@
-import { useState, useCallback } from "react";
-import { useMountEffect } from "../hooks/useMountEffect";
+import { useState, useCallback, useEffect } from "react";
 
 const TOTAL_SCAN_ROWS = 20;
 const SCAN_SPEED_MS = 55;
@@ -51,9 +50,9 @@ export default function BootSequence({ onBootComplete, error }) {
     const [hasWebSerial, setHasWebSerial] = useState(false);
 
     // Check WebSerial availability once on mount - legitimate external sync
-    useMountEffect(() => {
+    useEffect(() => {
         setHasWebSerial("serial" in navigator);
-    });
+    }, []);
 
     // Handle boot completion via CSS animation end
     const handleScanComplete = useCallback(() => {
@@ -74,14 +73,11 @@ export default function BootSequence({ onBootComplete, error }) {
         }
     }, [phase, hasWebSerial, selectedIndex]);
 
-    // Attach keyboard listener at component level - not in effect
-    // Using React's onKeyDown on a focusable container would be better,
-    // but for global window events, we use the hook pattern
-    useMountEffect(() => {
-        const listener = (e) => handleKeyDown(e);
-        window.addEventListener("keydown", listener);
-        return () => window.removeEventListener("keydown", listener);
-    });
+    // Use keyboard events on the component's onKeyDown instead of global listeners
+    // This avoids stale closures and doesn't need useEffect at all
+    const onKeyDown = useCallback((e) => {
+        handleKeyDown(e);
+    }, [handleKeyDown]);
 
     const selectOption = useCallback((index) => {
         if (!hasWebSerial && index === 0) {
@@ -113,6 +109,7 @@ export default function BootSequence({ onBootComplete, error }) {
                 background: "linear-gradient(180deg, #D9D9D9 0%, #CCCCCC 100%)"
             }}
             tabIndex={0}
+            onKeyDown={onKeyDown}
         >
             {/* Inject animation styles */}
             <style>{bootAnimationStyles}</style>

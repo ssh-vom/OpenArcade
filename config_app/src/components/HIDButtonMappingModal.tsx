@@ -1,8 +1,6 @@
 import { useState } from "react";
-import {
-  HID_INPUT_TYPES,
-  getInputLabel
-} from "../services/HIDManager";
+import { HID_INPUT_TYPES } from "../constants";
+import { getInputLabel } from "../domain/hid/input-resolver";
 import KeyboardLayout from "./KeyboardLayout";
 import ControllerDiagram from "./ControllerDiagram";
 import AnalogPicker from "./AnalogPicker";
@@ -14,7 +12,7 @@ import AnalogPicker from "./AnalogPicker";
  * - Left: Visual input selector (keyboard/controller/analog)
  * - Right: Configuration panel (type selector, settings, actions)
  */
-export default function ButtonMappingModal({
+export default function HIDButtonMappingModal({
   button,
   preferredInputType = HID_INPUT_TYPES.GAMEPAD,
   allowedInputTypes = [HID_INPUT_TYPES.GAMEPAD, HID_INPUT_TYPES.KEYBOARD],

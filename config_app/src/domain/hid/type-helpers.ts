@@ -6,83 +6,74 @@ export interface TypeStyleConfig {
   text: string;
 }
 
+interface TypeConfig extends TypeStyleConfig {
+  icon: string;
+  color: string;
+  borderColor: string;
+  label: string;
+}
+
+const DEFAULT_TYPE_CONFIG: TypeConfig = {
+  icon: '—',
+  color: '#707070',
+  borderColor: 'rgba(112, 112, 112, 0.3)',
+  label: 'Unknown',
+  bg: '#B8B8B8',
+  border: '#A0A0A0',
+  text: '#707070',
+};
+
+const TYPE_CONFIG: Record<string, TypeConfig> = {
+  [HID_INPUT_TYPES.GAMEPAD]: {
+    icon: 'GP',
+    color: '#5180C1',
+    borderColor: 'rgba(81, 128, 193, 0.35)',
+    label: 'Gamepad',
+    bg: 'rgba(81, 128, 193, 0.12)',
+    border: 'rgba(81, 128, 193, 0.25)',
+    text: '#5180C1',
+  },
+  [HID_INPUT_TYPES.KEYBOARD]: {
+    icon: 'KB',
+    color: '#4A90A4',
+    borderColor: 'rgba(74, 144, 164, 0.35)',
+    label: 'Keyboard',
+    bg: 'rgba(74, 144, 164, 0.12)',
+    border: 'rgba(74, 144, 164, 0.25)',
+    text: '#4A90A4',
+  },
+  [HID_INPUT_TYPES.ANALOG]: {
+    icon: 'AX',
+    color: '#6B9BD1',
+    borderColor: 'rgba(107, 155, 209, 0.35)',
+    label: 'Analog',
+    bg: 'rgba(107, 155, 209, 0.12)',
+    border: 'rgba(107, 155, 209, 0.25)',
+    text: '#6B9BD1',
+  },
+};
+
+function getTypeConfig(type: HidInputType | string | undefined): TypeConfig {
+  return (type && TYPE_CONFIG[type]) || DEFAULT_TYPE_CONFIG;
+}
+
 export function getTypeIcon(type: HidInputType | string | undefined): string {
-  switch (type) {
-    case HID_INPUT_TYPES.GAMEPAD:
-      return 'GP';
-    case HID_INPUT_TYPES.KEYBOARD:
-      return 'KB';
-    case HID_INPUT_TYPES.ANALOG:
-      return 'AX';
-    default:
-      return '—';
-  }
+  return getTypeConfig(type).icon;
 }
 
 export function getTypeColor(type: HidInputType | string | undefined): string {
-  switch (type) {
-    case HID_INPUT_TYPES.GAMEPAD:
-      return '#5180C1'; // Blue accent
-    case HID_INPUT_TYPES.KEYBOARD:
-      return '#4A90A4'; // Teal
-    case HID_INPUT_TYPES.ANALOG:
-      return '#6B9BD1'; // Light blue
-    default:
-      return '#707070';
-  }
+  return getTypeConfig(type).color;
 }
 
 export function getTypeBorderColor(type: HidInputType | string | undefined): string {
-  switch (type) {
-    case HID_INPUT_TYPES.GAMEPAD:
-      return 'rgba(81, 128, 193, 0.35)';
-    case HID_INPUT_TYPES.KEYBOARD:
-      return 'rgba(74, 144, 164, 0.35)';
-    case HID_INPUT_TYPES.ANALOG:
-      return 'rgba(107, 155, 209, 0.35)';
-    default:
-      return 'rgba(112, 112, 112, 0.3)';
-  }
+  return getTypeConfig(type).borderColor;
 }
 
 export function getTypeStyleConfig(type: HidInputType | string | undefined): TypeStyleConfig {
-  switch (type) {
-    case HID_INPUT_TYPES.GAMEPAD:
-      return {
-        bg: 'rgba(81, 128, 193, 0.12)',
-        border: 'rgba(81, 128, 193, 0.25)',
-        text: '#5180C1',
-      };
-    case HID_INPUT_TYPES.KEYBOARD:
-      return {
-        bg: 'rgba(74, 144, 164, 0.12)',
-        border: 'rgba(74, 144, 164, 0.25)',
-        text: '#4A90A4',
-      };
-    case HID_INPUT_TYPES.ANALOG:
-      return {
-        bg: 'rgba(107, 155, 209, 0.12)',
-        border: 'rgba(107, 155, 209, 0.25)',
-        text: '#6B9BD1',
-      };
-    default:
-      return {
-        bg: '#B8B8B8',
-        border: '#A0A0A0',
-        text: '#707070',
-      };
-  }
+  const { bg, border, text } = getTypeConfig(type);
+  return { bg, border, text };
 }
 
 export function getTypeLabel(type: HidInputType | string | undefined): string {
-  switch (type) {
-    case HID_INPUT_TYPES.GAMEPAD:
-      return 'Gamepad';
-    case HID_INPUT_TYPES.KEYBOARD:
-      return 'Keyboard';
-    case HID_INPUT_TYPES.ANALOG:
-      return 'Analog';
-    default:
-      return 'Unknown';
-  }
+  return getTypeConfig(type).label;
 }

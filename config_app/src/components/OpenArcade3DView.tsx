@@ -5,13 +5,13 @@ import * as THREE from "three";
 import { MemoizedChildModule } from "./ChildModule";
 import { CameraController } from "./CameraController";
 import { useCameraController, useOpenArcade } from "../hooks";
-import ButtonMappingModal from "./ButtonMappingModal";
 import HIDButtonMappingModal from "./HIDButtonMappingModal";
 import D2ConfigPanel from "./D2ConfigPanel";
 import ProfilesPanel from "./ProfilesPanel";
 import LiveInputPanel from "./LiveInputPanel";
 import ControllerHUD from "./ControllerHUD";
-import { DEFAULT_LAYOUT, HID_INPUT_TYPES } from "../services/HIDManager";
+import { DEFAULT_LAYOUT } from "../domain/hid/input-resolver";
+import { HID_INPUT_TYPES } from "../constants";
 import { MappingsIcon, ProfilesIcon, LiveInputIcon } from "./icons";
 import type { IConfigClient, MappingConfig } from "@/types";
 import type { ModuleState } from "../hooks";
@@ -451,25 +451,16 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
             </div>
             
             {selectedButton && (
-                viewMode === '3d' ? (
-                    <ButtonMappingModal
-                        button={selectedButton}
-                        onSave={saveMapping}
-                        onCancel={() => setSelectedButton(null)}
-                        onClear={clearMapping}
-                    />
-                ) : (
-                    <HIDButtonMappingModal
-                        button={selectedButton}
-                        preferredInputType={editingMode === "keyboard" ? HID_INPUT_TYPES.KEYBOARD : HID_INPUT_TYPES.GAMEPAD}
-                        allowedInputTypes={editingMode === "keyboard"
-                            ? [HID_INPUT_TYPES.KEYBOARD]
-                            : [HID_INPUT_TYPES.GAMEPAD]}
-                        onSave={saveMapping}
-                        onCancel={() => setSelectedButton(null)}
-                        onClear={clearMapping}
-                    />
-                )
+                <HIDButtonMappingModal
+                    button={selectedButton}
+                    preferredInputType={editingMode === "keyboard" ? HID_INPUT_TYPES.KEYBOARD : HID_INPUT_TYPES.GAMEPAD}
+                    allowedInputTypes={editingMode === "keyboard"
+                        ? [HID_INPUT_TYPES.KEYBOARD]
+                        : [HID_INPUT_TYPES.GAMEPAD]}
+                    onSave={saveMapping}
+                    onCancel={() => setSelectedButton(null)}
+                    onClear={clearMapping}
+                />
             )}
         </div>
     );

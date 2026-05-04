@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FALLBACK_PLATE_PREVIEW, getPlatePreview } from "../lib/plateCatalog";
+import { FALLBACK_PLATE_PREVIEW, getPlatePreview } from "../domain/plate";
 
 function PreviewImage({ src, className, alt }) {
     const [useFallback, setUseFallback] = useState(false);

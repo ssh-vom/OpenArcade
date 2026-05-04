@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState } from "react";
-import { HID_INPUT_TYPES } from "../services/HIDManager";
+import { HID_INPUT_TYPES } from "../constants";
 
 const oaBlockLogo = "/logos/oa_block.png";
 

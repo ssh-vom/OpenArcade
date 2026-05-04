@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DEFAULT_LAYOUT, HID_INPUT_TYPES, getInputForKeycode, getInputLabel, getKeycodeForInput } from "@/services/HIDManager";
-import { DEFAULT_PLATE_ID, getPlateControllerModel } from "@/lib/plateCatalog";
-import MockConfigClient from "@/services/MockConfigClient";
+import { DEFAULT_LAYOUT, getInputForKeycode, getInputLabel, getKeycodeForInput } from "@/domain/hid/input-resolver";
+import { HID_INPUT_TYPES } from "@/constants";
+import { DEFAULT_PLATE_ID, getPlateControllerModel } from "@/domain/plate";
+import { MockConfigClient } from "@/services/config-client/mock-client";
 import { shallowEqualArrays } from "@/utils";
 import type { IConfigClient, MappingConfig } from "@/types";
 

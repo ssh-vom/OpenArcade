@@ -11,17 +11,12 @@ export interface ClientFactoryOptions {
   mockSeed?: number;
 }
 
+const CLIENTS: Record<ClientType, (opts: ClientFactoryOptions) => IConfigClient> = {
+  serial: () => new SerialConfigClient(),
+  http: (opts) => new HttpConfigClient({ basePath: opts.httpBasePath }),
+  mock: () => new MockConfigClient(),
+};
+
 export function createConfigClient(options: ClientFactoryOptions): IConfigClient {
-  switch (options.type) {
-    case 'serial':
-      return new SerialConfigClient();
-    case 'http':
-      return new HttpConfigClient({ basePath: options.httpBasePath });
-    case 'mock':
-      return new MockConfigClient();
-    default: {
-      const exhaustive: never = options.type;
-      throw new Error(`Unknown client type: ${exhaustive}`);
-    }
-  }
+  return CLIENTS[options.type](options);
 }

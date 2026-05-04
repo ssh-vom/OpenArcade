@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import HttpConfigClient from "./services/HttpConfigClient";
+import { HttpConfigClient } from "./services/config-client/http-client";
 import OpenArcadeLiteView from "./OpenArcadeLiteView";
 import type { IConfigClient } from "./types";
 

@@ -8,11 +8,13 @@ import {
   HID_INPUT_TYPES,
   KEYBOARD_INPUTS,
   getInputLabel,
+} from "../domain/hid/input-resolver";
+import {
   getTypeIcon,
   getTypeColor,
   getTypeBorderColor,
-} from "../services/HIDManager";
-import { useMountEffect } from "../hooks/useMountEffect";
+} from "../domain/hid/type-helpers";
+import { useEffect } from "react";
 import { shallowEqualArrays, shallowEqualObjects } from "../utils";
 
 const GAMEPAD_INPUT_KEYS = new Set(Object.keys(GAMEPAD_INPUTS));
@@ -77,7 +79,7 @@ const normalizeMapping = (mapping) => {
     };
 };
 
-const ChildModule = memo(function ChildModule({
+function ChildModule({
     path,
     onButtonClick,
     onModuleClick,
@@ -435,7 +437,7 @@ const ChildModule = memo(function ChildModule({
     });
 
     // Attach mouse event listeners for raycasting - legitimate external sync
-    useMountEffect(() => {
+    useEffect(() => {
         const canvas = gl.domElement;
         canvas.addEventListener('click', handleMouseClick);
         canvas.addEventListener('mousemove', handleMouseMove);
@@ -626,33 +628,6 @@ const ChildModule = memo(function ChildModule({
                 );
             })()}
         </group>
-    );
-});
-
-function IndicatorRing({ buttonName, gltf }: { buttonName: string; gltf: { scene?: THREE.Scene } | null }) {
-    // Use useMemo to compute position once, avoiding setState during render
-    const position = useMemo(() => {
-        if (!gltf?.scene) return [0, 0, 0] as [number, number, number];
-        
-        let foundPosition: [number, number, number] | null = null;
-        gltf.scene.traverse((child) => {
-            if (child.name === buttonName && !foundPosition) {
-                foundPosition = [child.position.x, child.position.y + 0.05, child.position.z];
-            }
-        });
-        return foundPosition || [0, 0, 0];
-    }, [buttonName, gltf]);
-
-    return (
-        <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.04, 0.055, 32]} />
-            <meshBasicMaterial
-                color="#5180C1"
-                transparent
-                opacity={0.9}
-                side={THREE.DoubleSide}
-            />
-        </mesh>
     );
 }
 

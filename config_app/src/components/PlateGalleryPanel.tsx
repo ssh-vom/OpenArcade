@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PLATES, getPlateId } from "../lib/plateCatalog";
+import { PLATES, getPlateId } from "../domain/plate";
 import PlateTopPreview from "./PlateTopPreview";
 
 function PlateCard({ plate, isSelected, isLoading, onClick, staggerIndex = 0 }) {
