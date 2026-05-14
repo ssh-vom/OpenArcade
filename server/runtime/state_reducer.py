@@ -28,7 +28,7 @@ class StateReducer:
             for device_id, device_mapping in (mapping_cache or {}).items()
         }
         self._device_states: dict[str, int] = {}
-        self._device_active_outputs: dict[str, set[int | str]] = {}
+        self._device_output_counts: dict[str, dict[int | str, int]] = {}
         self._active_counts: dict[int | str, int] = {}
         self._mode: HIDMode = mode
 
@@ -53,10 +53,11 @@ class StateReducer:
         return self.build_report()
 
     def update_device_state(self, device_id: str, state: int) -> bytes | None:
-        if self._device_states.get(device_id) == state:
+        old_state = self._device_states.get(device_id)
+        if old_state == state:
             return None
         self._device_states[device_id] = state
-        self._update_device_active_outputs(device_id)
+        self._update_device_active_outputs(device_id, old_state or 0, state)
         return self.build_report()
 
     def remove_device_state(self, device_id: str) -> bytes | None:
@@ -73,75 +74,86 @@ class StateReducer:
             return self._build_switch_hori_report()
         return self._build_gamepad_pc_report()
 
-    def _outputs_for_device_state(self, device_id: str, state: int) -> set[int | str]:
-        outputs: set[int | str] = set()
-        default_mapping: Mapping[int, int | str]
-        if self._mode == "keyboard":
-            default_mapping = DEFAULT_MAPPING
-        else:
-            default_mapping = DEFAULT_GAMEPAD_MAPPING
+    def _default_mapping(self) -> Mapping[int, int | str]:
+        return DEFAULT_MAPPING if self._mode == "keyboard" else DEFAULT_GAMEPAD_MAPPING
 
-        mapping = self._mapping_cache.get(device_id, default_mapping)
-        for bit_index, output in mapping.items():
-            if (state >> bit_index) & 1:
-                if self._mode == "keyboard" and isinstance(output, int):
-                    outputs.add(output)
-                elif self._mode != "keyboard" and isinstance(output, str):
-                    outputs.add(output)
-        return outputs
-
-    def _apply_output_delta(
+    def _device_output_counts_for_state(
         self,
-        previous_outputs: set[int | str],
-        new_outputs: set[int | str],
-    ) -> None:
-        for output in previous_outputs - new_outputs:
-            count = self._active_counts.get(output, 0)
-            if count <= 1:
-                self._active_counts.pop(output, None)
-            else:
-                self._active_counts[output] = count - 1
+        device_id: str,
+        state: int,
+    ) -> dict[int | str, int]:
+        mapping = self._mapping_cache.get(device_id, self._default_mapping())
+        output_counts: dict[int | str, int] = {}
+        remaining = state
 
-        for output in new_outputs - previous_outputs:
-            self._active_counts[output] = self._active_counts.get(output, 0) + 1
+        while remaining:
+            lsb = remaining & -remaining
+            bit_index = lsb.bit_length() - 1
+            output = mapping.get(bit_index)
+            if output is not None:
+                output_counts[output] = output_counts.get(output, 0) + 1
+            remaining ^= lsb
 
-    def _update_device_active_outputs(self, device_id: str) -> None:
-        state = self._device_states.get(device_id, 0)
-        previous_outputs = self._device_active_outputs.get(device_id, set())
-        new_outputs = self._outputs_for_device_state(device_id, state)
-        self._apply_output_delta(previous_outputs, new_outputs)
-        if new_outputs:
-            self._device_active_outputs[device_id] = new_outputs
+        return output_counts
+
+    def _decrement_active_output(self, output: int | str) -> None:
+        count = self._active_counts.get(output, 0)
+        if count <= 1:
+            self._active_counts.pop(output, None)
         else:
-            self._device_active_outputs.pop(device_id, None)
+            self._active_counts[output] = count - 1
+
+    def _update_device_active_outputs(self, device_id: str, old_state: int, new_state: int) -> None:
+        mapping = self._mapping_cache.get(device_id, self._default_mapping())
+        device_counts = self._device_output_counts.get(device_id, {})
+        changed = old_state ^ new_state
+
+        while changed:
+            bit = changed & -changed
+            bit_index = bit.bit_length() - 1
+            output = mapping.get(bit_index)
+            if output is not None:
+                previous_count = device_counts.get(output, 0)
+                if new_state & bit:
+                    new_count = previous_count + 1
+                    device_counts[output] = new_count
+                    if previous_count == 0:
+                        self._active_counts[output] = self._active_counts.get(output, 0) + 1
+                else:
+                    new_count = previous_count - 1
+                    if new_count <= 0:
+                        device_counts.pop(output, None)
+                        if previous_count > 0:
+                            self._decrement_active_output(output)
+                    else:
+                        device_counts[output] = new_count
+            changed ^= bit
+
+        if device_counts:
+            self._device_output_counts[device_id] = device_counts
+        else:
+            self._device_output_counts.pop(device_id, None)
 
     def _remove_device_active_outputs(self, device_id: str) -> None:
-        previous_outputs = self._device_active_outputs.pop(device_id, set())
-        self._apply_output_delta(previous_outputs, set())
+        previous_counts = self._device_output_counts.pop(device_id, {})
+        for output in previous_counts:
+            self._decrement_active_output(output)
 
     def _rebuild_active_outputs(self) -> None:
-        self._device_active_outputs = {}
+        self._device_output_counts = {}
         self._active_counts = {}
         for device_id, state in self._device_states.items():
-            outputs = self._outputs_for_device_state(device_id, state)
-            if outputs:
-                self._device_active_outputs[device_id] = outputs
-                for output in outputs:
+            counts = self._device_output_counts_for_state(device_id, state)
+            if counts:
+                self._device_output_counts[device_id] = counts
+                for output in counts:
                     self._active_counts[output] = self._active_counts.get(output, 0) + 1
 
     def _build_keyboard_report(self) -> bytes:
-        active_keys = {
-            output for output in self._active_counts if isinstance(output, int)
-        }
-        return build_keyboard_report(active_keys)
-
-    def _collect_active_inputs(self) -> set[str]:
-        return {
-            output for output in self._active_counts if isinstance(output, str)
-        }
+        return build_keyboard_report(self._active_counts.keys())
 
     def _build_gamepad_pc_report(self) -> bytes:
-        return build_gamepad_pc_report(self._collect_active_inputs())
+        return build_gamepad_pc_report(self._active_counts.keys())
 
     def _build_switch_hori_report(self) -> bytes:
-        return build_gamepad_switch_hori_report(self._collect_active_inputs())
+        return build_gamepad_switch_hori_report(self._active_counts.keys())

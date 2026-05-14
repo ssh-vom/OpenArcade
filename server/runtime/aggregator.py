@@ -125,9 +125,8 @@ def aggregator_process(
                 report_published_at.value = published_at
 
         # Increment version and signal writer
-        with report_version.get_lock():
-            report_version.value += 1
-            version = report_version.value
+        report_version.value += 1
+        version = report_version.value
         report_event.set()
 
         if SWITCH_TIMING_DEBUG and current_mode == "gamepad_switch_hori":

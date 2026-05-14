@@ -107,8 +107,7 @@ def make_reducer(mode: str) -> tuple[StateReducer, list[str]]:
 def publish_report(mailbox: PublishMailbox, report: bytes) -> None:
     for i, value in enumerate(report):
         mailbox.report_array[i] = value
-    with mailbox.report_version.get_lock():
-        mailbox.report_version.value += 1
+    mailbox.report_version.value += 1
     mailbox.report_event.set()
 
 
