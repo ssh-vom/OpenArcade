@@ -112,14 +112,17 @@ def aggregator_process(
             return
         last_published_report = report
 
-        published_at = time.perf_counter()
+        published_at = 0.0
+        if SWITCH_TIMING_DEBUG:
+            published_at = time.perf_counter()
 
-        # Write to shared memory and clear any trailing bytes from a prior report.
-        for i in range(len(report_array)):
-            report_array[i] = report[i] if i < len(report) else 0
+        # Write only the active report bytes; the writer trims by mode.
+        for i, value in enumerate(report):
+            report_array[i] = value
 
-        with report_published_at.get_lock():
-            report_published_at.value = published_at
+        if SWITCH_TIMING_DEBUG:
+            with report_published_at.get_lock():
+                report_published_at.value = published_at
 
         # Increment version and signal writer
         with report_version.get_lock():
@@ -317,8 +320,9 @@ def aggregator_process(
             if device_states.get(address) == state:
                 return
             last_input_event_at = time.perf_counter()
-            with last_input_event_shared.get_lock():
-                last_input_event_shared.value = last_input_event_at
+            if SWITCH_TIMING_DEBUG:
+                with last_input_event_shared.get_lock():
+                    last_input_event_shared.value = last_input_event_at
             device_states[address] = state
             update_live_state(address, state)
             reduce_started_at = time.perf_counter()

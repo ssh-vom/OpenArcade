@@ -58,16 +58,12 @@ class PublishMailbox:
     __slots__ = (
         "report_array",
         "report_version",
-        "last_input_event_at",
-        "report_published_at",
         "report_event",
     )
 
     def __init__(self) -> None:
         self.report_array = multiprocessing.Array("B", 64, lock=False)
         self.report_version = multiprocessing.Value("i", 0, lock=True)
-        self.last_input_event_at = multiprocessing.Value("d", 0.0, lock=True)
-        self.report_published_at = multiprocessing.Value("d", 0.0, lock=True)
         self.report_event = multiprocessing.Event()
 
 
@@ -109,11 +105,8 @@ def make_reducer(mode: str) -> tuple[StateReducer, list[str]]:
 
 
 def publish_report(mailbox: PublishMailbox, report: bytes) -> None:
-    for i in range(len(mailbox.report_array)):
-        mailbox.report_array[i] = report[i] if i < len(report) else 0
-    published_at = time.perf_counter()
-    with mailbox.report_published_at.get_lock():
-        mailbox.report_published_at.value = published_at
+    for i, value in enumerate(report):
+        mailbox.report_array[i] = value
     with mailbox.report_version.get_lock():
         mailbox.report_version.value += 1
     mailbox.report_event.set()

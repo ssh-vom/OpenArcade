@@ -83,6 +83,7 @@ def hid_writer_process(
     last_input_event_shared = mailbox["last_input_event_at"]
     report_published_at = mailbox["report_published_at"]
     report_event = mailbox["report_event"]
+    report_length = REPORT_LENGTH_BY_MODE[current_mode]
 
     hid_mode_state = HIDModeState()
     gadget_state = GadgetState()
@@ -325,6 +326,7 @@ def hid_writer_process(
                     )
                     close_all_devices()
                     current_mode = new_mode
+                    report_length = REPORT_LENGTH_BY_MODE[current_mode]
                     current_report = _neutral_report_for_mode(current_mode)
                     pending_report = current_report
                     current_report_version = 0
@@ -345,7 +347,7 @@ def hid_writer_process(
         new_report_available = current_version != last_seen_version
         if new_report_available:
             last_seen_version = current_version
-            current_report = bytes(report_array)
+            current_report = bytes(report_array[:report_length])
             current_report_version = current_version
             pending_report = current_report
 
