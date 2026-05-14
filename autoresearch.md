@@ -4,8 +4,8 @@
 Reduce the latency of the server-side input-to-HID pipeline in `server/`, especially the hot path that handles BLE notifications, reduces controller state, builds HID reports, and wakes the HID writer.
 
 ## Metrics
-- **Primary**: `hot_path_us` (µs, lower is better) — median latency of the state-reducer/report-building hot path
-- **Secondary**: `keyboard_update_us`, `gamepad_update_us`, `switch_update_us`, `mapping_cache_us`
+- **Primary**: `input_to_publish_us` (µs, lower is better) — median latency from state update through report publication
+- **Secondary**: `reduce_us`, `publish_us`, `keyboard_update_us`, `gamepad_update_us`, `switch_update_us`, `mapping_cache_us`
 
 ## How to Run
 `./autoresearch.sh` — outputs `METRIC name=value` lines.
