@@ -1,26 +1,39 @@
+# local secrets/config
+*.env
+**/.env
+!packaging/rpi/openarcade.env.example
+server/config.json
+
+# Python/cache
+**/__pycache__/
+*.py[cod]
+.ruff_cache/
+**/.cache/
+
+# JS/build output
+node_modules/
+**/node_modules/
+**/dist/
+**/.astro/
+
+# Firmware build/vendor output
+**/build/
+firmware/esp32/managed_components/
+sdkconfig.*
+
+# Generated source
+config_app/src/generated/
+
+# LaTeX build output
 *.aux
 *.bbl
 *.bcf
-*.bcf
 *.blg
-*.fls
-*.env
-!packaging/rpi/openarcade.env.example
 *.fdb_latexmk
-sdkconfig.*
-**.aux
-**.bbl
-**.bcf
-**.bcf
-**.blg
-**.fls
-**.fdb_latexmk
-**.env
-!packaging/rpi/openarcade.env.example
-**/build/
-**/__pycache__/
-*.cache
-node_modules/
-node_modules
-server/config.json
-
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*-SAVE-ERROR

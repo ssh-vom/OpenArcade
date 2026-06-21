@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "source": {},
+  "comments": [
+    {
+      "path": "autoresearch.sh",
+      "body": "test",
+      "line": 108,
+      "side": "RIGHT"
+    },
+    {
+      "path": "autoresearch.sh",
+      "body": "Demo comment from pi: I can place and edit review comments.",
+      "line": 108,
+      "side": "RIGHT"
+    }
+  ]
+}

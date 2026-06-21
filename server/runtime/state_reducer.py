@@ -31,6 +31,11 @@ class StateReducer:
         self._device_output_counts: dict[str, dict[int | str, int]] = {}
         self._active_counts: dict[int | str, int] = {}
         self._mode: HIDMode = mode
+        # The built report depends only on the active-output *set membership*.
+        # Cache it and rebuild lazily, so state changes that only adjust counts
+        # (e.g. a second controller pressing an already-held output) reuse it.
+        self._cached_report: bytes | None = None
+        self._report_dirty = True
 
     def set_mode(self, mode: HIDMode) -> bytes:
         if mode == self._mode:
@@ -38,9 +43,6 @@ class StateReducer:
         self._mode = mode
         self._rebuild_active_outputs()
         return self.build_report()
-
-    def get_mode(self) -> HIDMode:
-        return self._mode
 
     def set_mapping_cache(
         self, mapping_cache: Mapping[str, Mapping[int, int | str]]
@@ -58,6 +60,10 @@ class StateReducer:
             return None
         self._device_states[device_id] = state
         self._update_device_active_outputs(device_id, old_state or 0, state)
+        # If the active-output set membership did not change, the report is
+        # byte-identical to the last one; skip the rebuild and the publish.
+        if not self._report_dirty:
+            return None
         return self.build_report()
 
     def remove_device_state(self, device_id: str) -> bytes | None:
@@ -68,11 +74,18 @@ class StateReducer:
         return self.build_report()
 
     def build_report(self) -> bytes:
+        cached = self._cached_report
+        if not self._report_dirty and cached is not None:
+            return cached
         if self._mode == "keyboard":
-            return self._build_keyboard_report()
-        if self._mode == "gamepad_switch_hori":
-            return self._build_switch_hori_report()
-        return self._build_gamepad_pc_report()
+            report = self._build_keyboard_report()
+        elif self._mode == "gamepad_switch_hori":
+            report = self._build_switch_hori_report()
+        else:
+            report = self._build_gamepad_pc_report()
+        self._cached_report = report
+        self._report_dirty = False
+        return report
 
     def _default_mapping(self) -> Mapping[int, int | str]:
         return DEFAULT_MAPPING if self._mode == "keyboard" else DEFAULT_GAMEPAD_MAPPING
@@ -99,7 +112,8 @@ class StateReducer:
     def _decrement_active_output(self, output: int | str) -> None:
         count = self._active_counts.get(output, 0)
         if count <= 1:
-            self._active_counts.pop(output, None)
+            if self._active_counts.pop(output, None) is not None:
+                self._report_dirty = True
         else:
             self._active_counts[output] = count - 1
 
@@ -118,7 +132,10 @@ class StateReducer:
                     new_count = previous_count + 1
                     device_counts[output] = new_count
                     if previous_count == 0:
-                        self._active_counts[output] = self._active_counts.get(output, 0) + 1
+                        global_count = self._active_counts.get(output, 0)
+                        self._active_counts[output] = global_count + 1
+                        if global_count == 0:
+                            self._report_dirty = True
                 else:
                     new_count = previous_count - 1
                     if new_count <= 0:
@@ -140,6 +157,7 @@ class StateReducer:
             self._decrement_active_output(output)
 
     def _rebuild_active_outputs(self) -> None:
+        self._report_dirty = True
         self._device_output_counts = {}
         self._active_counts = {}
         for device_id, state in self._device_states.items():

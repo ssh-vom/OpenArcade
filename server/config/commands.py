@@ -254,7 +254,7 @@ def _handle_get_live_state(
     if not isinstance(raw_state, int):
         raw_state = 0
 
-    controls_by_bit_index, _controls_by_id = build_control_maps(device)
+    controls_by_bit_index = build_control_maps(device)
     pressed_bits = [
         bit_index
         for bit_index in sorted(controls_by_bit_index)

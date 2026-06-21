@@ -48,20 +48,15 @@ def get_device_controls(
 def build_control_maps(
     device_config: Mapping[str, Any],
     default_controls: Sequence[Mapping[str, Any]] | None = None,
-) -> tuple[dict[int, Mapping[str, Any]], dict[str, Mapping[str, Any]]]:
+) -> dict[int, Mapping[str, Any]]:
     controls_by_bit_index: dict[int, Mapping[str, Any]] = {}
-    controls_by_id: dict[str, Mapping[str, Any]] = {}
 
     for control in get_device_controls(device_config, default_controls):
         bit_index = control.get("bit_index")
         if isinstance(bit_index, int):
             controls_by_bit_index[bit_index] = control
 
-        control_id = control.get("id")
-        if control_id is not None:
-            controls_by_id[str(control_id)] = control
-
-    return controls_by_bit_index, controls_by_id
+    return controls_by_bit_index
 
 
 def get_pressed_control_ids(
@@ -69,10 +64,7 @@ def get_pressed_control_ids(
     state: int,
     default_controls: Sequence[Mapping[str, Any]] | None = None,
 ) -> list[str]:
-    controls_by_bit_index, _controls_by_id = build_control_maps(
-        device_config,
-        default_controls,
-    )
+    controls_by_bit_index = build_control_maps(device_config, default_controls)
     pressed_control_ids: list[str] = []
 
     for bit_index in sorted(controls_by_bit_index):
@@ -286,34 +278,25 @@ def _apply_axis_inputs(
     return axes
 
 
-def _resolve_hat_value(
-    directions: set[int],
-    up: int,
-    right: int,
-    down: int,
-    left: int,
-    up_right: int,
-    down_right: int,
-    down_left: int,
-    up_left: int,
-    centered: int,
-) -> int:
+def _resolve_hat_value(directions: set[int], hat: Sequence[int]) -> int:
+    # hat = (up, right, down, left, up_right, down_right, down_left, up_left, center)
     if not directions:
-        return centered
+        return hat[8]
 
+    up, right, down, left = hat[0], hat[1], hat[2], hat[3]
     has_up = up in directions
     has_down = down in directions
     has_left = left in directions
     has_right = right in directions
 
     if has_up and has_right:
-        return up_right
+        return hat[4]
     if has_down and has_right:
-        return down_right
+        return hat[5]
     if has_down and has_left:
-        return down_left
+        return hat[6]
     if has_up and has_left:
-        return up_left
+        return hat[7]
     if has_up:
         return up
     if has_down:
@@ -322,103 +305,67 @@ def _resolve_hat_value(
         return left
     if has_right:
         return right
-    return centered
+    return hat[8]
+
+
+# (input_map, axis_neutral, axis_min, axis_max, hat_codes, vendor_byte)
+# hat_codes = (up, right, down, left, up_right, down_right, down_left, up_left, center)
+_GamepadProfile = tuple[Mapping[str, tuple[str, Any]], int, int, int, tuple[int, ...], int]
+
+_GAMEPAD_PC_PROFILE: _GamepadProfile = (
+    GAMEPAD_INPUT_MAP,
+    const.GP_AXIS_NEUTRAL, const.GP_AXIS_MIN, const.GP_AXIS_MAX,
+    (const.GP_DPAD_UP, const.GP_DPAD_RIGHT, const.GP_DPAD_DOWN, const.GP_DPAD_LEFT,
+     const.GP_DPAD_UP_RIGHT, const.GP_DPAD_DOWN_RIGHT, const.GP_DPAD_DOWN_LEFT,
+     const.GP_DPAD_UP_LEFT, const.GP_DPAD_CENTER),
+    0x00,
+)
+_GAMEPAD_SWITCH_HORI_PROFILE: _GamepadProfile = (
+    SWITCH_HORI_INPUT_MAP,
+    const.SW_HORI_AXIS_NEUTRAL, const.SW_HORI_AXIS_MIN, const.SW_HORI_AXIS_MAX,
+    (const.SW_HORI_HAT_UP, const.SW_HORI_HAT_RIGHT, const.SW_HORI_HAT_DOWN, const.SW_HORI_HAT_LEFT,
+     const.SW_HORI_HAT_UP_RIGHT, const.SW_HORI_HAT_DOWN_RIGHT, const.SW_HORI_HAT_DOWN_LEFT,
+     const.SW_HORI_HAT_UP_LEFT, const.SW_HORI_HAT_CENTER),
+    const.SW_HORI_VENDOR_BYTE_DEFAULT,
+)
+
+
+def _build_gamepad_report(active_inputs: Iterable[str], profile: _GamepadProfile) -> bytes:
+    input_map, neutral, axis_min, axis_max, hat, vendor_byte = profile
+    normalized_inputs = {name for name in active_inputs if isinstance(name, str)}
+
+    buttons = 0
+    dpad_directions: set[int] = set()
+    axes = _apply_axis_inputs(normalized_inputs, input_map, neutral, axis_min, axis_max)
+
+    for input_name in normalized_inputs:
+        mapping = input_map.get(input_name)
+        if mapping is None:
+            continue
+        input_type, value = mapping
+        if input_type == "button":
+            buttons |= 1 << value
+        elif input_type == "dpad":
+            dpad_directions.add(value)
+
+    report = bytearray(8)
+    report[0] = buttons & 0xFF
+    report[1] = (buttons >> 8) & 0xFF
+    report[2] = _resolve_hat_value(dpad_directions, hat)
+    report[3] = axes["lx"]
+    report[4] = axes["ly"]
+    report[5] = axes["rx"]
+    report[6] = axes["ry"]
+    report[7] = vendor_byte
+    return bytes(report)
 
 
 def build_gamepad_pc_report(active_inputs: Iterable[str]) -> bytes:
-    report = bytearray(8)
-    normalized_inputs = {input_name for input_name in active_inputs if isinstance(input_name, str)}
-
-    buttons = 0
-    dpad_directions: set[int] = set()
-    axes = _apply_axis_inputs(
-        normalized_inputs,
-        GAMEPAD_INPUT_MAP,
-        neutral=const.GP_AXIS_NEUTRAL,
-        minimum=const.GP_AXIS_MIN,
-        maximum=const.GP_AXIS_MAX,
-    )
-
-    for input_name in normalized_inputs:
-        mapping = GAMEPAD_INPUT_MAP.get(input_name)
-        if mapping is None:
-            continue
-        input_type, value = mapping
-        if input_type == "button":
-            buttons |= 1 << value
-        elif input_type == "dpad":
-            dpad_directions.add(value)
-
-    dpad_value = _resolve_hat_value(
-        dpad_directions,
-        up=const.GP_DPAD_UP,
-        right=const.GP_DPAD_RIGHT,
-        down=const.GP_DPAD_DOWN,
-        left=const.GP_DPAD_LEFT,
-        up_right=const.GP_DPAD_UP_RIGHT,
-        down_right=const.GP_DPAD_DOWN_RIGHT,
-        down_left=const.GP_DPAD_DOWN_LEFT,
-        up_left=const.GP_DPAD_UP_LEFT,
-        centered=const.GP_DPAD_CENTER,
-    )
-
-    report[0] = buttons & 0xFF
-    report[1] = (buttons >> 8) & 0xFF
-    report[2] = dpad_value
-    report[3] = axes["lx"]
-    report[4] = axes["ly"]
-    report[5] = axes["rx"]
-    report[6] = axes["ry"]
-    report[7] = 0x00
-    return bytes(report)
+    return _build_gamepad_report(active_inputs, _GAMEPAD_PC_PROFILE)
 
 
 def build_gamepad_switch_hori_report(active_inputs: Iterable[str]) -> bytes:
-    report = bytearray(8)
-    normalized_inputs = {input_name for input_name in active_inputs if isinstance(input_name, str)}
-
-    buttons = 0
-    dpad_directions: set[int] = set()
-    axes = _apply_axis_inputs(
-        normalized_inputs,
-        SWITCH_HORI_INPUT_MAP,
-        neutral=const.SW_HORI_AXIS_NEUTRAL,
-        minimum=const.SW_HORI_AXIS_MIN,
-        maximum=const.SW_HORI_AXIS_MAX,
-    )
-
-    for input_name in normalized_inputs:
-        mapping = SWITCH_HORI_INPUT_MAP.get(input_name)
-        if mapping is None:
-            continue
-        input_type, value = mapping
-        if input_type == "button":
-            buttons |= 1 << value
-        elif input_type == "dpad":
-            dpad_directions.add(value)
-
-    dpad_value = _resolve_hat_value(
-        dpad_directions,
-        up=const.SW_HORI_HAT_UP,
-        right=const.SW_HORI_HAT_RIGHT,
-        down=const.SW_HORI_HAT_DOWN,
-        left=const.SW_HORI_HAT_LEFT,
-        up_right=const.SW_HORI_HAT_UP_RIGHT,
-        down_right=const.SW_HORI_HAT_DOWN_RIGHT,
-        down_left=const.SW_HORI_HAT_DOWN_LEFT,
-        up_left=const.SW_HORI_HAT_UP_LEFT,
-        centered=const.SW_HORI_HAT_CENTER,
-    )
-
-    report[0] = buttons & 0xFF
-    report[1] = (buttons >> 8) & 0xFF
-    report[2] = dpad_value
-    report[3] = axes["lx"]
-    report[4] = axes["ly"]
-    report[5] = axes["rx"]
-    report[6] = axes["ry"]
-    report[7] = const.SW_HORI_VENDOR_BYTE_DEFAULT
-    return bytes(report)
+    return _build_gamepad_report(active_inputs, _GAMEPAD_SWITCH_HORI_PROFILE)
 
 
 

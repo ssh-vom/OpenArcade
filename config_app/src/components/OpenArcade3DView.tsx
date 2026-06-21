@@ -8,11 +8,10 @@ import { useCameraController, useOpenArcade } from "../hooks";
 import HIDButtonMappingModal from "./HIDButtonMappingModal";
 import D2ConfigPanel from "./D2ConfigPanel";
 import ProfilesPanel from "./ProfilesPanel";
-import LiveInputPanel from "./LiveInputPanel";
 import ControllerHUD from "./ControllerHUD";
 import { DEFAULT_LAYOUT } from "../domain/hid/input-resolver";
 import { HID_INPUT_TYPES } from "../constants";
-import { MappingsIcon, ProfilesIcon, LiveInputIcon } from "./icons";
+import { MappingsIcon, ProfilesIcon } from "./icons";
 import type { IConfigClient, MappingConfig } from "@/types";
 import type { ModuleState } from "../hooks";
 
@@ -177,7 +176,6 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
     const navItems = [
         { id: "mappings", label: "Mappings", Icon: MappingsIcon },
         { id: "profiles", label: "Profiles", Icon: ProfilesIcon },
-        { id: "live", label: "Live Input", Icon: LiveInputIcon },
     ];
 
     const showMappingsView = activeSection === "mappings";
@@ -438,16 +436,7 @@ const OpenArcade3DView = memo(function OpenArcade3DView({
                             onSwitch={toggleViewMode}
                         />
                     )
-                ) : (
-                    viewMode === '2d' ? (
-                        <LiveInputPanel />
-                    ) : (
-                        <SwitchTo2DNotice
-                            message="Live Input is available in 2D view"
-                            onSwitch={toggleViewMode}
-                        />
-                    )
-                )}
+                ) : null}
             </div>
             
             {selectedButton && (

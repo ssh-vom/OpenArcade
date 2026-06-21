@@ -16,15 +16,13 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@shared/*": ["../shared/*"],
-      "@generated/*": ["./src/generated/*"]
+      "@shared/*": ["../shared/*"]
     },
     "types": ["vite/client"]
   },
   "include": [
     "src/constants",
     "src/domain",
-    "src/generated",
     "src/services/config-client",
     "src/types",
     "src/utils"

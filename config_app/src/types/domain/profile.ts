@@ -1,4 +1,4 @@
-import type { PlateId } from '@generated/plate-catalog';
+import type { PlateId } from '@/domain/plate';
 
 export type EditingMode = 'keyboard' | 'gamepad_pc' | 'gamepad_switch_hori' | 'gamepad';
 

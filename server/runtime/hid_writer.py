@@ -79,11 +79,9 @@ def hid_writer_process(
     logger.info("HID Writer Process Started on core %d", cpu_core)
 
     report_array = mailbox["report_array"]
-    report_version = mailbox["report_version"]
     last_input_event_shared = mailbox["last_input_event_at"]
     report_published_at = mailbox["report_published_at"]
     report_event = mailbox["report_event"]
-    report_length = REPORT_LENGTH_BY_MODE[current_mode]
 
     hid_mode_state = HIDModeState()
     gadget_state = GadgetState()
@@ -95,10 +93,10 @@ def hid_writer_process(
     opened_devices: dict[str, Any] = {}
     current_device = None
     current_device_path: str | None = None
-    last_seen_version = 0
     pending_report: bytes | None = None
     last_opened_mode: HIDMode | None = None
     current_report: bytes = _neutral_report_for_mode(current_mode)
+    report_length = REPORT_LENGTH_BY_MODE[current_mode]
     last_write_at = 0.0
     last_mode_check_at = 0.0
     last_gadget_state_check_at = 0.0
@@ -111,8 +109,6 @@ def hid_writer_process(
     writer_debug_publish_to_write_max_ms = 0.0
     writer_debug_input_to_write_total_ms = 0.0
     writer_debug_input_to_write_max_ms = 0.0
-    current_report_version = 0
-    last_written_report_version = 0
     next_switch_refresh_at = time.monotonic()
 
     def close_all_devices() -> None:

@@ -58,7 +58,6 @@ def aggregator_process(
     logger.info("Aggregator Process Started on core %d", cpu_core)
 
     report_array = mailbox["report_array"]
-    report_version = mailbox["report_version"]
     last_input_event_shared = mailbox["last_input_event_at"]
     report_published_at = mailbox["report_published_at"]
     report_event = mailbox["report_event"]
@@ -81,6 +80,7 @@ def aggregator_process(
     agg_debug_reduce_max_ms = 0.0
     agg_debug_input_to_publish_total_ms = 0.0
     agg_debug_input_to_publish_max_ms = 0.0
+    agg_publish_sequence = 0
     scan_until = time.monotonic() + CONNECTED_SCAN_SETTLE_SECONDS
     next_background_scan_at = scan_until + BACKGROUND_SCAN_INTERVAL_SECONDS
 
@@ -124,15 +124,13 @@ def aggregator_process(
             with report_published_at.get_lock():
                 report_published_at.value = published_at
 
-        # Increment version and signal writer
-        report_version.value += 1
-        version = report_version.value
         report_event.set()
 
         if SWITCH_TIMING_DEBUG and current_mode == "gamepad_switch_hori":
-            nonlocal agg_debug_last_log_at, agg_debug_samples
+            nonlocal agg_debug_last_log_at, agg_debug_samples, agg_publish_sequence
             nonlocal agg_debug_reduce_total_ms, agg_debug_reduce_max_ms
             nonlocal agg_debug_input_to_publish_total_ms, agg_debug_input_to_publish_max_ms
+            agg_publish_sequence += 1
             latency_ms = 0.0
             if last_input_event_at > 0:
                 latency_ms = (published_at - last_input_event_at) * 1000.0
@@ -150,13 +148,13 @@ def aggregator_process(
                     if agg_debug_samples else 0.0
                 )
                 logger.info(
-                    "[SWITCH_TIMING][AGG] samples=%s avg_reduce_ms=%.3f max_reduce_ms=%.3f avg_input_to_publish_ms=%.3f max_input_to_publish_ms=%.3f last_version=%s last_report=%s",
+                    "[SWITCH_TIMING][AGG] samples=%s avg_reduce_ms=%.3f max_reduce_ms=%.3f avg_input_to_publish_ms=%.3f max_input_to_publish_ms=%.3f last_sequence=%s last_report=%s",
                     agg_debug_samples,
                     avg_reduce_ms,
                     agg_debug_reduce_max_ms,
                     avg_input_to_publish_ms,
                     agg_debug_input_to_publish_max_ms,
-                    version,
+                    agg_publish_sequence,
                     report[:8].hex(),
                 )
                 agg_debug_last_log_at = now

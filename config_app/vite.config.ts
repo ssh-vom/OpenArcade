@@ -12,7 +12,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@generated': resolve(__dirname, 'src/generated'),
       '@shared': resolve(repoRoot, 'shared'),
     },
   },

@@ -1,12 +1,26 @@
-import {
-  PLATES,
-  DEFAULT_PLATE_ID,
-  PLATE_CATALOG,
-  type Plate,
-  type PlateId,
-} from '@generated/plate-catalog';
+import plateCatalog from '@shared/plate_catalog.json';
 
-export { PLATES, DEFAULT_PLATE_ID, PLATE_CATALOG };
+export type PlateId = string;
+
+export interface Plate {
+  id: PlateId;
+  name: string;
+  description?: string;
+  plate_model: string;
+  controller_model: string;
+  accent_color?: string;
+  top_plate_preview?: string;
+  legacy_ids?: string[];
+}
+
+export interface PlateCatalog {
+  version: number;
+  plates: Plate[];
+}
+
+export const PLATE_CATALOG = plateCatalog as PlateCatalog;
+export const PLATES = PLATE_CATALOG.plates;
+export const DEFAULT_PLATE_ID: PlateId = PLATES[0]?.id ?? 'button-module-v1';
 
 export const FALLBACK_PLATE_PREVIEW = '/logos/oa_block.png';
 
@@ -43,7 +57,7 @@ export function getPlate(plateId?: string | null): Plate | null {
 }
 
 export function getPlateId(plateId?: string | null): PlateId {
-  return (getPlate(plateId)?.id || DEFAULT_PLATE_ID) as PlateId;
+  return getPlate(plateId)?.id || DEFAULT_PLATE_ID;
 }
 
 export function getPlateName(plateId?: string | null): string {

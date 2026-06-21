@@ -7,8 +7,7 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro",
-    "postinstall": "patch-package"
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.32.0",
@@ -17,7 +16,6 @@
   },
   "devDependencies": {
     "@fontsource/jetbrains-mono": "^5.0.0",
-    "@fontsource/newsreader": "^5.0.0",
-    "patch-package": "^8.0.1"
+    "@fontsource/newsreader": "^5.0.0"
   }
 }

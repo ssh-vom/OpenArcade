@@ -1,7 +1,7 @@
 import type { DeviceConfig } from '../domain/device';
 import type { Profile, EditingMode } from '../domain/profile';
 import type { MappingValue } from '../domain/mapping';
-import type { PlateId } from '@generated/plate-catalog';
+import type { PlateId } from '@/domain/plate';
 import type { LiveState } from '../hardware/protocol';
 
 export interface IConfigClient {

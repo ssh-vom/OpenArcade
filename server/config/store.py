@@ -310,18 +310,6 @@ class DeviceConfigStore:
                 if isinstance(profile, dict)
             ]
 
-    def get_active_profile(self, device_id: str) -> dict[str, Any] | None:
-        with self._lock:
-            device = self._data.get("devices", {}).get(device_id)
-            if not isinstance(device, dict):
-                return None
-            self._migrate_device_locked(device_id, device)
-            profile_id = device.get("active_profile")
-            if not isinstance(profile_id, str):
-                return None
-            profile = device.get("profiles", {}).get(profile_id)
-            return deepcopy(profile) if isinstance(profile, dict) else None
-
     def create_profile(
         self, device_id: str, name: str, plate_id: str
     ) -> dict[str, Any]:

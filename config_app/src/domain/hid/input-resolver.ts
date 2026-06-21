@@ -1,4 +1,4 @@
-import { INPUT_SCHEMA } from '@generated/input-schema';
+import inputSchema from '@shared/input_schema.json';
 import { HID_INPUT_TYPES } from '@/constants';
 import type { InputType } from '@/types';
 
@@ -10,8 +10,26 @@ export interface InputOption {
   type?: 'bidirectional' | 'unidirectional';
 }
 
+interface InputConfig {
+  label: string;
+  category?: string;
+  keycode?: string;
+  isAnalog?: boolean;
+  type?: 'bidirectional' | 'unidirectional';
+}
+
+interface InputSchema {
+  version: number;
+  default_layout: Record<string, string>;
+  default_mapping: Record<string, string>;
+  keyboard: { inputs: Record<string, InputConfig> };
+  gamepad: { inputs: Record<string, InputConfig> };
+  analog: { inputs: Record<string, InputConfig> };
+}
+
 export { HID_INPUT_TYPES };
 
+export const INPUT_SCHEMA = inputSchema as InputSchema;
 export const DEFAULT_LAYOUT = INPUT_SCHEMA.default_layout || {};
 export const DEFAULT_MAPPING = INPUT_SCHEMA.default_mapping || {};
 
@@ -30,7 +48,7 @@ export function getKeycodeForInput(inputValue: string): string | null {
     return null;
   }
 
-  return (KEYBOARD_INPUTS as Record<string, { keycode?: string }>)[inputValue]?.keycode || null;
+  return KEYBOARD_INPUTS[inputValue]?.keycode || null;
 }
 
 export function getInputForKeycode(keycodeName: string): string | null {
@@ -71,11 +89,11 @@ export function getInputOptions(type: InputType): InputOption[] {
 export function getInputLabel(type: InputType, input: string): string {
   switch (type) {
     case HID_INPUT_TYPES.GAMEPAD:
-      return (GAMEPAD_INPUTS as Record<string, { label?: string }>)[input]?.label || input;
+      return GAMEPAD_INPUTS[input]?.label || input;
     case HID_INPUT_TYPES.KEYBOARD:
-      return (KEYBOARD_INPUTS as Record<string, { label?: string }>)[input]?.label || input;
+      return KEYBOARD_INPUTS[input]?.label || input;
     case HID_INPUT_TYPES.ANALOG:
-      return (ANALOG_INPUTS as Record<string, { label?: string }>)[input]?.label || input;
+      return ANALOG_INPUTS[input]?.label || input;
     default:
       return input;
   }

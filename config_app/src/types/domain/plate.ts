@@ -1,4 +1,4 @@
-import type { PlateId } from '@generated/plate-catalog';
+import type { PlateId } from '@/domain/plate';
 import type { ButtonMapping } from './mapping';
 
 export type PositionTuple = [number, number, number];

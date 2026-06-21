@@ -198,8 +198,3 @@ class StateManager(ABC):
                     self._write_state(state)
                     self._cache = state
                 return dict(state)
-
-    def get_sequence(self, use_cache: bool = False) -> int:
-        """Get the current sequence number."""
-        state = self.load(use_cache=use_cache)
-        return state.get("sequence", 0)
