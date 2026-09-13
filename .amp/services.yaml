@@ -1,6 +1,8 @@
 services:
   configurator:
-    command: npm run dev -- --host 0.0.0.0 --port "$PORT"
+    command: >-
+      npm run build -- --mode development --outDir build/orb &&
+      npm run preview -- --host 0.0.0.0 --port "$PORT" --strictPort --outDir build/orb
     cwd: config_app
     port: 4173
     health: /
