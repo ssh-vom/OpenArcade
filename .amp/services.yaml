@@ -1,0 +1,12 @@
+services:
+  configurator:
+    command: npm run dev -- --host 0.0.0.0 --port "$PORT"
+    cwd: config_app
+    port: 4173
+    health: /
+    env:
+      VITE_MOCK_API: "true"
+    portal:
+      url: /
+      title: OpenArcade Configurator
+      description: Interactive controller configurator running with the mock device API.

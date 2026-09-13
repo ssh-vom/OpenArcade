@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+
+for command in node npm uv; do
+  if ! command -v "$command" >/dev/null 2>&1; then
+    echo "Required tool is missing from the orb base image: $command" >&2
+    exit 1
+  fi
+done
+
+echo "==> Installing controller configurator dependencies"
+time npm ci --prefix config_app --no-audit --no-fund
+
+echo "==> Installing documentation site dependencies"
+time npm ci --prefix docs-site --no-audit --no-fund
+
+echo "==> Installing Python server dependencies"
+time uv sync --directory server --frozen
+
+echo "==> Orb setup complete"

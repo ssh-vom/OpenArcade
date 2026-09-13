@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Long-lived development processes are restored by .amp/services.yaml.
+exit 0

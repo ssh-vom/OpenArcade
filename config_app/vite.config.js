@@ -16,6 +16,7 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: globalThis.process?.env?.AMP_ORB ? true : undefined,
     fs: {
       allow: [repoRoot],
     },

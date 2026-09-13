@@ -23,4 +23,5 @@ sdkconfig.*
 node_modules/
 node_modules
 server/config.json
-
+.amp/in/
+.amp/portals/
